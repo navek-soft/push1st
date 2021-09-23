@@ -1,0 +1,20 @@
+app-test:
+  name: "Default Application for tests"
+  key: "app-key"
+  secret: "secret"
+  options: { client-messages: true, statistic: false }
+  channels: [ public, private, presence, protected ]
+  origins: []
+  hook:
+    register: 
+      - "*" : [ none://beam.naveksoft.local/ ]
+    unregister: 
+      - "*" : [ none://beam.naveksoft.local/ ]
+    join: 
+      - "*" : [ none://beam.naveksoft.local/ ]
+      - "va-face-detect:*" : [ none://beam.naveksoft.local/ ]
+    leave: 
+      - "*" : [ none://beam.naveksoft.local/ ]
+    push:
+      - "*" : [ none://beam.naveksoft.local/ ]
+      - "va-face-detect:*" : [ none://beam.naveksoft.local/ ]
