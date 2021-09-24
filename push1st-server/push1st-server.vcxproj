@@ -71,21 +71,64 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
-  <ImportGroup Label="Shared" />
+  <ImportGroup Label="Shared">
+    <Import Project="..\lib\inet\inet.vcxitems" Label="Shared" />
+    <Import Project="..\lib\http\http.vcxitems" Label="Shared" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>/usr/include</IncludePath>
+    <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>/usr/include</IncludePath>
+    <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
+  </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="core\ci\cconfig.cpp" />
+    <ClCompile Include="medium\server\cwspusherserver.cpp" />
+    <ClCompile Include="medium\server\cwsrawserver.cpp" />
+    <ClCompile Include="medium\ccluster.cpp" />
+    <ClCompile Include="medium\cbroker.cpp" />
+    <ClCompile Include="core\cconfig.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="medium\ccredentials.cpp" />
+    <ClCompile Include="medium\chooks.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="opt\apps\default.yml" />
     <None Include="opt\server.yml" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="core\ci\cconfig.h" />
+    <ClInclude Include="medium\server\cwspusherserver.h" />
+    <ClInclude Include="medium\server\cwsrawserver.h" />
+    <ClInclude Include="medium\ccluster.h" />
+    <ClInclude Include="medium\cbroker.h" />
+    <ClInclude Include="core\cconfig.h" />
+    <ClInclude Include="core\ci\cflag.h" />
+    <ClInclude Include="core\ci\cjson.h" />
+    <ClInclude Include="core\csyslog.h" />
+    <ClInclude Include="core\ci\cyaml.h" />
+    <ClInclude Include="medium\ccredentials.h" />
+    <ClInclude Include="medium\chooks.h" />
+    <ClInclude Include="medium\medium.h" />
   </ItemGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <CppLanguageStandard>c++17</CppLanguageStandard>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;jsoncpp</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <CppLanguageStandard>c++17</CppLanguageStandard>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;jsoncpp</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

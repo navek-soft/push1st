@@ -4,17 +4,17 @@ app-test:
   secret: "secret"
   options: { client-messages: true, statistic: false }
   channels: [ public, private, presence, protected ]
-  origins: []
+  origins: [ "localhost" ]
   hook:
     register: 
-      - "*" : [ none://beam.naveksoft.local/ ]
+      - "*" : http://beam.naveksoft.local/
     unregister: 
-      - "*" : [ none://beam.naveksoft.local/ ]
+      - "*" : http://beam.naveksoft.local/
     join: 
-      - "*" : [ none://beam.naveksoft.local/ ]
-      - "va-face-detect:*" : [ none://beam.naveksoft.local/ ]
+      - "*" : http://beam.naveksoft.local/
+      - "va-face-detect-*" : https://beam.naveksoft.local/
     leave: 
-      - "*" : [ none://beam.naveksoft.local/ ]
+      - "*" : http://beam.naveksoft.local/
     push:
-      - "*" : [ none://beam.naveksoft.local/ ]
-      - "va-face-detect:*" : [ none://beam.naveksoft.local/ ]
+      - "*" : http://beam.naveksoft.local/
+      - "va-face-detect-*" : https://beam.naveksoft.local/

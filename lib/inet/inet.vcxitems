@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{f50a7f3a-5cd5-44dd-9f36-421aebc3f696}</ItemsProjectGuid>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)cepoll.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)cinet.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)csocket.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)ctcpserver.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)cepoll.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)cinet.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)cserver.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)csocket.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)ctcpserver.h" />
+  </ItemGroup>
+</Project>
