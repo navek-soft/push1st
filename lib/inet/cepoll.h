@@ -11,9 +11,9 @@ namespace inet {
 		cpoll();
 		virtual ~cpoll();
 		virtual const char* NameOf() { return "epoll"; }
-	protected:
 		ssize_t Listen(int pollSize = 1024, int pollTimeoutMs = -1);
 		void Join();
+	protected:
 		inline std::shared_ptr<cpoll> Self() { return shared_from_this(); }
 	public:
 		template<typename FN>

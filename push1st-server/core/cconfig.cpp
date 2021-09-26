@@ -61,10 +61,18 @@ void cconfig::cluster_t::load(const std::filesystem::path& path, const yaml_t& o
 	}
 }
 
+inet::ssl_ctx_t cconfig::server_t::ssloptions_t::Context() const {
+	//inet::SslCreateContext(sslCtx, SslCert, SslKey, true)
+	return {};
+}
+
 void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& options, size_t MaxPayloadSize) {
 	if (options.IsDefined() and options.IsMap()) {
+		std::string_view trimPath{ Value<std::string>(options["path"], {"app"})};
+		while (!trimPath.empty() and trimPath.front() == '/') trimPath.remove_prefix(1);
+		while (!trimPath.empty() and trimPath.back() == '/') trimPath.remove_suffix(1);
 		Listen = options["listen"];
-		Path = Value<std::string>(options["path"], {});
+		Path = trimPath;
 		ActivityTimeout = Value<std::time_t>(options["activity-timeout"], ActivityTimeout);
 		Ssl.Cert = Value<std::string>(options["ssl"]["cert"], {});
 		Ssl.Key = Value<std::string>(options["ssl"]["key"], {});
@@ -75,7 +83,9 @@ void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& op
 void cconfig::interface_t::load(const std::filesystem::path& path, const yaml_t& options) {
 	KeepAlive = Value<std::time_t>(options["keep-alive-timeout"], 0);
 	Interface = Map(options["interface"], { {"pusher",api_t::type::pusher},{"push1st",api_t::type::push1st} }, api_t::type::disable);
-	Threads = Value<size_t>(options["threads"], Threads);
+	std::string Path{ "apps" };
+	ssloptions_t Ssl;
+
 	if (auto path = Value<std::string>(options["path"], Path);  1) {
 		std::string_view trimPath{ path };
 		while (!trimPath.empty() and trimPath.front() == '/') trimPath.remove_prefix(1);
@@ -92,7 +102,11 @@ void cconfig::interface_t::load(const std::filesystem::path& path, const yaml_t&
 	if (options["listen"].IsDefined() and options["listen"].IsSequence()) {
 		for (auto&& dsn : options["listen"]) {
 			Listen.push_back({});
-			Listen.back() = dsn;
+			Listen.back().Listen = dsn;
+			Listen.back().Path = Path;
+			Listen.back().Ssl.Enable = Ssl.Enable;
+			Listen.back().Ssl.Cert = Ssl.Cert;
+			Listen.back().Ssl.Key = Ssl.Key;
 		}
 	}
 	else {

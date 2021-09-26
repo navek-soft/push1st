@@ -116,6 +116,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <CppLanguageStandard>c++17</CppLanguageStandard>
+      <PreprocessorDefinitions>DEBUG</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;jsoncpp</LibraryDependencies>

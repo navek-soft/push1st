@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include "ci/cflag.h"
 #include "ci/cyaml.h"
+#include "../inet/cinet.h"
 #include <ctime>
 
 namespace core {
@@ -74,24 +75,19 @@ namespace core {
 			cdsn Listen;
 			std::string Path;
 			std::time_t ActivityTimeout{ 20 };
-			struct {
+			struct ssloptions_t {
 				bool Enable{ false };
 				std::string Cert, Key;
+				inet::ssl_ctx_t Context() const;
 			} Ssl;
 		private:
 			friend class cconfig;
 			void load(const std::filesystem::path& path, const yaml_t& options, size_t MaxPayloadSize);
 		} Pusher, WebSocket;
-		struct interface_t {
+		struct interface_t : public server_t {
 			api_t Interface{ api_t::type::disable };
-			size_t Threads{ 1 };
+			std::vector<server_t> Listen;
 			std::time_t KeepAlive{ 10 };
-			std::string Path{ "apps" };
-			std::vector<cdsn> Listen;
-			struct {
-				bool Enable{ false };
-				std::string Cert, Key;
-			} Ssl;
 		private:
 			friend class cconfig;
 			void load(const std::filesystem::path& path, const yaml_t& options);

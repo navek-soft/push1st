@@ -78,6 +78,7 @@ namespace http {
 		};
 #pragma pack(pop)
 	public:
+		virtual ~cwebsocket() = default;
 		static std::string SecKey(const std::string_view& secKey);
 		static void Mask(uint8_t* data, size_t length, const uint8_t* mask);
 		static inline void RandMask(mask_t& mask);

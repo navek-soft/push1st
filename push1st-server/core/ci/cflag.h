@@ -18,8 +18,8 @@ namespace core::ci {
 		inline bool operator == (FLAG_T flag) const { return flagset == flag; }
 		inline bool operator != (FLAG_T flag) const { return flagset != flag; }
 
-		inline FLAG_T operator | (ENUM_T flag) { return flagset | (FLAG_T)flag; }
-		inline FLAG_T operator & (ENUM_T flag) { return flagset & (FLAG_T)flag; }
+		inline FLAG_T operator | (ENUM_T flag) const { return flagset | (FLAG_T)flag; }
+		inline FLAG_T operator & (ENUM_T flag) const { return flagset & (FLAG_T)flag; }
 		
 		template<typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value>>
 		inline auto operator |= (T flag) { flagset |= (FLAG_T)flag; return *this; }

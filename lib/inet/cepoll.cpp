@@ -21,8 +21,10 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 				while (nevents--) {
 					if (auto&& hFd{ self->fdHandlers.find(events_list[nevents].data.fd) }; hFd != self->fdHandlers.end())
 					{
-						hFd->second(events_list[nevents].data.fd, events_list[nevents].events);
-						continue;
+						if (hFd->second) {
+							hFd->second(events_list[nevents].data.fd, events_list[nevents].events);
+							continue;
+						}
 					}
 					fprintf(stderr, "[ SERVER:%s ] Unhandled socket ( %ld )\n", self->NameOf(), events_list[nevents].data.fd);
 					::close(events_list[nevents].data.fd);

@@ -1,7 +1,7 @@
 # channels configuration section
 server:
     proto: [pusher, mqtt, websocket ]       # enabled proto
-    threads: 3                  # number of worker threads
+    threads: 1                  # number of worker threads
     max-request-payload: 65400  # global max request payload length less or equal 65400
 
 cluster:
@@ -35,7 +35,6 @@ websocket:
 api:
     keep-alive-timeout: 10          # http api keep-alive connection timeout
     interface: pusher
-    threads: 1
     ssl: { enable: false, *default-ssl }
     path: /apps/
     listen: [ tcp://*:6002/, unix://opt/naveksoft/beam-server/beam.api ]

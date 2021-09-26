@@ -63,10 +63,10 @@ void ctcpserver::OnAcceptSSL(fd_t fd, uint events, std::weak_ptr<cpoll> poll) {
 void ctcpserver::Listen(const std::shared_ptr<cpoll>& poll) {
 	if (srvFd > 0) {
 		if (srvSslContext) {
-			poll->PollAdd(srvFd, EPOLLIN | EPOLLRDHUP, std::bind(&ctcpserver::OnAcceptSSL, this, std::placeholders::_1, std::placeholders::_2,poll->weak_from_this()));
+			poll->PollAdd(srvFd, EPOLLIN | EPOLLRDHUP | EPOLLEXCLUSIVE, std::bind(&ctcpserver::OnAcceptSSL, this, std::placeholders::_1, std::placeholders::_2,poll->weak_from_this()));
 		}
 		else {
-			poll->PollAdd(srvFd, EPOLLIN | EPOLLRDHUP, std::bind(&ctcpserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()));
+			poll->PollAdd(srvFd, EPOLLIN | EPOLLRDHUP | EPOLLEXCLUSIVE, std::bind(&ctcpserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()));
 			//poll->PollAdd(srvFd, EPOLLIN | EPOLLRDHUP, { TcpSelf() }, &ctcpserver::OnAccept);
 		}
 	}

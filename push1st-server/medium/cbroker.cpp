@@ -1,8 +1,11 @@
 #include "cbroker.h"
 #include "chooks.h"
 #include "ccluster.h"
+#include "server/cwsrawserver.h"
+#include "server/cwspusherserver.h"
 #include "ccredentials.h"
 #include <csignal>
+#include "../core/csyslog.h"
 
 std::shared_ptr<chook> cbroker::RegisterHook(const std::string& endpoint) {
     if (dsn_t dsn{ endpoint }; dsn.proto() == "http://" or dsn.proto() == "https://") {
@@ -24,7 +27,7 @@ int cbroker::Run() {
 }
 
 void cbroker::OnIdle() {
-    printf("timeout\n");
+    //printf("timeout\n");
 }
 
 void cbroker::Initialize(const core::cconfig& config) {
@@ -34,9 +37,26 @@ void cbroker::Initialize(const core::cconfig& config) {
 
     Credentials = std::make_shared<ccredentials>(shared_from_this(), config.Credentials);
 
+    if (config.Server.Proto & proto_t::type::websocket) {
+        WsRawServer = std::make_shared<cwsrawserver>(config.WebSocket);
+    }
+
+
     ServerPoll.reserve(config.Server.Threads);
     for (auto n{ config.Server.Threads }; n--;) {
         ServerPoll.emplace_back(std::make_shared<inet::cpoll>());
+        if (WsRawServer) {
+            WsRawServer->Listen(ServerPoll.back());
+        }
+        ServerPoll.back()->Listen();
+    }
+
+    syslog.ob.flush(1);
+
+    WaitFor({ SIGINT, SIGQUIT, SIGABRT, SIGSEGV, SIGHUP });
+
+    for (auto& poll : ServerPoll) {
+        poll->Join();
     }
 }
 
@@ -62,10 +82,12 @@ int cbroker::WaitFor(std::initializer_list<int>&& signals) {
 
     sigprocmask(SIG_BLOCK, &sigSet, &sigMask);
     int nsig{ -1 };
-    while ((nsig = sigtimedwait(&sigMask, &sigInfo, &tmout)) == -1 and errno == EAGAIN) {
+    /*
+    while ((nsig = sigtimedwait(&sigMask, &sigInfo, &tmout)) == -1 or errno == EAGAIN) {
         OnIdle();
     }
-    //sigsuspend();
+    */
+    nsig = sigsuspend(&sigMask);
     sigprocmask(SIG_UNBLOCK, &sigSet, nullptr);
 
     return nsig;

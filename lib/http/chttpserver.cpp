@@ -1,5 +1,7 @@
 #include "chttpserver.h"
 
+using namespace inet;
+
 ssize_t chttpserver::OnTcpAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	/* Read HTTP request */
 	ssize_t res{ -1 };
