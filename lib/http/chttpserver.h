@@ -4,7 +4,7 @@
 
 namespace inet {
 
-	class chttpserver : public inet::ctcpserver, public http::cconnection {
+	class chttpserver : public inet::ctcpserver, public inet::chttpconnection {
 	public:
 		chttpserver(const std::string& name, const std::string& HostPort, size_t httpMaxHeaderSize = 8192);
 		chttpserver(const std::string& name, const std::string& HostPort, const std::string& SslCert, const std::string& SslKey, size_t httpMaxHeaderSize = 8192);

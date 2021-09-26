@@ -75,6 +75,7 @@ namespace core {
 			cdsn Listen;
 			std::string Path;
 			std::time_t ActivityTimeout{ 20 };
+			size_t MaxPayloadSize{ 8192 };
 			struct ssloptions_t {
 				bool Enable{ false };
 				std::string Cert, Key;

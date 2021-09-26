@@ -82,12 +82,10 @@ int cbroker::WaitFor(std::initializer_list<int>&& signals) {
 
     sigprocmask(SIG_BLOCK, &sigSet, &sigMask);
     int nsig{ -1 };
-    /*
     while ((nsig = sigtimedwait(&sigMask, &sigInfo, &tmout)) == -1 or errno == EAGAIN) {
         OnIdle();
     }
-    */
-    nsig = sigsuspend(&sigMask);
+//    nsig = sigsuspend(&sigMask);
     sigprocmask(SIG_UNBLOCK, &sigSet, nullptr);
 
     return nsig;

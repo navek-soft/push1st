@@ -1,8 +1,8 @@
 #include "chttpconn.h"
 
-using namespace http;
+using namespace inet;
 
-ssize_t cconnection::HttpReadRequest(const inet::csocket& fd, std::string_view& method, http::path_t& path, http::params_t& args, http::headers_t& headers, std::string& request, std::string& content, size_t max_size)
+ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_view& method, http::path_t& path, http::params_t& args, http::headers_t& headers, std::string& request, std::string& content, size_t max_size)
 {
 	request.resize(max_size);
 	ssize_t res{ -1 };
@@ -38,7 +38,7 @@ ssize_t cconnection::HttpReadRequest(const inet::csocket& fd, std::string_view& 
 	return res;
 }
 
-ssize_t cconnection::HttpWriteResponse(const inet::csocket& fd, const std::string_view& code, const std::string_view& response, std::unordered_map<std::string_view, std::string>&& headers) {
+ssize_t chttpconnection::HttpWriteResponse(const inet::csocket& fd, const std::string_view& code, const std::string_view& response, std::unordered_map<std::string_view, std::string>&& headers) {
 	std::string reply;
 
 	reply.reserve(2048);

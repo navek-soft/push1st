@@ -20,13 +20,12 @@ namespace inet {
 			bcopy(&so.fdSa, &fdSa, sizeof(sockaddr_storage));
 			if (fdSsl) { write_fn = &csocket::write_ssl; read_fn = &csocket::read_ssl; }
 		}
-		virtual ~csocket() { SocketClose(); }
+		virtual ~csocket() { printf("%s\n", __PRETTY_FUNCTION__); }
 		virtual inline void OnSocketConnect() { ; }
 		virtual inline void OnSocketRecv() { ; }
 		virtual inline void OnSocketSend() { ; }
 		virtual inline void OnSocketError(ssize_t err) { ; }
 	public:
-		inline fd_t SocketDetach() { fd_t so{ fdSocket }; fdSocket = -1; return so; }
 		inline ssize_t SocketSend(const void* data, size_t length, size_t& nwrite, uint flags) const { return (this->*write_fn)(data, length, nwrite, flags); }
 		inline ssize_t SocketRecv(void* data, size_t length, size_t& nread, uint flags) const { return (this->*read_fn)(data, length, nread, flags); }
 		inline ssize_t SocketSend(const sockaddr_storage& sa, const void* data, size_t length, size_t& nwrite, uint flags) const { return (this->*write_to_fn)(sa, data, length, nwrite, flags); }

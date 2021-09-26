@@ -66,7 +66,7 @@ inet::ssl_ctx_t cconfig::server_t::ssloptions_t::Context() const {
 	return {};
 }
 
-void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& options, size_t MaxPayloadSize) {
+void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& options, size_t maxPayloadSize) {
 	if (options.IsDefined() and options.IsMap()) {
 		std::string_view trimPath{ Value<std::string>(options["path"], {"app"})};
 		while (!trimPath.empty() and trimPath.front() == '/') trimPath.remove_prefix(1);
@@ -77,6 +77,7 @@ void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& op
 		Ssl.Cert = Value<std::string>(options["ssl"]["cert"], {});
 		Ssl.Key = Value<std::string>(options["ssl"]["key"], {});
 		Ssl.Enable = Value<bool>(options["ssl"]["enable"], false) and !Ssl.Cert.empty() and !Ssl.Key.empty();
+		MaxPayloadSize = maxPayloadSize;
 	}
 }
 

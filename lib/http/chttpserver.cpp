@@ -13,7 +13,7 @@ ssize_t chttpserver::OnTcpAccept(fd_t fd, const sockaddr_storage& sa, const inet
 			OnHttpRequest(so, method, path, args, headers, std::move(request), std::move(content));
 			return 0;
 		}
-		so.SocketDetach();
+		self->PollDelete(fd);
 	}
 	return res;
 }
