@@ -13,10 +13,13 @@ namespace core::ci {
 		template<typename Integer, typename = std::enable_if_t<std::is_integral<Integer>::value>>
 		cflag& operator = (Integer val) { flagset = (FLAG_T)val; return *this; }
 		inline operator FLAG_T() const { return flagset; }
+		inline operator ENUM_T() const { return (ENUM_T)flagset; }
 
 		inline bool empty () const { return !flagset; }
 		inline bool operator == (FLAG_T flag) const { return flagset == flag; }
 		inline bool operator != (FLAG_T flag) const { return flagset != flag; }
+		inline bool operator == (ENUM_T flag) const { return flagset == (FLAG_T)flag; }
+		inline bool operator != (ENUM_T flag) const { return flagset != (FLAG_T)flag; }
 
 		inline FLAG_T operator | (ENUM_T flag) const { return flagset | (FLAG_T)flag; }
 		inline FLAG_T operator & (ENUM_T flag) const { return flagset & (FLAG_T)flag; }

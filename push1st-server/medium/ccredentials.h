@@ -22,7 +22,7 @@ class ccredentials : public std::enable_shared_from_this<ccredentials>
 	public:
 		capplication(const std::shared_ptr<cbroker>& broker, const config::credential_t& app);
 		~capplication() = default;
-		inline bool IsAllowChannel(channel_t::type type) { return Channels & type; }
+		inline bool IsAllowChannel(channel_t::type type, const std::string_view& channel, const std::string_view& token) { return Channels & type; }
 		void Trigger(hook_t::type type, sid_t channel, sid_t session, data_t);
 	private:
 		std::unordered_multimap<hook_t::type, std::pair<cmatch /* channel matcher */, std::shared_ptr<chook> /* hook endpoint */>> HookEndpoints;

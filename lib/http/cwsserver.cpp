@@ -15,7 +15,7 @@ void cwsserver::WsData(fd_t fd, uint events, inet::socket_t so, const std::weak_
 	}
 }
 
-ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, const http::path_t& path, const http::params_t& args, const http::headers_t& headers, std::string&& request, std::string&& content) {
+ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, const http::path_t& path, const http::params_t& args, const http::headers_t& headers) {
 	return HttpWriteResponse(fd, "101", {}, {
 			{"Upgrade","WebSocket"},
 			{"Connection","Upgrade"},
@@ -28,6 +28,7 @@ ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, const http::path_t& path, 
 ssize_t cwsserver::OnTcpAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
+		printf("Accept at poll %ld\n", self->Fd());
 		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR, std::bind(&cwsserver::WsAccept, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll));
 	}
 	return res;
@@ -46,14 +47,20 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
 					http::GetValue(headers, "upgrade") == "websocket" and
 					http::ToNumber(http::GetValue(headers, "sec-websocket-version")) >= 12)
 				{
-					if (res = WsUpgrade(so, path, args, headers, std::move(request), std::move(content)); res == 0) {
+					if (res = WsUpgrade(so, path, args, headers); res == 0) {
 						if (auto&& con = OnWsUpgrade(so, path, args, headers, std::move(request), std::move(content)); con) {
 							res = self->PollUpdate(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR, std::bind(&cwsserver::WsData, this, std::placeholders::_1, std::placeholders::_2, con, poll));
 							if (res != 0) {
 								con->OnSocketError(res); /* Handler must close connection and free resources by itself */
 							}
-							return;
 						}
+						return;
+					}
+					else if (res == -EACCES) {
+						HttpWriteResponse(so, "404");
+					}
+					else {
+						HttpWriteResponse(so, "400");
 					}
 				}
 				else {

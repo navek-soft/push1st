@@ -24,6 +24,7 @@ namespace inet {
 		inline ssize_t PollUpdate(fd_t fd, uint events, FN&& callback);
 		ssize_t PollUpdate(fd_t fd, uint events);
 		void PollDelete(int& fd);
+		inline fd_t Fd() { return fdPoll; }
 	private:
 		static void PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTimeout);
 		using handler_t = std::function<void(fd_t,uint)>;

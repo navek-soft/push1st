@@ -1,9 +1,13 @@
 #pragma once
-#include <jsoncpp/json/value.h>
+#include <jsoncpp/json/json.h>
+#include <any>
+#include <string>
+#include <memory>
 
-using json_t = Json::Value;
+class cjson {
+public:
+	using value_t = Json::Value;
+	static value_t unserialize(const std::string_view& document);
+};
 
-namespace json {
-	static inline auto unserialize(const std::string& value) { return json_t(); }
-	static inline std::string serialize(const json_t& value) { return {}; }
-}
+using json = cjson;

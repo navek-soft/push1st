@@ -26,23 +26,24 @@ namespace inet {
 		virtual inline void OnSocketSend() { ; }
 		virtual inline void OnSocketError(ssize_t err) { ; }
 	public:
+		inline void SocketUpdateEvents(uint events);
 		inline ssize_t SocketSend(const void* data, size_t length, size_t& nwrite, uint flags) const { return (this->*write_fn)(data, length, nwrite, flags); }
 		inline ssize_t SocketRecv(void* data, size_t length, size_t& nread, uint flags) const { return (this->*read_fn)(data, length, nread, flags); }
 		inline ssize_t SocketSend(const sockaddr_storage& sa, const void* data, size_t length, size_t& nwrite, uint flags) const { return (this->*write_to_fn)(sa, data, length, nwrite, flags); }
 		inline ssize_t SocketRecv(sockaddr_storage& sa, void* data, size_t length, size_t& nread, uint flags) const { return (this->*read_from_fn)(sa, data, length, nread, flags); }
 		inline int Fd() const { return (int)fdSocket; }
 		inline const sockaddr_storage& Address() const { return fdSa; }
-		int SocketClose();
-		inline std::string GetAddress() { return inet::GetIp(fdSa); }
-		inline uint32_t GetIp4() { return inet::GetIp4(fdSa); }
-		inline uint8_t* GetIp6() { return inet::GetIp6(fdSa); }
-		inline int GetAF() { return inet::GetAF(fdSa); }
-		inline uint16_t GetPort() { return inet::GetPort(fdSa); }
-		inline ssize_t GetErrorNo() { return inet::GetErrorNo(fdSocket); }
-		inline ssize_t SetKeepAlive(bool enable, int count, int idle_sec, int intrvl_sec) { return inet::SetKeepAlive(fdSocket, enable, count, idle_sec, intrvl_sec); }
-		inline ssize_t SetNonBlock(bool nonblock) { return inet::SetNonBlock(fdSocket, nonblock); }
-		inline ssize_t SetRecvTimeout(std::time_t milliseconds) { return inet::SetRecvTimeout(fdSocket, (size_t)milliseconds); }
-		inline ssize_t SetSendTimeout(std::time_t milliseconds) { return inet::SetSendTimeout(fdSocket, (size_t)milliseconds); }
+		int SocketClose() const;
+		inline std::string GetAddress() const { return inet::GetIp(fdSa); }
+		inline uint32_t GetIp4() const { return inet::GetIp4(fdSa); }
+		inline uint8_t* GetIp6() const { return inet::GetIp6(fdSa); }
+		inline int GetAF() const { return inet::GetAF(fdSa); }
+		inline uint16_t GetPort() const { return inet::GetPort(fdSa); }
+		inline ssize_t GetErrorNo() const { return inet::GetErrorNo(fdSocket); }
+		inline ssize_t SetKeepAlive(bool enable, int count, int idle_sec, int intrvl_sec) const { return inet::SetKeepAlive(fdSocket, enable, count, idle_sec, intrvl_sec); }
+		inline ssize_t SetNonBlock(bool nonblock) const { return inet::SetNonBlock(fdSocket, nonblock); }
+		inline ssize_t SetRecvTimeout(std::time_t milliseconds) const { return inet::SetRecvTimeout(fdSocket, (size_t)milliseconds); }
+		inline ssize_t SetSendTimeout(std::time_t milliseconds) const { return inet::SetSendTimeout(fdSocket, (size_t)milliseconds); }
 	private:
 		mutable fd_t fdSocket;
 		mutable std::shared_ptr<struct ssl_st> fdSsl;
@@ -65,6 +66,20 @@ namespace inet {
 		ssize_t(csocket::* write_to_fn)(const sockaddr_storage& sa, const void* data, size_t length, size_t& nwrite, uint flags) const { &csocket::write_to_nossl };
 		ssize_t(csocket::* read_from_fn)(sockaddr_storage& sa, void* data, size_t length, size_t& nread, uint flags) const { &csocket::read_from_nossl };
 	};
+
+	inline void csocket::SocketUpdateEvents(uint events) {
+		if (auto&& poll{ fdPoll.lock() }; poll and fdSocket > 0) {
+			if (auto res = poll->PollUpdate(fdSocket, events); res == 0) {
+				return;
+			}
+			else {
+				OnSocketError(res);
+			}
+		}
+		else {
+			OnSocketError(-EBADFD);
+		}
+	}
 
 	using socket_t = std::shared_ptr<csocket>;
 }

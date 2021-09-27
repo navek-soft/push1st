@@ -10,7 +10,7 @@ extern "C" {
 
 using namespace inet;
 
-int csocket::SocketClose() {
+int csocket::SocketClose() const {
 	if (int fd{ fdSocket }; fd > 0) {
 		if (auto&& poll{ fdPoll.lock() }; poll) {
 			poll->PollDelete(fdSocket);

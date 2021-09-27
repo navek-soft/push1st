@@ -86,7 +86,13 @@
     <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="medium\cmessage.cpp" />
+    <ClCompile Include="medium\channels\cpublicchannel.cpp" />
+    <ClCompile Include="medium\channels\cchannel.cpp" />
+    <ClCompile Include="medium\csubscriber.cpp" />
+    <ClCompile Include="medium\cchannels.cpp" />
     <ClCompile Include="medium\server\cwspusherserver.cpp" />
+    <ClCompile Include="medium\server\cwsrawconnection.cpp" />
     <ClCompile Include="medium\server\cwsrawserver.cpp" />
     <ClCompile Include="medium\ccluster.cpp" />
     <ClCompile Include="medium\cbroker.cpp" />
@@ -100,7 +106,14 @@
     <None Include="opt\server.yml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="core\ci\cspinlock.h" />
+    <ClInclude Include="medium\cmessage.h" />
+    <ClInclude Include="medium\channels\cpublicchannel.h" />
+    <ClInclude Include="medium\csubscriber.h" />
+    <ClInclude Include="medium\cchannels.h" />
+    <ClInclude Include="medium\channels\cchannel.h" />
     <ClInclude Include="medium\server\cwspusherserver.h" />
+    <ClInclude Include="medium\server\cwsrawconnection.h" />
     <ClInclude Include="medium\server\cwsrawserver.h" />
     <ClInclude Include="medium\ccluster.h" />
     <ClInclude Include="medium\cbroker.h" />

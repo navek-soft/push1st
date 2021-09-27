@@ -1,5 +1,6 @@
 #pragma once
 #include "cwebsocket.h"
+#include "chttp.h"
 #include "../inet/csocket.h"
 
 namespace inet {
@@ -9,6 +10,7 @@ namespace inet {
 		cwsconnection() = default;
 		virtual ~cwsconnection() { printf("%s\n", __PRETTY_FUNCTION__); }
 	protected:
+		virtual bool OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers) = 0;
 		virtual void OnWsError(ssize_t err) = 0;
 		virtual void OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr<uint8_t[]>&& message, size_t length) { ; }
 		virtual void OnWsPing();

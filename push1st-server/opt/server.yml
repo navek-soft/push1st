@@ -1,7 +1,7 @@
 # channels configuration section
 server:
     proto: [pusher, mqtt, websocket ]       # enabled proto
-    threads: 1                  # number of worker threads
+    threads: 2                  # number of worker threads
     max-request-payload: 65400  # global max request payload length less or equal 65400
 
 cluster:

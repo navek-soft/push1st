@@ -5,7 +5,7 @@
 void ccredentials::capplication::Trigger(hook_t::type type, sid_t channel, sid_t session, data_t data) {
 	for (auto&& [from, to] = HookEndpoints.equal_range(type); from != to; ++from) {
 		if (from->second.first.Match(channel)) {
-			from->second.second->Trigger(channel, session, data);
+			from->second.second->Trigger(Id, channel, session, data);
 		}
 	}
 }

@@ -1,6 +1,7 @@
 #include "cbroker.h"
 #include "chooks.h"
 #include "ccluster.h"
+#include "cchannels.h"
 #include "server/cwsrawserver.h"
 #include "server/cwspusherserver.h"
 #include "ccredentials.h"
@@ -35,12 +36,12 @@ void cbroker::Initialize(const core::cconfig& config) {
     if (config.Server.Proto.empty()) throw std::runtime_error("Protocols not specified");
     if (!config.Server.Threads) throw std::runtime_error("Invalid worker threads number ( zero count )");
 
+    Channels = std::make_shared<cchannels>();
     Credentials = std::make_shared<ccredentials>(shared_from_this(), config.Credentials);
 
     if (config.Server.Proto & proto_t::type::websocket) {
-        WsRawServer = std::make_shared<cwsrawserver>(config.WebSocket);
+        WsRawServer = std::make_shared<cwsrawserver>(Channels, Credentials, config.WebSocket);
     }
-
 
     ServerPoll.reserve(config.Server.Threads);
     for (auto n{ config.Server.Threads }; n--;) {
