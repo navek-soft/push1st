@@ -63,17 +63,16 @@ void cwsrawconnection::OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr
 	}
 	syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, std::strerror(EBADMSG));
 }
-
+#if SENDQ 
 void cwsrawconnection::OnSocketSend() {
-	{
-		std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
-		while (!OutgoingQueue.empty()) {
-			WsWriteMessage(opcode_t::text, { (char*)OutgoingQueue.front().first.get(),OutgoingQueue.front().second });
-			OutgoingQueue.pop();
-		}
+	std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
+	while (!OutgoingQueue.empty()) {
+		WsWriteMessage(opcode_t::text, { (char*)OutgoingQueue.front().first.get(),OutgoingQueue.front().second });
+		OutgoingQueue.pop();
 	}
-	SocketUpdateEvents(EPOLLIN | EPOLLRDHUP);
+	SocketUpdateEvents(EPOLLIN | EPOLLRDHUP | EPOLLERR);
 }
+#endif
 
 void cwsrawconnection::OnSocketError(ssize_t err) {
 	syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, std::strerror((int)-err));

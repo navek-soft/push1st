@@ -8,6 +8,8 @@
 #include <queue>
 #include "../cmessage.h"
 
+#define SENDQ 1
+
 class cwsrawconnection : public inet::cwsconnection, public inet::csocket, public csubscriber, public std::enable_shared_from_this<cwsrawconnection>
 {
 public:
@@ -21,18 +23,24 @@ public:
 	virtual void OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr<uint8_t[]>&& message, size_t length) override;
 
 	virtual inline void OnSocketRecv() override { WsReadMessage(MaxMessageLength); }
+#if SENDQ 
 	virtual void OnSocketSend() override;
+#else
+	virtual inline void OnSocketSend() override { ; }
+#endif
 	virtual void OnSocketError(ssize_t err) override;
 
 	virtual void OnWsClose() override;
 	virtual inline void OnWsPing() override { ; }
 
 	virtual inline void Push(const std::unique_ptr<cmessage>& msg) override {
-		{
-			std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
-			OutgoingQueue.emplace(msg->Data);
-		}
-		SocketUpdateEvents(EPOLLIN | EPOLLOUT | EPOLLRDHUP);
+#if SENDQ 
+		std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
+		OutgoingQueue.emplace(msg->Data);
+		SocketUpdateEvents(EPOLLOUT | EPOLLET);
+#else
+		WsWriteMessage(opcode_t::text, msg->GetData());
+#endif
 	}
 private:
 	inline std::unique_ptr<cmessage> UnPack(data_t&& msg);
@@ -41,6 +49,8 @@ private:
 	std::shared_ptr<cchannels> Channels;
 	std::unordered_map<std::string, std::weak_ptr<cchannel>> SubscribedTo;
 	app_t App;
+#if SENDQ 
 	spinlock_t OutgoingLock;
 	std::queue<array_t> OutgoingQueue;
+#endif
 };
