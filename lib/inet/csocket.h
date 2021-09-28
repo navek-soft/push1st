@@ -20,7 +20,7 @@ namespace inet {
 			bcopy(&so.fdSa, &fdSa, sizeof(sockaddr_storage));
 			if (fdSsl) { write_fn = &csocket::write_ssl; read_fn = &csocket::read_ssl; }
 		}
-		virtual ~csocket() { printf("%s\n", __PRETTY_FUNCTION__); }
+		virtual ~csocket() { ; }
 		virtual inline void OnSocketConnect() { ; }
 		virtual inline void OnSocketRecv() { ; }
 		virtual inline void OnSocketSend() { ; }

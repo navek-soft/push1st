@@ -18,6 +18,19 @@ inline flag_t<ET> Map(const yaml_t& vals, const std::unordered_map<std::string_v
 	return res;
 }
 
+template<typename ET>
+inline flag_t<ET> Map(const yaml_t& vals, const std::unordered_map<std::string_view, ET>&& names, uint def) {
+	flag_t<ET> res{ def };
+	if (vals.IsDefined() and vals.IsSequence()) {
+		for (auto&& val : vals) {
+			if (auto&& it{ names.find(val.as<std::string>()) }; it != names.end()) {
+				res |= it->second;
+			}
+		}
+	}
+	return res;
+}
+
 template<typename T>
 inline T Value(const yaml_t& vals, T def) {
 	if (vals.IsDefined() and vals.IsScalar()) {
@@ -26,11 +39,58 @@ inline T Value(const yaml_t& vals, T def) {
 	return def;
 }
 
-void cconfig::instance_t::load(const std::filesystem::path& path, const yaml_t& options) {
+static inline std::string PathValue(const yaml_t& vals, const std::string& def) {
+	std::string val;
+	if (vals.IsDefined() and vals.IsScalar() and !vals.IsNull()) {
+		val = vals.as<std::string>();
+	}
+	std::string_view trimPath{ val };
+	while (!trimPath.empty() and trimPath.front() == '/') trimPath.remove_prefix(1);
+	while (!trimPath.empty() and trimPath.back() == '/') trimPath.remove_suffix(1);
+
+	return !trimPath.empty() ? std::string{ trimPath } : def;
+}
+
+void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& options) {
 	if (options.IsDefined() and options.IsMap()) {
-		Proto = Map(options["proto"], { {"pusher",proto_t::type::pusher}, {"mqtt3",proto_t::type::mqtt3}, {"websocket",proto_t::type::websocket} }, proto_t::type::none);
+		Proto = Map(options["proto"], { {"pusher",proto_t::type::pusher}, {"mqtt",proto_t::type::mqtt3}, {"websocket",proto_t::type::websocket} }, proto_t::type::none);
 		Threads = Value<size_t>(options["threads"], Threads);
-		MaxPayloadSize = Value<size_t>(options["max-request-payload"], MaxPayloadSize);
+		Listen = options["listen"];
+		Ssl.Cert = Value<std::string>(options["ssl"]["cert"], {});
+		Ssl.Key = Value<std::string>(options["ssl"]["key"], {});
+		Ssl.Enable = Value<bool>(options["ssl"]["enable"], false);
+
+		if (options["pusher"].IsMap()) {
+			Pusher.ActivityTimeout = (std::time_t)Value<size_t>(options["pusher"]["activity-timeout"], 0);
+			Pusher.MaxPayloadSize = Value<size_t>(options["pusher"]["max-request-payload"], Pusher.MaxPayloadSize);
+			Pusher.PushOn = channel_t::type::pres;
+			Pusher.Path = PathValue(options["pusher"]["path"], "pusher");
+		}
+		else {
+			Proto -= proto_t::type::pusher;
+		}
+
+		if (options["websocket"].IsMap()) {
+			WebSocket.ActivityTimeout = (std::time_t)Value<size_t>(options["websocket"]["activity-timeout"], 0);
+			WebSocket.MaxPayloadSize = Value<size_t>(options["websocket"]["max-request-payload"], Pusher.MaxPayloadSize);
+			WebSocket.PushOn = Map<channel_t::type>(options["websocket"]["push"], {
+				{"public",channel_t::type::pub}, {"private",channel_t::type::priv}, {"presence", channel_t::type::pres}}, channel_t::type::pub | channel_t::type::prot | channel_t::type::pres);
+			WebSocket.Path = PathValue(options["websocket"]["path"], "ws");
+		}
+		else {
+			Proto -= proto_t::type::websocket;
+		}
+
+		if (options["mqtt"].IsMap()) {
+			MQTT.ActivityTimeout = (std::time_t)Value<size_t>(options["mqtt"]["activity-timeout"], 0);
+			MQTT.MaxPayloadSize = Value<size_t>(options["mqtt"]["max-request-payload"], Pusher.MaxPayloadSize);
+			MQTT.PushOn = Map<channel_t::type>(options["mqtt"]["push"], {
+				{"public",channel_t::type::pub}, {"private",channel_t::type::priv}, {"presence", channel_t::type::pres} }, channel_t::type::pub | channel_t::type::prot | channel_t::type::pres);
+			MQTT.Path = PathValue(options["mqtt"]["path"], "mqtt");
+		}
+		else {
+			Proto -= proto_t::type::mqtt3;
+		}
 	}
 	else {
 		throw std::runtime_error{"Server section not found"};
@@ -61,53 +121,27 @@ void cconfig::cluster_t::load(const std::filesystem::path& path, const yaml_t& o
 	}
 }
 
-inet::ssl_ctx_t cconfig::server_t::ssloptions_t::Context() const {
-	//inet::SslCreateContext(sslCtx, SslCert, SslKey, true)
-	return {};
-}
-
-void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& options, size_t maxPayloadSize) {
-	if (options.IsDefined() and options.IsMap()) {
-		std::string_view trimPath{ Value<std::string>(options["path"], {"app"})};
-		while (!trimPath.empty() and trimPath.front() == '/') trimPath.remove_prefix(1);
-		while (!trimPath.empty() and trimPath.back() == '/') trimPath.remove_suffix(1);
-		Listen = options["listen"];
-		Path = trimPath;
-		ActivityTimeout = Value<std::time_t>(options["activity-timeout"], ActivityTimeout);
-		Ssl.Cert = Value<std::string>(options["ssl"]["cert"], {});
-		Ssl.Key = Value<std::string>(options["ssl"]["key"], {});
-		Ssl.Enable = Value<bool>(options["ssl"]["enable"], false) and !Ssl.Cert.empty() and !Ssl.Key.empty();
-		MaxPayloadSize = maxPayloadSize;
+inet::ssl_ctx_t cconfig::ssloptions_t::Context() const {
+	inet::ssl_ctx_t ctx;
+	if (Enable) {
+		inet::SslCreateContext(ctx, Cert, Key, true);
 	}
+	
+	return ctx;
 }
 
 void cconfig::interface_t::load(const std::filesystem::path& path, const yaml_t& options) {
 	KeepAlive = Value<std::time_t>(options["keep-alive-timeout"], 0);
 	Interface = Map(options["interface"], { {"pusher",api_t::type::pusher},{"push1st",api_t::type::push1st} }, api_t::type::disable);
-	std::string Path{ "apps" };
-	ssloptions_t Ssl;
-
-	if (auto path = Value<std::string>(options["path"], Path);  1) {
-		std::string_view trimPath{ path };
-		while (!trimPath.empty() and trimPath.front() == '/') trimPath.remove_prefix(1);
-		while (!trimPath.empty() and trimPath.back() == '/') trimPath.remove_suffix(1);
-		
-		if (!trimPath.empty()) {
-			Path = trimPath;
-		}
-	}
+	Path = PathValue(options["path"], "apps");
 	Ssl.Cert = Value<std::string>(options["ssl"]["cert"], {});
 	Ssl.Key = Value<std::string>(options["ssl"]["key"], {});
-	Ssl.Enable = Value<bool>(options["ssl"]["enable"], false) and !Ssl.Cert.empty() and !Ssl.Key.empty();
+	Ssl.Enable = Value<bool>(options["ssl"]["enable"], false);
 
 	if (options["listen"].IsDefined() and options["listen"].IsSequence()) {
 		for (auto&& dsn : options["listen"]) {
 			Listen.push_back({});
-			Listen.back().Listen = dsn;
-			Listen.back().Path = Path;
-			Listen.back().Ssl.Enable = Ssl.Enable;
-			Listen.back().Ssl.Cert = Ssl.Cert;
-			Listen.back().Ssl.Key = Ssl.Key;
+			Listen.back() = dsn;
 		}
 	}
 	else {
@@ -235,8 +269,6 @@ void cconfig::Load(const std::filesystem::path& configfile) {
 
 		Server.load(Path, cfgOptions["server"]);
 		Cluster.load(Path, cfgOptions["cluster"]);
-		Pusher.load(Path, cfgOptions["pusher"], Server.MaxPayloadSize);
-		WebSocket.load(Path, cfgOptions["websocket"], Server.MaxPayloadSize);
 		Api.load(Path, cfgOptions["api"]);
 		Credentials.load(Path, cfgOptions["credentials"]);
 	}

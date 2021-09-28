@@ -7,7 +7,7 @@ namespace core::ci {
 	public:
 		using type = ENUM_T;
 
-		cflag(ENUM_T flag_set = 0) : flagset{ (FLAG_T)flag_set } { ; }
+		cflag(ENUM_T flag_set = (ENUM_T)0) : flagset{ (FLAG_T)flag_set } { ; }
 		cflag(FLAG_T flag_set) : flagset{ flag_set } { ; }
 		cflag(const cflag& val) : flagset{ val.flagset } { ; }
 		template<typename Integer, typename = std::enable_if_t<std::is_integral<Integer>::value>>
@@ -26,6 +26,12 @@ namespace core::ci {
 		
 		template<typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value>>
 		inline auto operator |= (T flag) { flagset |= (FLAG_T)flag; return *this; }
+
+		template<typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value>>
+		inline auto operator += (T flag) { flagset |= (FLAG_T)flag; return *this; }
+
+		template<typename T, typename = std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value>>
+		inline auto operator -= (T flag) { flagset &= (~(FLAG_T)flag); return *this; }
 		
 
 	private:

@@ -8,7 +8,7 @@ namespace inet {
 	{
 	public:
 		cwsconnection() = default;
-		virtual ~cwsconnection() { printf("%s\n", __PRETTY_FUNCTION__); }
+		virtual ~cwsconnection() { ; }
 	protected:
 		virtual bool OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers) = 0;
 		virtual void OnWsError(ssize_t err) = 0;

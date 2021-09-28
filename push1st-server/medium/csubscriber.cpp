@@ -9,10 +9,13 @@ csubscriber::csubscriber(const std::string& ip, uint16_t port)
 {
 	static char alphaRand[]{ "0123456789abcdefABCDEF" };
 	uint64_t id{ ++SessionId };
-	uint64_t sess{ std::hash<std::string>{}(ip) ^ (std::hash<uint64_t>{}(id) << 1) ^ (std::hash<uint16_t>{}(port) << 2) };
-	subsId.assign(std::to_string(id / 1000000)).append(".");
-	for (size_t n{ 7 }; n--;) { subsId.push_back(alphaRand[mrand48() % sizeof(alphaRand)]); }
-	subsId.append(".").append(std::to_string(sess));
+	char sess[128];
+	snprintf(sess, 127, "%lX.%c%c%c%c%c%c%c.%lX", id,
+		alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)],
+		alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)],
+		std::hash<std::string>{}(ip) ^ std::hash<uint64_t>{}(id) ^ (std::hash<uint16_t>{}(port) << 2) ^ std::hash<uint64_t>{}(std::time(nullptr))
+	);
+	subsId.assign(sess);
 }
 
 csubscriber::~csubscriber() {

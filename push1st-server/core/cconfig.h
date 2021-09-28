@@ -52,11 +52,22 @@ namespace core {
 		using dsn_t = cdsn;
 
 		std::filesystem::path Path;
-
-		struct instance_t {
+		struct ssloptions_t {
+			bool Enable{ false };
+			std::string Cert, Key;
+			inet::ssl_ctx_t Context() const;
+		};
+		struct server_t {
 			proto_t Proto{ proto_t::type::none };
 			size_t Threads{ 3 };
-			size_t MaxPayloadSize{ 65400 };
+			cdsn Listen;
+			ssloptions_t Ssl;
+			struct srvproto_t {
+				std::string Path;
+				std::time_t ActivityTimeout{ 20 };
+				size_t MaxPayloadSize{ 65400 };
+				channel_t PushOn;
+			} Pusher, WebSocket, MQTT;
 		private:
 			friend class cconfig;
 			void load(const std::filesystem::path& path, const yaml_t& options);
@@ -71,24 +82,12 @@ namespace core {
 			friend class cconfig;
 			void load(const std::filesystem::path& path, const yaml_t& options);
 		} Cluster;
-		struct server_t {
-			cdsn Listen;
-			std::string Path;
-			std::time_t ActivityTimeout{ 20 };
-			size_t MaxPayloadSize{ 8192 };
-			struct ssloptions_t {
-				bool Enable{ false };
-				std::string Cert, Key;
-				inet::ssl_ctx_t Context() const;
-			} Ssl;
-		private:
-			friend class cconfig;
-			void load(const std::filesystem::path& path, const yaml_t& options, size_t MaxPayloadSize);
-		} Pusher, WebSocket;
-		struct interface_t : public server_t {
+		struct interface_t {
 			api_t Interface{ api_t::type::disable };
-			std::vector<server_t> Listen;
+			std::vector<cdsn> Listen;
+			std::string Path;
 			std::time_t KeepAlive{ 10 };
+			ssloptions_t Ssl;
 		private:
 			friend class cconfig;
 			void load(const std::filesystem::path& path, const yaml_t& options);

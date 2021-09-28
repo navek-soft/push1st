@@ -13,7 +13,7 @@
 class cwsrawconnection : public inet::cwsconnection, public inet::csocket, public csubscriber, public std::enable_shared_from_this<cwsrawconnection>
 {
 public:
-	cwsrawconnection(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength);
+	cwsrawconnection(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels);
 	virtual ~cwsrawconnection();
 
 	virtual bool OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers);
@@ -49,6 +49,7 @@ private:
 	std::shared_ptr<cchannels> Channels;
 	std::unordered_map<std::string, std::weak_ptr<cchannel>> SubscribedTo;
 	app_t App;
+	channel_t EnablePushOnChannels{ channel_t::type::pub | channel_t::type::prot | channel_t::type::pres };
 #if SENDQ 
 	spinlock_t OutgoingLock;
 	std::queue<array_t> OutgoingQueue;

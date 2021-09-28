@@ -35,15 +35,15 @@ std::unique_ptr<cmessage> cwsrawconnection::UnPack(data_t&& msg) {
 					root.isMember("event") ? root["event"].asString() : std::string{}, root["channel"].asString(), Id(), delivery, ttl));
 			}
 			else {
-				syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, "Invalid message format");
+				syslog.error("[SUBSCRIBER:%s] Message ( %s )\n", Id().c_str(), "Invalid message format");
 			}
 		}
 		else {
-			syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, err.c_str());
+			syslog.error("[SUBSCRIBER:%s] Message ( %s )\n", Id().c_str(), err.c_str());
 		}
 	}
 	catch (std::exception& ex) {
-		syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, ex.what());
+		syslog.error("[SUBSCRIBER:%s] Message ( %s )\n", Id().c_str(), ex.what());
 	}
 	return unpack;
 }
@@ -54,14 +54,17 @@ void cwsrawconnection::OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr
 			if (std::shared_ptr<cchannel> ch{ chIt->second.lock() }; ch) {
 				ch->Push(std::move(message));
 				App->Trigger(hook_t::type::push, message->Channel, Id(), message->Data);
+				syslog.print(4, "[SUBSCRIBER:%s] Push ( %s/%s )\n", Id().c_str(), message->Channel.c_str(), message->Event.c_str());
 			}
 			else {
 				syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, std::strerror(EBADSLT));
 			}
 			return;
 		}
+		else {
+			syslog.print(4, "[SUBSCRIBER:%s] Push ( %s ) no channel subscription\n", Id().c_str(), message->Channel.c_str(), message->Event.c_str());
+		}
 	}
-	syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, std::strerror(EBADMSG));
 }
 #if SENDQ 
 void cwsrawconnection::OnSocketSend() {
@@ -116,12 +119,13 @@ bool cwsrawconnection::OnWsConnect(const http::path_t& path, const http::params_
 	return nchannels;
 }
 
-cwsrawconnection::cwsrawconnection(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength) :
-	inet::csocket{ std::move(fd) }, csubscriber{ GetAddress(), GetPort() }, MaxMessageLength{ maxMessageLength }, Channels{ channels }, App{ app }
+cwsrawconnection::cwsrawconnection(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels) :
+	inet::csocket{ std::move(fd) }, csubscriber{ GetAddress(), GetPort() }, 
+	MaxMessageLength{ maxMessageLength }, Channels{ channels }, App{ app }, EnablePushOnChannels{ pushOnChannels }
 {
-	syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
+	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
 }
 
 cwsrawconnection::~cwsrawconnection() {
-	syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
+	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
 }
