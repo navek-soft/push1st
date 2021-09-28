@@ -2,7 +2,7 @@
 
 using namespace inet;
 
-void cwsconnection::WsReadMessage(size_t maxMessageLength) {
+ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 	size_t nread{ 0 }, nlength{ 0 };
 	ssize_t res{ -1 };
 
@@ -19,7 +19,7 @@ void cwsconnection::WsReadMessage(size_t maxMessageLength) {
 				nlength = be16toh(extra.medium.len);
 			}
 			else {
-				OnWsError(res); return;
+				OnWsError(res); return res;
 			}
 		}
 		else if (length == 127) {
@@ -27,16 +27,16 @@ void cwsconnection::WsReadMessage(size_t maxMessageLength) {
 				nlength = be64toh(extra.large.len);
 			}
 			else {
-				OnWsError(res); return;
+				OnWsError(res); return res;
 			}
 		}
 		else {
-			OnWsError(-EBADMSG); return;
+			OnWsError(-EBADMSG); return -EBADMSG;
 		}
 
 		if (packet.mask) {
 			if ((res = WsRecv(&mask, sizeof(websocket_t::mask_t), nread, MSG_WAITALL)) != 0) {
-				OnWsError(res); return;
+				OnWsError(res); return res;
 			}
 		}
 
@@ -49,42 +49,48 @@ void cwsconnection::WsReadMessage(size_t maxMessageLength) {
 			}
 			else {
 				WsClose(websocket_t::close_t::MessageToBig);
-				OnWsError(-EMSGSIZE); return;
+				OnWsError(-EMSGSIZE); return -EMSGSIZE;
 			}
 		}
 		if (auto opcode{ (websocket_t::opcode_t)packet.opcode }; opcode == websocket_t::opcode_t::text or opcode == websocket_t::opcode_t::binary) {
-			OnWsMessage((websocket_t::opcode_t)packet.opcode, std::move(message), nlength);  return;
+			OnWsMessage((websocket_t::opcode_t)packet.opcode, std::move(message), nlength); return 0;
 		}
 		else if (opcode == websocket_t::opcode_t::ping) {
-			OnWsPing();  return;
+			OnWsPing();  return 0;
 		}
 		else if (opcode == websocket_t::opcode_t::close) {
-			OnWsClose();  return;
+			OnWsClose();  return 0;
 		}
 		else {
 			WsClose(websocket_t::close_t::UnsupportedData);
-			OnWsError(-ENODATA); return;
+			OnWsError(-ENODATA); return -ENODATA;
 		}
 	}
 	OnWsError(res); 
+	return res;
 }
 
 
-void cwsconnection::WsWriteMessage(websocket_t::opcode_t opcode, const std::string_view& data, bool masked) {
+ssize_t cwsconnection::WsWriteMessage(websocket_t::opcode_t opcode, const std::string_view& data, bool masked) {
 	if (auto&& message{ websocket_t::Make(opcode, data, masked) }; !message.empty()) {
 		size_t nwrite{ 0 };
 		if (auto res = WsSend(message.data(), message.size(), nwrite); res == 0) {
-			return;
+			return 0;
 		}
 		else {
-			OnWsError(res); return;
+			OnWsError(res); return res;
 		}
 	}
-	OnWsError(-ENOMEM); return;
+	OnWsError(-ENOMEM); return -ENOMEM;
 }
 
 void cwsconnection::OnWsClose() {
 	WsClose(websocket_t::close_t::NormalClosure);
+}
+
+void cwsconnection::WsShutdown(websocket_t::close_t code) {
+	cwsconnection::WsClose(code);
+	OnWsError(-ESHUTDOWN);
 }
 
 void cwsconnection::WsClose(websocket_t::close_t code) {

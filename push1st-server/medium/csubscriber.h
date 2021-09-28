@@ -10,6 +10,7 @@ public:
 	virtual ~csubscriber();
 	inline sid_t Id() { return subsId; }
 	virtual void Push(const std::unique_ptr<cmessage>& msg) = 0;
+	virtual void GetUserInfo(std::string& userId, std::string& userData) = 0;
 protected:
 	std::string subsId;
 };

@@ -1,5 +1,6 @@
+#include "../core/csyslog.h"
 #include "cwebsocketserver.h"
-#include "proto/cwsrawconnection.h"
+#include "proto/cwssession.h"
 #include "ccredentials.h"
 
 ssize_t cwebsocketserver::WsUpgrade(const inet::csocket& fd, const http::path_t& path, const http::params_t& args, const http::headers_t& headers) {
@@ -36,7 +37,7 @@ cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, c
 	if (config.Proto & proto_t::type::websocket) {
 		syslog.ob.print("Proto", "WebSocket ... enable %s proto, listen on %s, route /%s/", config.Ssl.Enable ? "https" : "http", std::string{ config.Listen.hostport() }.c_str(), config.WebSocket.Path.c_str());
 		ProtoRoutes[config.WebSocket.Path] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, const http::path_t& path, const http::params_t& args, const http::headers_t& headers) -> inet::socket_t {
-			if (auto&& conn{ std::make_shared<cwsrawconnection>(channels, app, fd, config.WebSocket.MaxPayloadSize, config.WebSocket.PushOn) }; conn and conn->OnWsConnect(path, args, headers)) {
+			if (auto&& conn{ std::make_shared<cwssession>(channels, app, fd, config.WebSocket.MaxPayloadSize, config.WebSocket.PushOn,config.WebSocket.ActivityTimeout) }; conn and conn->OnWsConnect(path, args, headers)) {
 				return std::dynamic_pointer_cast<inet::csocket>(conn);
 			}
 			return {};

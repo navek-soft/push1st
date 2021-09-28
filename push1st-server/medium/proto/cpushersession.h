@@ -1,20 +1,23 @@
 #include "../http/cwsconn.h"
-#include "../../core/csyslog.h"
 #include "../csubscriber.h"
 #include "../http/chttp.h"
 #include "../ccredentials.h"
 #include "../cchannels.h"
 #include "../../core/ci/cspinlock.h"
-#include <queue>
+#include "../../core/ci/cjson.h"
 #include "../cmessage.h"
+#include <queue>
 
+#ifndef SENDQ
 #define SENDQ 1
+#endif // !SENDQ
 
-class cwsrawconnection : public inet::cwsconnection, public inet::csocket, public csubscriber, public std::enable_shared_from_this<cwsrawconnection>
+
+class cpushersession : public inet::cwsconnection, public inet::csocket, public csubscriber, public std::enable_shared_from_this<cpushersession>
 {
 public:
-	cwsrawconnection(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels);
-	virtual ~cwsrawconnection();
+	cpushersession(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels, std::time_t keepAlive);
+	virtual ~cpushersession();
 
 	virtual bool OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers);
 	virtual inline void OnWsError(ssize_t err) override { OnSocketError(err); }
@@ -32,7 +35,7 @@ public:
 
 	virtual void OnWsClose() override;
 	virtual inline void OnWsPing() override { ; }
-
+	virtual void GetUserInfo(std::string& userId, std::string& userData) override { userId = SessionUserId; userData = SessionPresenceData; }
 	virtual inline void Push(const std::unique_ptr<cmessage>& msg) override {
 #if SENDQ 
 		std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
@@ -43,13 +46,18 @@ public:
 #endif
 	}
 private:
-	inline std::unique_ptr<cmessage> UnPack(data_t&& msg);
-
+	inline void OnPusherSubscribe(const json::value_t& data);
+	inline void OnPusherUnSubscribe(const json::value_t& data);
+	inline void OnPusherPing(const json::value_t& data);
+	inline void OnPusherPush(const json::value_t& data);
+	inline bool UnPack(json::value_t& message, const std::shared_ptr<uint8_t[]>& data, size_t length);
 	size_t MaxMessageLength{ 65536 };
+	std::time_t KeepAlive{ 20 };
 	std::shared_ptr<cchannels> Channels;
 	std::unordered_map<std::string, std::weak_ptr<cchannel>> SubscribedTo;
 	app_t App;
-	channel_t EnablePushOnChannels{ channel_t::type::pub | channel_t::type::prot | channel_t::type::pres };
+	channel_t EnablePushOnChannels{ channel_t::type::pres };
+	std::string SessionUserId, SessionPresenceData;
 #if SENDQ 
 	spinlock_t OutgoingLock;
 	std::queue<array_t> OutgoingQueue;

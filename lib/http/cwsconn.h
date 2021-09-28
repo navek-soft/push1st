@@ -18,8 +18,9 @@ namespace inet {
 		virtual inline ssize_t WsRecv(void* data, size_t size, size_t& readed, uint flags = 0) = 0;
 		virtual inline ssize_t WsSend(const void* data, size_t size, size_t& writen, uint flags = 0) = 0;
 		void WsClose(websocket_t::close_t code);
-		void WsReadMessage(size_t maxMessageLength);
-		void WsWriteMessage(websocket_t::opcode_t opcode, const std::string_view& data, bool masked = false);
+		void WsShutdown(websocket_t::close_t code);
+		ssize_t WsReadMessage(size_t maxMessageLength);
+		ssize_t WsWriteMessage(websocket_t::opcode_t opcode, const std::string_view& data, bool masked = false);
 	};
 }
 
