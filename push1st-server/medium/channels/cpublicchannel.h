@@ -9,9 +9,6 @@ public:
 
 	virtual void Subscribe(const std::shared_ptr<csubscriber>& subscriber) override;
 	virtual void UnSubscribe(const std::shared_ptr<csubscriber>& subscriber) override;
-	virtual void Push(std::unique_ptr<cmessage>&& msg) override;
 	virtual inline void GetUsers(usersids_t&, userslist_t&) override { ; }
-private:
-	std::unordered_map<std::string, std::weak_ptr<csubscriber>> chSubscribers;
 };
 

@@ -18,5 +18,6 @@ private:
 	std::shared_ptr<cchannels> Channels;
 	std::shared_ptr<ccredentials> Credentials;
 	std::unordered_map<std::string, std::function<inet::socket_t(const std::shared_ptr<cchannels>&, const app_t&, const inet::csocket&, const http::path_t&, const http::params_t&, const http::headers_t&)>> ProtoRoutes;
+	std::string AppPath{ "app" };
 };
 

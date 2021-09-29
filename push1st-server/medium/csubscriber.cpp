@@ -7,13 +7,10 @@ static std::atomic_uint64_t SessionId{ (uint64_t)std::chrono::system_clock::now(
 
 csubscriber::csubscriber(const std::string& ip, uint16_t port) 
 {
-	static char alphaRand[]{ "0123456789abcdefABCDEF" };
 	uint64_t id{ ++SessionId };
 	char sess[128];
-	snprintf(sess, 127, "%lX.%c%c%c%c%c%c%c.%lX", id,
-		alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)],
-		alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)], alphaRand[mrand48() % sizeof(alphaRand)],
-		std::hash<std::string>{}(ip) ^ std::hash<uint64_t>{}(id) ^ (std::hash<uint16_t>{}(port) << 2) ^ std::hash<uint64_t>{}(std::time(nullptr))
+	snprintf(sess, 127, "%lu%lu.%lu", id / std::chrono::system_clock::period::den, mrand48(),
+		std::hash<std::string>{}(ip) ^ std::hash<uint64_t>{}(id) ^ (std::hash<uint16_t>{}(port) << 2) ^ __bswap_64(std::hash<uint64_t>{}(mrand48() ^ std::time(nullptr)))
 	);
 	subsId.assign(sess);
 }

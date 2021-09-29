@@ -71,7 +71,7 @@ ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 }
 
 
-ssize_t cwsconnection::WsWriteMessage(websocket_t::opcode_t opcode, const std::string_view& data, bool masked) {
+ssize_t cwsconnection::WsWriteMessage(websocket_t::opcode_t opcode, std::string&& data, bool masked) {
 	if (auto&& message{ websocket_t::Make(opcode, data, masked) }; !message.empty()) {
 		size_t nwrite{ 0 };
 		if (auto res = WsSend(message.data(), message.size(), nwrite); res == 0) {
@@ -88,9 +88,9 @@ void cwsconnection::OnWsClose() {
 	WsClose(websocket_t::close_t::NormalClosure);
 }
 
-void cwsconnection::WsShutdown(websocket_t::close_t code) {
+void cwsconnection::WsError(websocket_t::close_t code, ssize_t err) {
 	cwsconnection::WsClose(code);
-	OnWsError(-ESHUTDOWN);
+	OnWsError(err);
 }
 
 void cwsconnection::WsClose(websocket_t::close_t code) {

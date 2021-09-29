@@ -62,6 +62,7 @@ namespace core {
 			size_t Threads{ 3 };
 			cdsn Listen;
 			ssloptions_t Ssl;
+			std::string Path;
 			struct srvproto_t {
 				std::string Path;
 				std::time_t ActivityTimeout{ 20 };
@@ -84,7 +85,7 @@ namespace core {
 		} Cluster;
 		struct interface_t {
 			api_t Interface{ api_t::type::disable };
-			std::vector<cdsn> Listen;
+			cdsn Tcp,Unix;
 			std::string Path;
 			std::time_t KeepAlive{ 10 };
 			ssloptions_t Ssl;

@@ -60,6 +60,8 @@ void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& op
 		Ssl.Key = Value<std::string>(options["ssl"]["key"], {});
 		Ssl.Enable = Value<bool>(options["ssl"]["enable"], false);
 
+		Path = PathValue(options["path"], "app");
+
 		if (options["pusher"].IsMap()) {
 			Pusher.ActivityTimeout = (std::time_t)Value<size_t>(options["pusher"]["activity-timeout"], 0);
 			Pusher.MaxPayloadSize = Value<size_t>(options["pusher"]["max-request-payload"], Pusher.MaxPayloadSize);
@@ -140,8 +142,12 @@ void cconfig::interface_t::load(const std::filesystem::path& path, const yaml_t&
 
 	if (options["listen"].IsDefined() and options["listen"].IsSequence()) {
 		for (auto&& dsn : options["listen"]) {
-			Listen.push_back({});
-			Listen.back() = dsn;
+			if (auto con{ dsn.as<std::string>() }; con.compare(0, 6, "tcp://") == 0) {
+				Tcp = dsn;
+			}
+			else if (auto con{ dsn.as<std::string>() }; con.compare(0, 7, "unix://") == 0) {
+				Unix = dsn;
+			}
 		}
 	}
 	else {

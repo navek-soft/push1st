@@ -16,12 +16,12 @@ static inline char hex(int v) {
 	return alpha[v];
 }
 
-std::string  ccredentials::capplication::Token(const std::string_view& session, const std::string& channel, const std::string& custom_data) {
-	std::string data{ std::string{session} + ":" + channel + (custom_data.empty() ? "" : ":") + custom_data }, token;
-	uint8_t digest[SHA256_DIGEST_LENGTH];
-	uint dlength{ SHA256_DIGEST_LENGTH };
+std::string  ccredentials::capplication::Token(const std::string& session, const std::string& channel, const std::string& custom_data) {
+	std::string data{ session + ":" + channel + (custom_data.empty() ? "" : ":") + custom_data }, token;
+	std::vector<uint8_t> digest; digest.resize(SHA256_DIGEST_LENGTH);
+	uint dlength{ (uint)digest.size() };
 	token.reserve(dlength * 2);
-	if (HMAC(EVP_sha256(), Secret.data(), (int)Secret.length(), (unsigned char*)data.data(), data.length(), digest, &dlength)) {
+	if (HMAC(EVP_sha256(), Secret.data(), (int)Secret.length(), (unsigned char*)data.data(), data.length(), digest.data(), &dlength)) {
 		for (uint n{ 0 }; n < dlength; ++n) {
 			token.push_back(hex(digest[n] >> 4));
 			token.push_back(hex(digest[n] & 0x0f));
@@ -30,12 +30,15 @@ std::string  ccredentials::capplication::Token(const std::string_view& session, 
 	return token;
 }
 
-bool ccredentials::capplication::Validate(std::string_view token, const std::string_view& session, const std::string& channel, const std::string& custom_data) {
-	std::string data{ std::string{session} + ":" + channel + (custom_data.empty() ? "" : ":") + custom_data };
-	uint8_t digest[SHA256_DIGEST_LENGTH];
-	uint dlength{ SHA256_DIGEST_LENGTH };
-	if (token.compare(0, 4, "key:") == 0 and (token.length() - 4) == (SHA256_DIGEST_LENGTH * 2)) {
-		if (token.remove_prefix(4); HMAC(EVP_sha256(), Secret.data(), (int)Secret.length(), (unsigned char*)data.data(), data.length(), digest, &dlength)) {
+bool ccredentials::capplication::Validate(std::string_view token, const std::string& session, const std::string& channel, const std::string& custom_data) {
+	if (token.compare(0, 4, "key:") == 0) {
+		token.remove_prefix(4);
+	}
+	if (token.length() >= (SHA256_DIGEST_LENGTH * 2)) {
+		std::string data{ std::string{session} + ":" + channel + (custom_data.empty() ? "" : ":") + custom_data };
+		std::vector<uint8_t> digest; digest.resize(SHA256_DIGEST_LENGTH);
+		uint dlength{ (uint)digest.size() };
+		if (HMAC(EVP_sha256(), Secret.data(), (int)Secret.length(), (unsigned char*)data.data(), data.length(), digest.data(), &dlength)) {
 			for (uint n{ 0 }; n < dlength; ++n) {
 				if (hex(token[0], token[1]) == digest[n]) { token.remove_prefix(2); continue; }
 				return false;

@@ -15,6 +15,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "inet", "lib\inet\inet.vcxit
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "http", "lib\http\http.vcxitems", "{C2D2EBF3-BC54-42FB-8667-2265135B5469}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{02C7B5F7-B081-4187-8FEF-02EAE4708BB7}"
+	ProjectSection(SolutionItems) = preProject
+		test\pusher-cli.html = test\pusher-cli.html
+		test\pusher-cli.js = test\pusher-cli.js
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		lib\http\http.vcxitems*{c2d2ebf3-bc54-42fb-8667-2265135b5469}*SharedItemsImports = 9

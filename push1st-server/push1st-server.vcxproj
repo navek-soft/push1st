@@ -86,7 +86,10 @@
     <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="medium\capiserver.cpp" />
     <ClCompile Include="core\ci\cjson.cpp" />
+    <ClCompile Include="medium\channels\cpresensechannel.cpp" />
+    <ClCompile Include="medium\channels\cprivatechannel.cpp" />
     <ClCompile Include="medium\proto\cpushersession.cpp" />
     <ClCompile Include="medium\cmessage.cpp" />
     <ClCompile Include="medium\channels\cpublicchannel.cpp" />
@@ -107,7 +110,11 @@
     <None Include="opt\server.yml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="medium\capiserver.h" />
     <ClInclude Include="core\ci\cspinlock.h" />
+    <ClInclude Include="core\ci\nlohmann\json.hpp" />
+    <ClInclude Include="medium\channels\cpresensechannel.h" />
+    <ClInclude Include="medium\channels\cprivatechannel.h" />
     <ClInclude Include="medium\proto\cpushersession.h" />
     <ClInclude Include="medium\cmessage.h" />
     <ClInclude Include="medium\channels\cpublicchannel.h" />
@@ -133,7 +140,7 @@
       <PreprocessorDefinitions>DEBUG</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;jsoncpp</LibraryDependencies>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp</LibraryDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,7 +148,7 @@
       <CppLanguageStandard>c++17</CppLanguageStandard>
     </ClCompile>
     <Link>
-      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;jsoncpp</LibraryDependencies>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp</LibraryDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

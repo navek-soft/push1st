@@ -3,6 +3,7 @@
 #include "ccluster.h"
 #include "cchannels.h"
 #include "cwebsocketserver.h"
+#include "capiserver.h"
 #include "ccredentials.h"
 #include <csignal>
 #include "../core/csyslog.h"
@@ -37,21 +38,17 @@ void cbroker::Initialize(const core::cconfig& config) {
 
     Channels = std::make_shared<cchannels>();
     Credentials = std::make_shared<ccredentials>(shared_from_this(), config.Credentials);
-
-    if (!config.Server.Proto.empty()) {
-        WsServer = std::make_shared<cwebsocketserver>(Channels, Credentials, config.Server);
-    }
+    ApiServer = std::make_shared<capiserver>(Channels, Credentials, config.Api);
+    if (!config.Server.Proto.empty()) { WsServer = std::make_shared<cwebsocketserver>(Channels, Credentials, config.Server); }
 
     ServerPoll.reserve(config.Server.Threads);
     for (auto n{ config.Server.Threads }; n--;) {
         ServerPoll.emplace_back(std::make_shared<inet::cpoll>());
-
-        if (WsServer) {
-            WsServer->Listen(ServerPoll.back());
-        }
+        if (WsServer) { WsServer->Listen(ServerPoll.back()); }
+        ApiServer->Listen(ServerPoll.back());
         ServerPoll.back()->Listen();
     }
-
+ 
     syslog.ob.flush(1);
 
     WaitFor({ SIGINT, SIGQUIT, SIGABRT, SIGSEGV, SIGHUP });

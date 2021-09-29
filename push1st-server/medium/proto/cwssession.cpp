@@ -13,12 +13,12 @@ std::unique_ptr<cmessage> cwssession::UnPack(data_t&& msg) {
 	json::value_t root;
 	try {
 		if (json::unserialize(to_string(msg), root, err)) {
-			if(root.isObject() and root.isMember("channel")) {
+			if(root.is_object() and root.contains("channel")) {
 				delivery_t delivery{ delivery_t::broadcast };
 				std::time_t ttl{ 0 };
 
-				if (root.isMember("options") and root.isObject()) {
-					if (root["options"].isMember("delivery")) {
+				if (root.contains("options") and root.is_object()) {
+					if (root["options"].contains("delivery")) {
 						if (auto&& value{ root["options"]["delivery"] }; value == "multicast") {
 							delivery = delivery_t::multicast;
 						}
@@ -26,12 +26,12 @@ std::unique_ptr<cmessage> cwssession::UnPack(data_t&& msg) {
 							delivery = delivery_t::unicast;
 						}
 					}
-					if (root["options"].isMember("ttl")) {
-						ttl = (std::time_t)root["options"]["ttl"].asInt();
+					if (root["options"].contains("ttl")) {
+						ttl = (std::time_t)root["options"]["ttl"].get<size_t>();
 					}
 				}
 				unpack = std::move(std::make_unique<cmessage>(msg, 
-					root.isMember("event") ? root["event"].asString() : std::string{}, root["channel"].asString(), Id(), delivery, ttl));
+					root.contains("event") ? root["event"].get<std::string>() : std::string{}, root["channel"].get<std::string>(), Id(), delivery, ttl));
 			}
 			else {
 				syslog.error("[ RAW:%s ] Message ( %s )\n", Id().c_str(), "Invalid message format");
@@ -47,7 +47,7 @@ std::unique_ptr<cmessage> cwssession::UnPack(data_t&& msg) {
 	return unpack;
 }
 
-void cwssession::OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr<uint8_t[]>&& data, size_t length) {
+void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	if (auto&& message{ UnPack({std::move(data),length}) }; message and !message->Channel.empty()) {
 		if (auto&& chIt{ SubscribedTo.find(message->Channel) }; chIt != SubscribedTo.end()) {
 			if (std::shared_ptr<cchannel> ch{ chIt->second.lock() }; ch) {

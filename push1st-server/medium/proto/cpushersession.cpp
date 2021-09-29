@@ -7,10 +7,10 @@
 
 
 void cpushersession::OnPusherSubscribe(const json::value_t& data) {
-	if (data["data"].isObject() and data["data"]["channel"].isString() and !data["data"]["channel"].empty()) {
-		if (auto chName{ data["data"]["channel"].asString() }; !chName.empty() and chName.length() <= MaxChannelNameLength) {
-			if (auto chType{ ChannelType(chName) };  chType == channel_t::type::priv and data["data"]["auth"].isString()) {
-				if (App->IsAllowChannel(chType, Id(), chName, data["data"]["auth"].asString())) {
+	if (data["data"].is_object() and data["data"]["channel"].is_string() and !data["data"]["channel"].empty()) {
+		if (auto chName{ data["data"]["channel"].get<std::string>() }; !chName.empty() and chName.length() <= MaxChannelNameLength) {
+			if (auto chType{ ChannelType(chName) };  chType == channel_t::type::priv and data["data"]["auth"].is_string()) {
+				if (App->IsAllowChannel(chType, Id(), chName, data["data"]["auth"].get<std::string>())) {
 					if (auto&& chSelf{ Channels->Register(chType, App, std::string{chName}) }; chSelf) {
 						SubscribedTo.emplace(chName, chSelf);
 						chSelf->Subscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
@@ -21,12 +21,12 @@ void cpushersession::OnPusherSubscribe(const json::value_t& data) {
 					}
 				}
 			}
-			else if (chType == channel_t::type::pres and data["data"]["auth"].isString()) {
-				SessionPresenceData = data["data"]["channel_data"].isString() ? data["data"]["channel_data"].asString() : std::string{};
-				if (App->IsAllowChannel(chType, Id(), chName, data["data"]["auth"].asString(), SessionPresenceData)) {
+			else if (chType == channel_t::type::pres and data["data"]["auth"].is_string()) {
+				SessionPresenceData = data["data"]["channel_data"].is_string() ? data["data"]["channel_data"].get<std::string>() : std::string{};
+				if (App->IsAllowChannel(chType, Id(), chName, data["data"]["auth"].get<std::string>(), SessionPresenceData)) {
 					if (auto&& chSelf{ Channels->Register(chType, App, std::string{chName}) }; chSelf) {
 
-						if (json::value_t ui; json::unserialize(SessionPresenceData, ui) and ui["user_id"].isString()) { SessionUserId = ui["user_id"].asString(); }
+						if (json::value_t ui; json::unserialize(SessionPresenceData, ui) and ui["user_id"].is_string()) { SessionUserId = ui["user_id"].get<std::string>(); }
 
 						SubscribedTo.emplace(chName, chSelf);
 						chSelf->Subscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
@@ -56,12 +56,12 @@ void cpushersession::OnPusherSubscribe(const json::value_t& data) {
 			}
 		}
 	}
-	WsShutdown(close_t::ProtoError);
+	WsError(close_t::ProtoError, -EPROTO);
 }
 
 void cpushersession::OnPusherUnSubscribe(const json::value_t& data) {
-	if (data["data"].isObject() and data["data"]["channel"].isString()) {
-		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].asString()) }; chIt != SubscribedTo.end()) {
+	if (data["data"].is_object() and data["data"]["channel"].is_string()) {
+		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
 			if (auto&& ch{ chIt->second.lock() }; ch) {
 				ch->UnSubscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
 			}
@@ -75,8 +75,8 @@ void cpushersession::OnPusherPing(const json::value_t& data) {
 }
 
 void cpushersession::OnPusherPush(const json::value_t& data) {
-	if (auto&& chName{ data["channel"].asString() }; !chName.empty()) {
-		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].asString()) }; chIt != SubscribedTo.end()) {
+	if (auto&& chName{ data["channel"].get<std::string>() }; !chName.empty()) {
+		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
 			if (auto&& ch{ chIt->second.lock() }; ch) {
 				/*ch->Push(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
 				channels.Pull(sesApp, chName, shared_from_this(),
@@ -87,12 +87,12 @@ void cpushersession::OnPusherPush(const json::value_t& data) {
 		syslog.trace("[ PUSHER:%s ] Channel `%s` PULL\n", Id().c_str(), chName.c_str());
 		return;
 	}
-	WsShutdown(close_t::ProtoError);
+	WsError(close_t::ProtoError, -EPROTO);
 }
 
-void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr<uint8_t[]>&& data, size_t length) {
+void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	if (json::value_t msg; UnPack(msg,data,length)) {
-		if (auto&& evName{ msg["event"].asString() }; !evName.empty()) {
+		if (auto&& evName{ msg["event"].get<std::string>() }; !evName.empty()) {
 			if (evName == "pusher:subscribe") {
 				OnPusherSubscribe(msg);
 				return;
@@ -105,19 +105,35 @@ void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr<u
 				OnPusherUnSubscribe(msg);
 				return;
 			}
-			else if (msg["channel"].isString()) {
+			else if (msg["channel"].is_string()) {
 				OnPusherPush(msg);
 				return;
 			}
 		}
 	}
-	WsShutdown(close_t::ProtoError);
+	WsError(close_t::ProtoError, -EPROTO);
 }
+
+void cpushersession::Push(const std::unique_ptr<cmessage>& msg) {
+	auto data = json::serialize({
+		{"event",msg->Event}, {"channel", msg->Channel}, {"data", to_string(msg->Data)},
+		{"event_id", msg->Id},{"time_arrival", msg->TimeArrival },{"time_departure", std::chrono::system_clock::now().time_since_epoch().count()}
+	});
+
+#if SENDQ 
+	std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
+	OutgoingQueue.emplace(std::move(data));
+	SocketUpdateEvents(EPOLLOUT | EPOLLET);
+#else
+	WsWriteMessage(opcode_t::text, msg->GetData());
+#endif
+}
+
 #if SENDQ 
 void cpushersession::OnSocketSend() {
 	std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
 	while (!OutgoingQueue.empty()) {
-		WsWriteMessage(opcode_t::text, { (char*)OutgoingQueue.front().first.get(),OutgoingQueue.front().second });
+		WsWriteMessage(opcode_t::text, { (char*)OutgoingQueue.front().data(),OutgoingQueue.front().size() });
 		OutgoingQueue.pop();
 	}
 	SocketUpdateEvents(EPOLLIN | EPOLLRDHUP | EPOLLERR);
@@ -161,7 +177,7 @@ inline bool cpushersession::UnPack(json::value_t& message, const std::shared_ptr
 	std::string err;
 	try {
 		if (json::unserialize(to_string({ data, length }), message, err)) {
-			if (!message.empty() and message.isObject()) {
+			if (!message.empty() and message.is_object()) {
 				return true;
 			}
 			else {

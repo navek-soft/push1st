@@ -1,7 +1,7 @@
 #include "cjson.h"
 #include <memory>
 #include "sstream"
-
+/*
 //static inline const size_t map_type_id{ typeid(map_t).hash_code() };
 static inline const size_t umapss_type_id{ typeid(std::unordered_map<std::string,std::string>).hash_code() };
 static inline const size_t umap_type_id{ typeid(cjson::object_t).hash_code() };
@@ -21,9 +21,15 @@ static inline const size_t double_type_id{ typeid(double).hash_code() };
 static inline const size_t jsonval_type_id{ typeid(Json::Value).hash_code() };
 
 bool cjson::unserialize(const std::string_view& document, value_t& value, std::string& err) {
-	Json::CharReaderBuilder builder;
-	const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-	return reader->parse(document.data(), document.data() + document.length(), &value, &err);
+	try
+	{
+		nlohmann::json res{ nlohmann::json::parse(document.begin(),document.end()) };
+		return !res.empty();
+	}
+	catch (...) {
+		printf("1");
+	}
+	return false;
 }
 
 template<typename T>
@@ -41,17 +47,6 @@ static inline std::stringstream& serialize_c(std::stringstream& s, const cjson::
 	s << "]";
 	return s;
 }
-/*
-static inline std::stringstream& serialize_c(std::stringstream& s, const map_t& val) {
-	s << "{";
-	if (!val.empty()) {
-		for (auto&& v : val) { s << "\"" << v.first << "\":"; serialize_v(s, v.second) << ","; }
-		s.seekp(-1, s.cur);
-	}
-	s << "}";
-	return s;
-}
-*/
 
 static inline std::stringstream& serialize_c(std::stringstream& s, const cjson::object_t& val) {
 	s << "{";
@@ -69,14 +64,6 @@ static inline void serialize_c(Json::Value& s, const cjson::array_t& val) {
 		for (auto&& v : val) { serialize_v(vec.append(Json::nullValue), v); }
 	}
 }
-/*
-static inline void serialize_c(Json::Value& s, const map_t& val) {
-	auto&& obj{ s.append(Json::objectValue) };
-	if (!val.empty()) {
-		for (auto&& v : val) { serialize_v(obj[v.first], v.second); }
-	}
-}
-*/
 
 static inline void serialize_c(Json::Value& s, const cjson::object_t& val) {
 	auto&& obj{ s.append(Json::objectValue) };
@@ -162,3 +149,5 @@ std::string cjson::serialize(object_t&& document) {
 	serialize_v(ss, document);
 	return ss.str();
 }
+
+*/

@@ -10,7 +10,8 @@ server:
     threads: 2                  # number of worker threads
     max-request-payload: 65400  # global max request payload length less or equal 65400
     listen: tcp://*:6001   # false, tcp://<host>:<port>
-    ssl: { enable: true, *default-ssl }
+    ssl: { enable: false, *default-ssl }
+    app-path: app/  # <proto>/<app-path>/<app-key> url
     pusher:
         path: /pusher/
         activity-timeout: 20    # pusher activity timeout (pusher ping\pong) N seconds 

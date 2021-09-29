@@ -12,15 +12,15 @@ namespace inet {
 	protected:
 		virtual bool OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers) = 0;
 		virtual void OnWsError(ssize_t err) = 0;
-		virtual void OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr<uint8_t[]>&& message, size_t length) { ; }
+		virtual void OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& message, size_t length) { ; }
 		virtual void OnWsPing();
 		virtual void OnWsClose();
 		virtual inline ssize_t WsRecv(void* data, size_t size, size_t& readed, uint flags = 0) = 0;
 		virtual inline ssize_t WsSend(const void* data, size_t size, size_t& writen, uint flags = 0) = 0;
 		void WsClose(websocket_t::close_t code);
-		void WsShutdown(websocket_t::close_t code);
+		void WsError(websocket_t::close_t code, ssize_t err);
 		ssize_t WsReadMessage(size_t maxMessageLength);
-		ssize_t WsWriteMessage(websocket_t::opcode_t opcode, const std::string_view& data, bool masked = false);
+		ssize_t WsWriteMessage(websocket_t::opcode_t opcode, std::string&& data, bool masked = false);
 	};
 }
 

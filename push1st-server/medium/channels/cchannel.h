@@ -19,7 +19,7 @@ public:
 	virtual ~cchannel();
 	virtual inline void Subscribe(const std::shared_ptr<csubscriber>& subscriber) = 0;
 	virtual inline void UnSubscribe(const std::shared_ptr<csubscriber>& subscriber) = 0;
-	virtual inline void Push(std::unique_ptr<cmessage>&& msg) = 0;
+	virtual void Push(std::unique_ptr<cmessage>&& msg);
 	virtual inline void GetUsers(usersids_t&, userslist_t&) = 0;
 	inline channel_t::type Type() { return chType; }
 protected:
@@ -29,6 +29,7 @@ protected:
 	app_t chApp;
 	std::shared_ptr<cchannels> chChannels;
 	std::shared_mutex chSubscribersLock;
+	std::unordered_map<std::string, std::weak_ptr<csubscriber>> chSubscribers;
 };
 
 static inline channel_t ChannelType(const std::string_view& Name) {

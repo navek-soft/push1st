@@ -23,7 +23,7 @@ public:
 	virtual inline void OnWsError(ssize_t err) override { OnSocketError(err); }
 	virtual inline ssize_t WsRecv(void* data, size_t size, size_t& readed, uint flags = 0) override { return SocketRecv(data, size, readed, flags); }
 	virtual inline ssize_t WsSend(const void* data, size_t size, size_t& writen, uint flags = 0) override { return SocketSend(data, size, writen, flags); }
-	virtual void OnWsMessage(websocket_t::opcode_t opcode, std::shared_ptr<uint8_t[]>&& message, size_t length) override;
+	virtual void OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& message, size_t length) override;
 
 	virtual inline void OnSocketRecv() override { WsReadMessage(MaxMessageLength); }
 #if SENDQ 
@@ -36,15 +36,7 @@ public:
 	virtual void OnWsClose() override;
 	virtual inline void OnWsPing() override { ; }
 	virtual void GetUserInfo(std::string& userId, std::string& userData) override { userId = SessionUserId; userData = SessionPresenceData; }
-	virtual inline void Push(const std::unique_ptr<cmessage>& msg) override {
-#if SENDQ 
-		std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
-		OutgoingQueue.emplace(msg->Data);
-		SocketUpdateEvents(EPOLLOUT | EPOLLET);
-#else
-		WsWriteMessage(opcode_t::text, msg->GetData());
-#endif
-	}
+	virtual void Push(const std::unique_ptr<cmessage>& msg) override;
 private:
 	inline void OnPusherSubscribe(const json::value_t& data);
 	inline void OnPusherUnSubscribe(const json::value_t& data);
@@ -60,6 +52,6 @@ private:
 	std::string SessionUserId, SessionPresenceData;
 #if SENDQ 
 	spinlock_t OutgoingLock;
-	std::queue<array_t> OutgoingQueue;
+	std::queue<std::string> OutgoingQueue;
 #endif
 };

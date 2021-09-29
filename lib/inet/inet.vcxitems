@@ -18,6 +18,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)cinet.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)csocket.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)ctcpserver.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)cunixserver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)cepoll.h" />
@@ -25,5 +26,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)cserver.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)csocket.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ctcpserver.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)cunixserver.h" />
   </ItemGroup>
 </Project>
