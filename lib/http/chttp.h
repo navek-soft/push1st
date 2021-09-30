@@ -6,22 +6,23 @@
 namespace http {
 	enum auth_t { none = 0, basic = 1, digest = 2, token = 3, disable = 4 };
 	using headers_t = std::unordered_map<std::string_view, std::string_view>;
-	using params_t = std::unordered_map<std::string_view, std::string_view>;
 
 	class curi {
+		using params_t = std::unordered_multimap<std::string_view, std::string_view>;
 	public:
 		curi() { ; }
 		//curi(const curi& u) : uriFull{ u.uriFull }, uriPath{ u.uriPath }, uriPathList{ u.uriPathList } {; }
 		inline std::string_view at(size_t idx) const { return uriPathList[idx]; }
-		inline size_t size() const { return uriPathList.size(); }
 		inline std::string_view uri() const { return uriFull; }
 		inline std::string_view path() const { return uriPath; }
+		inline std::string_view arg(const std::string_view& name) const { return uriArgs.find(name)->second; }
 	public:
 		std::string_view uriFull, uriPath;
 		std::vector<std::string_view> uriPathList;
+		params_t uriArgs;
 	};
 
-	using path_t = curi;
+	using uri_t = curi;
 
 	class cauthchallenge
 	{
@@ -51,10 +52,10 @@ namespace http {
 	};
 
 
-	ssize_t ParseRequest(std::string_view stream, std::string_view& method, path_t& uri, params_t& args, headers_t& headers, std::string_view& content, size_t& contentLength);
-	static inline ssize_t ParseRequest(std::string_view stream, std::string_view& method, path_t& uri, params_t& args, headers_t& headers, std::string_view& content) {
+	ssize_t ParseRequest(std::string_view stream, std::string_view& method, uri_t& uri, headers_t& headers, std::string_view& content, size_t& contentLength);
+	static inline ssize_t ParseRequest(std::string_view stream, std::string_view& method, uri_t& uri, headers_t& headers, std::string_view& content) {
 		size_t contentLength{ 0 };
-		return ParseRequest(stream, method, uri, args, headers, content, contentLength);
+		return ParseRequest(stream, method, uri, headers, content, contentLength);
 	}
 	ssize_t ParseResponse(std::string_view stream, std::string_view& code, std::string_view& msg, headers_t& headers, size_t& content_length, std::string_view& content);
 	template<typename CONTAINER_T>

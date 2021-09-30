@@ -2,7 +2,7 @@
 
 using namespace inet;
 
-ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_view& method, http::path_t& path, http::params_t& args, http::headers_t& headers, std::string& request, std::string& content, size_t max_size)
+ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_view& method, http::uri_t& path, http::headers_t& headers, std::string& request, std::string& content, size_t max_size)
 {
 	request.resize(max_size);
 	ssize_t res{ -1 };
@@ -11,7 +11,7 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
 
 		request.resize(nread);
 
-		if (res = http::ParseRequest(std::string_view{ request.data(), request.size() }, method, path, args, headers, data, contentLength); res > 0) {
+		if (res = http::ParseRequest(std::string_view{ request.data(), request.size() }, method, path, headers, data, contentLength); res > 0) {
 			content = data;
 			return 0;
 		}

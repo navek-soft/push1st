@@ -168,7 +168,7 @@ static inline char splitBy(std::string_view& data, std::string_view& result, con
 static inline char splitBy(std::string_view& data, std::string_view& result, char symbol);
 static inline std::string_view toLower(std::string_view& data);
 
-ssize_t http::ParseRequest(std::string_view request, std::string_view& method, path_t& path, params_t& args, headers_t& headers, std::string_view& content, size_t& contentLength) {
+ssize_t http::ParseRequest(std::string_view request, std::string_view& method, uri_t& path, headers_t& headers, std::string_view& content, size_t& contentLength) {
 	static const std::string_view eod{ "\r\n\r\n", 4 };
 
 	const char* begin{ request.data() }; // for length calculation
@@ -229,19 +229,19 @@ ssize_t http::ParseRequest(std::string_view request, std::string_view& method, p
 			for (std::string_view param, key; !paramslist.empty();) {
 				if (splitBy(paramslist, param, '&') == '&') {
 					if (splitBy(param, key, '=') == '=') {
-						args.emplace(key, param);
+						path.uriArgs.emplace(key, param);
 					}
 					else {
-						args.emplace(param, std::string_view{});
+						path.uriArgs.emplace(param, std::string_view{});
 					}
 					continue;
 				}
 				else if (!paramslist.empty()) {
 					if (splitBy(paramslist, key, '=') == '=') {
-						args.emplace(key, paramslist);
+						path.uriArgs.emplace(key, paramslist);
 					}
 					else {
-						args.emplace(paramslist, std::string_view{});
+						path.uriArgs.emplace(paramslist, std::string_view{});
 					}
 				}
 				break;

@@ -1,8 +1,13 @@
 ﻿#include <cstdio>
 #include "medium/cbroker.h"
 
-int main()
+#ifndef TEST
+#define TEST 1
+#endif
+
+int main(int argc, char* argv[])
 {
+#if TEST != 1
     broker_t&& broker{ std::make_shared<cbroker>() };
     try
     {
@@ -14,4 +19,9 @@ int main()
 
     }
     return 0;
+#else
+    extern int test_http_route(int argc, char* argv[]);
+    test_http_route(argc, argv);
+    return 0;
+#endif
 }

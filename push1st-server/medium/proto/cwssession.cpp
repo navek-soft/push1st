@@ -107,12 +107,12 @@ static inline std::pair<std::string_view, std::string_view> ExplodePathName(std:
 	return value.first.size() <= MaxChannelNameLength ? value : std::pair<std::string_view, std::string_view>{ {}, {}};
 }
 
-bool cwssession::OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers) {
+bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& headers) {
 	
 	syslog.trace("[ RAW:%ld:%s ] Connect\n", Fd(), Id().c_str());
 
 	size_t nchannels{ 0 };
-	for (size_t n{ 3 }; n < path.size(); ++n) {
+	for (size_t n{ 3 }; n < path.uriPath.size(); ++n) {
 		if (auto&& [chName, chToken] = ExplodePathName(path.at(n)); !chName.empty()) {
 			if (auto chType = ChannelType(path.at(n)); chType != channel_t::type::none and App->IsAllowChannel(chType, Id(), chName, chToken)) {
 				if (auto&& chSelf{ Channels->Register(chType, App, std::string{chName}) }; chSelf) {

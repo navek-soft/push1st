@@ -154,7 +154,7 @@ void cpushersession::OnWsClose() {
 	OnSocketError(-ENOTCONN);
 }
 
-bool cpushersession::OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers) {
+bool cpushersession::OnWsConnect(const http::uri_t& path, const http::headers_t& headers) {
 	syslog.trace("[ PUSHER:%ld:%s ] Connect\n", Fd(), Id().c_str());
 	return WsWriteMessage(opcode_t::text, json::serialize({
 		{"event","pusher:connection_established"} ,

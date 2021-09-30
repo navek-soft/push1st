@@ -104,6 +104,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="medium\ccredentials.cpp" />
     <ClCompile Include="medium\chooks.cpp" />
+    <ClCompile Include="test\test-http-route.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="opt\apps\default.yml" />

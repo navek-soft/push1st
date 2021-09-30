@@ -19,7 +19,7 @@ public:
 	cpushersession(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels, std::time_t keepAlive);
 	virtual ~cpushersession();
 
-	virtual bool OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers);
+	virtual bool OnWsConnect(const http::uri_t& path, const http::headers_t& headers);
 	virtual inline void OnWsError(ssize_t err) override { OnSocketError(err); }
 	virtual inline ssize_t WsRecv(void* data, size_t size, size_t& readed, uint flags = 0) override { return SocketRecv(data, size, readed, flags); }
 	virtual inline ssize_t WsSend(const void* data, size_t size, size_t& writen, uint flags = 0) override { return SocketSend(data, size, writen, flags); }

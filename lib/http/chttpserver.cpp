@@ -14,10 +14,10 @@ ssize_t chttpserver::OnTcpAccept(fd_t fd, const sockaddr_storage& sa, const inet
 void chttpserver::HttpData(fd_t fd, uint events, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
-		std::string_view method; http::path_t path; http::params_t args; http::headers_t headers;  std::string request, content;
+		std::string_view method; http::uri_t path; http::headers_t headers;  std::string request, content;
 		inet::csocket so(fd, sa, ssl, poll);
-		if (res = HttpReadRequest(so, method, path, args, headers, request, content, HttpMaxHeaderSize); res == 0) {
-			OnHttpRequest(so, method, path, args, headers, std::move(request), std::move(content));
+		if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
+			OnHttpRequest(so, method, path, headers, std::move(request), std::move(content));
 		}
 		else {
 			so.SocketClose();

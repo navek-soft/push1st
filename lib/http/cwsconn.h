@@ -10,7 +10,7 @@ namespace inet {
 		cwsconnection() = default;
 		virtual ~cwsconnection() { ; }
 	protected:
-		virtual bool OnWsConnect(const http::path_t& path, const http::params_t& args, const http::headers_t& headers) = 0;
+		virtual bool OnWsConnect(const http::uri_t& path, const http::headers_t& headers) = 0;
 		virtual void OnWsError(ssize_t err) = 0;
 		virtual void OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& message, size_t length) { ; }
 		virtual void OnWsPing();

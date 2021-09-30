@@ -11,7 +11,7 @@ capiserver::ctcpapiserver::~ctcpapiserver() {
 
 }
 
-void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::path_t& path, const http::params_t& args, const http::headers_t& headers, std::string&& request, std::string&& content) {
+void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) {
 	printf("1");
 }
 

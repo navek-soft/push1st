@@ -19,7 +19,7 @@ void cwsserver::WsData(fd_t fd, uint events, inet::socket_t so, const std::weak_
 	}
 }
 
-ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, const http::path_t& path, const http::params_t& args, const http::headers_t& headers) {
+ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) {
 	return HttpWriteResponse(fd, "101", {}, {
 			{"Upgrade","WebSocket"},
 			{"Connection","Upgrade"},
@@ -43,15 +43,15 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
 		if (events == EPOLLIN) {
-			std::string_view method; http::path_t path; http::params_t args; http::headers_t headers;  std::string request, content;
+			std::string_view method; http::uri_t path; http::headers_t headers;  std::string request, content;
 			inet::csocket so(fd, sa, ssl, poll);
-			if (res = HttpReadRequest(so, method, path, args, headers, request, content, HttpMaxHeaderSize); res == 0) {
+			if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
 				if (method == "GET" and http::GetValue(headers, "connection") == "Upgrade" and
 					http::GetValue(headers, "upgrade") == "websocket" and
 					http::ToNumber(http::GetValue(headers, "sec-websocket-version")) >= 12)
 				{
-					if (res = WsUpgrade(so, path, args, headers); res == 0) {
-						if (auto&& con = OnWsUpgrade(so, path, args, headers); con) {
+					if (res = WsUpgrade(so, path, headers); res == 0) {
+						if (auto&& con = OnWsUpgrade(so, path, headers); con) {
 							res = self->PollUpdate(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR, std::bind(&cwsserver::WsData, this, std::placeholders::_1, std::placeholders::_2, con, poll));
 							if (res != 0) {
 								con->OnSocketError(res); /* Handler must close connection and free resources by itself */
