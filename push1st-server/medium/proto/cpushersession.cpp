@@ -4,9 +4,10 @@
 #include "../ccredentials.h"
 #include "../cchannels.h"
 #include "../channels/cchannel.h"
+#include <chrono>
 
-
-void cpushersession::OnPusherSubscribe(const json::value_t& data) {
+void cpushersession::OnPusherSubscribe(const message_t& message) {
+	auto&& data{ msg::ref(message) };
 	if (data["data"].is_object() and data["data"]["channel"].is_string() and !data["data"]["channel"].empty()) {
 		if (auto chName{ data["data"]["channel"].get<std::string>() }; !chName.empty() and chName.length() <= MaxChannelNameLength) {
 			if (auto chType{ ChannelType(chName) };  chType == channel_t::type::priv and data["data"]["auth"].is_string()) {
@@ -59,7 +60,8 @@ void cpushersession::OnPusherSubscribe(const json::value_t& data) {
 	WsError(close_t::ProtoError, -EPROTO);
 }
 
-void cpushersession::OnPusherUnSubscribe(const json::value_t& data) {
+void cpushersession::OnPusherUnSubscribe(const message_t& message) {
+	auto&& data{ msg::ref(message) };
 	if (data["data"].is_object() and data["data"]["channel"].is_string()) {
 		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
 			if (auto&& ch{ chIt->second.lock() }; ch) {
@@ -69,12 +71,13 @@ void cpushersession::OnPusherUnSubscribe(const json::value_t& data) {
 	}
 }
 
-void cpushersession::OnPusherPing(const json::value_t& data) {
+void cpushersession::OnPusherPing(const message_t& message) {
 	syslog.print(7, "[ PUSHER:%s ] Ping ( ping )\n", Id().c_str());
 	WsWriteMessage(opcode_t::text, json::serialize({ {"event","pusher:pong"} }));
 }
 
-void cpushersession::OnPusherPush(const json::value_t& data) {
+void cpushersession::OnPusherPush(const message_t& message) {
+	auto&& data{ msg::ref(message) };
 	if (auto&& chName{ data["channel"].get<std::string>() }; !chName.empty()) {
 		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
 			if (auto&& ch{ chIt->second.lock() }; ch) {
@@ -91,22 +94,23 @@ void cpushersession::OnPusherPush(const json::value_t& data) {
 }
 
 void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
-	if (json::value_t msg; UnPack(msg,data,length)) {
+	if (auto&& message{ UnPack(data, length) }; message) {
+		auto&& msg{ msg::ref(message) };
 		if (auto&& evName{ msg["event"].get<std::string>() }; !evName.empty()) {
 			if (evName == "pusher:subscribe") {
-				OnPusherSubscribe(msg);
+				OnPusherSubscribe(message);
 				return;
 			}
 			else if (evName == "pusher:ping") {
-				OnPusherPing(msg);
+				OnPusherPing(message);
 				return;
 			}
 			else if (evName == "pusher:unsubscribe") {
-				OnPusherUnSubscribe(msg);
+				OnPusherUnSubscribe(message);
 				return;
 			}
 			else if (msg["channel"].is_string()) {
-				OnPusherPush(msg);
+				OnPusherPush(message);
 				return;
 			}
 		}
@@ -114,27 +118,16 @@ void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared
 	WsError(close_t::ProtoError, -EPROTO);
 }
 
-void cpushersession::Push(const std::unique_ptr<cmessage>& msg) {
-	auto data = json::serialize({
-		{"event",msg->Event}, {"channel", msg->Channel}, {"data", to_string(msg->Data)},
-		{"event_id", msg->Id},{"time_arrival", msg->TimeArrival },{"time_departure", std::chrono::system_clock::now().time_since_epoch().count()}
-	});
-
-#if SENDQ 
-	std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
-	OutgoingQueue.emplace(std::move(data));
-	SocketUpdateEvents(EPOLLOUT | EPOLLET);
-#else
-	WsWriteMessage(opcode_t::text, msg->GetData());
-#endif
-}
-
 #if SENDQ 
 void cpushersession::OnSocketSend() {
+	message_t message;
 	std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
 	while (!OutgoingQueue.empty()) {
-		WsWriteMessage(opcode_t::text, { (char*)OutgoingQueue.front().data(),OutgoingQueue.front().size() });
+		message = OutgoingQueue.front();
 		OutgoingQueue.pop();
+		lock.unlock();
+		WsWriteMessage(opcode_t::text, Pack(message));
+		lock.lock();
 	}
 	SocketUpdateEvents(EPOLLIN | EPOLLRDHUP | EPOLLERR);
 }
@@ -156,6 +149,9 @@ void cpushersession::OnWsClose() {
 
 bool cpushersession::OnWsConnect(const http::uri_t& path, const http::headers_t& headers) {
 	syslog.trace("[ PUSHER:%ld:%s ] Connect\n", Fd(), Id().c_str());
+
+	SetSendTimeout(500);
+
 	return WsWriteMessage(opcode_t::text, json::serialize({
 		{"event","pusher:connection_established"} ,
 		{"data", json::serialize({ {"socket_id",Id()}, {"activity_timeout", std::to_string(KeepAlive)},})}
@@ -173,23 +169,12 @@ cpushersession::~cpushersession() {
 	syslog.trace("[ PUSHER:%s ] Destroy\n", Id().c_str());
 }
 
-inline bool cpushersession::UnPack(json::value_t& message, const std::shared_ptr<uint8_t[]>& data, size_t length) {
-	std::string err;
+inline message_t cpushersession::UnPack(const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	try {
-		if (json::unserialize(to_string({ data, length }), message, err)) {
-			if (!message.empty() and message.is_object()) {
-				return true;
-			}
-			else {
-				syslog.error("[ RAW:%s ] Message ( %s )\n", Id().c_str(), "Invalid message format");
-			}
-		}
-		else {
-			syslog.error("[ RAW:%s ] Message ( %s )\n", Id().c_str(), err.c_str());
-		}
+		return msg::unserialize({ data,length }, subsId);
 	}
 	catch (std::exception& ex) {
 		syslog.error("[ RAW:%s ] Message ( %s )\n", Id().c_str(), ex.what());
 	}
-	return false;
+	return {};
 }

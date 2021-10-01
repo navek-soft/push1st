@@ -20,10 +20,6 @@ inet::socket_t cwebsocketserver::OnWsUpgrade(const inet::csocket& fd, const http
 	if (auto&& conn{ ProtoRoutes[std::string{path.at(1)}](Channels, Credentials->GetAppByKey(std::string{path.at(3)}), fd, path, headers) }; conn) {
 		return conn;
 	}
-	else if (conn) {
-		HttpWriteResponse(fd, "403");
-		conn->SocketClose();
-	}
 	else {
 		HttpWriteResponse(fd, "400");
 		fd.SocketClose();

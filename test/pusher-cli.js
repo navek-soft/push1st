@@ -49,7 +49,7 @@
         });
         */
 //const channel1 = echo.private('user.2');
-const channel1 = echo.listen('UserPush', (data) => {
+const channel1 = echo.listen('user.1', (data) => {
     alert(data);
 });
 /*

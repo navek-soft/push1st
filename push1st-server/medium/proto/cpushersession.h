@@ -4,12 +4,11 @@
 #include "../ccredentials.h"
 #include "../cchannels.h"
 #include "../../core/ci/cspinlock.h"
-#include "../../core/ci/cjson.h"
 #include "../cmessage.h"
 #include <queue>
 
 #ifndef SENDQ
-#define SENDQ 1
+#define SENDQ 0
 #endif // !SENDQ
 
 
@@ -36,13 +35,22 @@ public:
 	virtual void OnWsClose() override;
 	virtual inline void OnWsPing() override { ; }
 	virtual void GetUserInfo(std::string& userId, std::string& userData) override { userId = SessionUserId; userData = SessionPresenceData; }
-	virtual void Push(const std::unique_ptr<cmessage>& msg) override;
+	virtual inline void Push(const message_t& msg) override {
+#if SENDQ
+		std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
+		OutgoingQueue.emplace(msg);
+		SocketUpdateEvents(EPOLLOUT | EPOLLET);
+#else
+		WsWriteMessage(opcode_t::text, Pack(msg));
+#endif
+	}
 private:
-	inline void OnPusherSubscribe(const json::value_t& data);
-	inline void OnPusherUnSubscribe(const json::value_t& data);
-	inline void OnPusherPing(const json::value_t& data);
-	inline void OnPusherPush(const json::value_t& data);
-	inline bool UnPack(json::value_t& message, const std::shared_ptr<uint8_t[]>& data, size_t length);
+	inline void OnPusherSubscribe(const message_t& message);
+	inline void OnPusherUnSubscribe(const message_t& message);
+	inline void OnPusherPing(const message_t& message);
+	inline void OnPusherPush(const message_t& message);
+	inline std::string Pack(const message_t& msg);
+	inline message_t UnPack(const std::shared_ptr<uint8_t[]>& data, size_t length);
 	size_t MaxMessageLength{ 65536 };
 	std::time_t KeepAlive{ 20 };
 	std::shared_ptr<cchannels> Channels;
@@ -52,6 +60,15 @@ private:
 	std::string SessionUserId, SessionPresenceData;
 #if SENDQ 
 	spinlock_t OutgoingLock;
-	std::queue<std::string> OutgoingQueue;
+	std::queue<message_t> OutgoingQueue;
 #endif
 };
+
+inline std::string cpushersession::Pack(const message_t& message) {
+	auto&& msg{ msg::ref(message) };
+	return json::serialize({
+		{"event", msg["event"]}, {"channel", msg["channel"]}, 
+		{"#msg-time", std::chrono::system_clock::now().time_since_epoch().count() - msg["#msg-arrival"].get<size_t>()}, 
+		{"data", json::serialize(std::move(msg["data"]))}, {"#msg-id", msg["#msg-id"]}, {"#msg-from", msg["#msg-from"]}
+	});
+}

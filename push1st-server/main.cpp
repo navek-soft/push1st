@@ -2,7 +2,7 @@
 #include "medium/cbroker.h"
 
 #ifndef TEST
-#define TEST 1
+#define TEST 0
 #endif
 
 int main(int argc, char* argv[])

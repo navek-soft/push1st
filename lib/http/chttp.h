@@ -11,7 +11,7 @@ namespace http {
 		using params_t = std::unordered_multimap<std::string_view, std::string_view>;
 	public:
 		curi() { ; }
-		//curi(const curi& u) : uriFull{ u.uriFull }, uriPath{ u.uriPath }, uriPathList{ u.uriPathList } {; }
+		curi(const curi& u) : uriFull{ u.uriFull }, uriPath{ u.uriPath }, uriPathList{ u.uriPathList }, uriArgs{ u.uriArgs }{; }
 		inline std::string_view at(size_t idx) const { return uriPathList[idx]; }
 		inline std::string_view uri() const { return uriFull; }
 		inline std::string_view path() const { return uriPath; }

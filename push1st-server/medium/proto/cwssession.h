@@ -8,7 +8,7 @@
 #include "../cmessage.h"
 
 #ifndef SENDQ
-#define SENDQ 1
+#define SENDQ 0
 #endif // !SENDQ
 
 
@@ -37,18 +37,18 @@ public:
 
 	virtual void GetUserInfo(std::string& userId, std::string& userData) override { ; }
 
-	virtual inline void Push(const std::unique_ptr<cmessage>& msg) override {
-#if SENDQ 
+	virtual inline void Push(const message_t& msg) override {
+#if SENDQ
 		std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
-		OutgoingQueue.emplace(msg->Data);
+		OutgoingQueue.emplace(msg);
 		SocketUpdateEvents(EPOLLOUT | EPOLLET);
 #else
-		WsWriteMessage(opcode_t::text, msg->GetData());
+		WsWriteMessage(opcode_t::text, Pack(msg));
 #endif
 	}
 private:
-	inline std::unique_ptr<cmessage> UnPack(data_t&& msg);
-
+	inline message_t UnPack(data_t&& data);
+	inline std::string Pack(const message_t& msg);
 	size_t MaxMessageLength{ 65536 };
 	std::time_t KeepAlive{ 3600 }; 
 	std::shared_ptr<cchannels> Channels;
@@ -57,6 +57,16 @@ private:
 	channel_t EnablePushOnChannels{ channel_t::type::pub | channel_t::type::prot | channel_t::type::pres };
 #if SENDQ 
 	spinlock_t OutgoingLock;
-	std::queue<array_t> OutgoingQueue;
+	std::queue<message_t> OutgoingQueue;
 #endif
 };
+
+
+inline std::string cwssession::Pack(const message_t& message) {
+	auto&& msg{ msg::ref(message) };
+	return json::serialize({
+		{"event", msg["event"]}, {"channel", msg["channel"]},
+		{"#msg-time", std::chrono::system_clock::now().time_since_epoch().count() - msg["#msg-arrival"].get<size_t>()},
+		{"data", msg["data"]}, {"#msg-id", msg["#msg-id"]}, {"#msg-from", msg["#msg-from"]}
+	});
+}
