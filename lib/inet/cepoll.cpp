@@ -6,6 +6,27 @@
 
 using namespace inet;
 
+inline void cpoll::Gc() {
+	while(!fdQueueGC.empty()) {
+		auto fd{ fdQueueGC.front() };
+		fdQueueGC.pop_front();
+		if (auto res = inet::GetErrorNo(fd); res != 0) {
+			std::unique_lock<decltype(fdLock)> lock(fdLock);
+			if (auto&& hFd{ fdHandlers.find(fd) }; hFd != fdHandlers.end())
+			{
+				if (hFd->second) {
+					hFd->second(fd, EPOLLRDHUP);
+					break;
+				}
+			}
+		}
+		else if (auto&& hFd{ fdHandlers.find(fd) }; hFd != fdHandlers.end()) {
+			fdQueueGC.emplace_back(fd);
+		}
+		break;
+	}
+}
+
 void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTimeout) {
 	std::vector<struct epoll_event> events_list(numEventsMax);
 	pthread_setname_np(pthread_self(), self->NameOf());
@@ -15,9 +36,10 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 		sigaddset(&sigset, SIGPIPE);
 		sigaddset(&sigset, SIGHUP);
 		pthread_sigmask(SIG_BLOCK, &epoll_sig_mask, NULL);
-
+		ssize_t nevents{ 0 };
 		while (1) {
-			if (auto nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), msTimeout); nevents > 0) {
+			if (nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), 50/*msTimeout*/); nevents > 0) {
+
 				while (nevents--) {
 					if (auto&& hFd{ self->fdHandlers.find(events_list[nevents].data.fd) }; hFd != self->fdHandlers.end())
 					{
@@ -27,16 +49,33 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 						}
 					}
 					fprintf(stderr, "[ SERVER:%s ] Unhandled socket ( %ld )\n", self->NameOf(), events_list[nevents].data.fd);
-					::close(events_list[nevents].data.fd);
+					int fd{ events_list[nevents].data.fd };
+					inet::Close(fd);
 				}
 				continue;
 			}
 			else if (!nevents) {
 				/* Timeout exceeded */
+
+				/*
+				std::string dump;
+				for (auto&& f : self->fdQueueGC) {
+					dump.append(":").append(std::to_string(f)).append(" ");
+				}
+				printf("GC#%ld %s\n", self->fdPoll, dump.c_str());
+				*/
 				continue;
 			}
+			else if (errno == -1) {
+				printf("%ld: %ld ( %s )\n", self->fdPoll, nevents, std::strerror(errno));
+			}
+
+
 #ifdef DEBUG
-			if (errno == EINTR) { continue; }
+			if (errno == EINTR) { 
+				printf("EINTR: %ld: %ld ( %s )\n", self->fdPoll, nevents, std::strerror(errno));
+				continue; 
+			}
 #endif // DEBUG
 			fprintf(stderr, "[ SERVER:%s ] epoll error (%s)\n", self->NameOf(), inet::GetErrorStr(errno));
 			raise(SIGHUP);
@@ -52,6 +91,7 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 		fprintf(stderr, "[ SERVER:%s ] Unhandled exception\n", self->NameOf());
 		raise(SIGHUP);
 	}
+	printf("#poll: %ld\n", self->fdPoll);
 }
 
 ssize_t cpoll::Listen(int numEventsMax, int pollTimeoutMs) {
@@ -75,10 +115,19 @@ ssize_t cpoll::PollUpdate(fd_t fd, uint events) {
 void cpoll::PollDelete(fd_t& fd) {
 	if (fd > 0) {
 		epoll_ctl(fdPoll, EPOLL_CTL_DEL, fd, nullptr);
+		::shutdown(fd, SHUT_RDWR);
 		::close(fd);
+		std::unique_lock<decltype(fdLock)> lock(fdLock);
 		fdHandlers.erase(fd);
 		fd = -1;
 	}
+/*
+	std::string dump;
+	for (auto&& f : fdHandlers) {
+		dump.append(":").append(std::to_string(f.first)).append(" ");
+	}
+	printf("PollDelete #%ld %s\n", fdPoll, dump.c_str());
+	*/
 }
 
 cpoll::cpoll() {

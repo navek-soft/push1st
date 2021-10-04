@@ -5,6 +5,7 @@
 using namespace inet;
 
 void ctcpserver::OnAccept(fd_t fd, uint events, std::weak_ptr<cpoll> poll) {
+
 	if (events == EPOLLIN) {
 		sockaddr_storage sa;
 		ssize_t res{ -1 };
@@ -62,13 +63,19 @@ void ctcpserver::OnAcceptSSL(fd_t fd, uint events, std::weak_ptr<cpoll> poll) {
 
 void ctcpserver::Listen(const std::shared_ptr<cpoll>& poll) {
 	if (srvFd > 0) {
+		ssize_t res{ 0 };
 		if (srvSslContext) {
-			poll->PollAdd(srvFd, EPOLLIN | EPOLLRDHUP | EPOLLEXCLUSIVE, std::bind(&ctcpserver::OnAcceptSSL, this, std::placeholders::_1, std::placeholders::_2,poll->weak_from_this()));
+			if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE, std::bind(&ctcpserver::OnAcceptSSL, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()),false); res == 0) {
+				return;
+			}
 		}
 		else {
-			poll->PollAdd(srvFd, EPOLLIN | EPOLLRDHUP | EPOLLEXCLUSIVE, std::bind(&ctcpserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()));
-			//poll->PollAdd(srvFd, EPOLLIN | EPOLLRDHUP, { TcpSelf() }, &ctcpserver::OnAccept);
+			if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE, std::bind(&ctcpserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()), false); res == 0) {
+				return;
+			}
 		}
+		fprintf(stderr, "[ TCPSERVER:%s(%ld) ] Listen error: %s\n", NameOf(), std::strerror((int)-res));
+		throw std::runtime_error("TCP server fail");
 	}
 }
 

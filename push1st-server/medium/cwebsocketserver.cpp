@@ -10,9 +10,11 @@ ssize_t cwebsocketserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& 
 			return cwsserver::WsUpgrade(fd, path, headers);
 		}
 		HttpWriteResponse(fd, "403");
+		fd.SocketClose();
 		return -EACCES;
 	}
 	HttpWriteResponse(fd, "404");
+	fd.SocketClose();
 	return -ENOTDIR;
 }
 

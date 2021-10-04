@@ -65,7 +65,7 @@ void cpushersession::OnPusherUnSubscribe(const message_t& message) {
 	if (data["data"].is_object() and data["data"]["channel"].is_string()) {
 		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
 			if (auto&& ch{ chIt->second.lock() }; ch) {
-				ch->UnSubscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
+				ch->UnSubscribe(subsId);
 			}
 		}
 	}
@@ -137,7 +137,7 @@ void cpushersession::OnSocketError(ssize_t err) {
 	syslog.error("[ PUSHER:%s ] Error ( %s )\n", Id().c_str(), std::strerror((int)-err));
 	for (auto&& it : SubscribedTo) {
 		if (auto&& ch{ it.second.lock() }; ch) {
-			ch->UnSubscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
+			ch->UnSubscribe(subsId);
 		}
 	}
 	SocketClose();

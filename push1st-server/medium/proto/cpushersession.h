@@ -35,6 +35,7 @@ public:
 	virtual void OnWsClose() override;
 	virtual inline void OnWsPing() override { ; }
 	virtual void GetUserInfo(std::string& userId, std::string& userData) override { userId = SessionUserId; userData = SessionPresenceData; }
+	virtual inline fd_t GetFd() { return Fd(); }
 	virtual inline void Push(const message_t& msg) override {
 #if SENDQ
 		std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);

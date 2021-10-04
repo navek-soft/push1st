@@ -20,7 +20,7 @@ namespace inet::ssl {
 }
 
 int inet::Close(int& sock) {
-	if (fd_t fd{ sock }; fd > 0) { ::close(fd); sock = -1; return fd; }
+	if (fd_t fd{ sock }; fd > 0) { shutdown(fd, SHUT_RDWR); ::close(fd); sock = -1; return fd; }
 	return -1;
 }
 
@@ -74,9 +74,10 @@ uint16_t inet::GetPort(const sockaddr_storage& sa) {
 ssize_t inet::GetErrorNo(fd_t fd) {
 	int soerror{ 0 };
 	if (socklen_t so_len{ sizeof(soerror) }; getsockopt((int)fd, SOL_SOCKET, SO_ERROR, &soerror, &so_len) == 0) {
-		return -soerror;
+		soerror == 0 and getsockopt((int)fd, SOL_SOCKET, SO_LINGER, &soerror, &so_len);
 	}
-	return -errno;
+	return errno == EAGAIN ? 0 : -errno;
+//	return !soerror? -soerror : ((!errno || errno == EAGAIN) ? 0 : -errno);
 }
 
 ssize_t inet::SetKeepAlive(fd_t fd, bool enable, int count, int idle_sec, int intrvl_sec) {

@@ -7,18 +7,18 @@ void cpublicchannel::Subscribe(const std::shared_ptr<csubscriber>& subscriber) {
 	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
 	chSubscribers.emplace(subscriber->Id(), std::dynamic_pointer_cast<csubscriber>(subscriber));
 
-	syslog.print(1, "[ PUBLIC:%s ] Subscribe %s ( %ld sessions)\n", chUid.c_str(), subscriber->Id().c_str(), chSubscribers.size());
+	syslog.print(1, "[ PUBLIC:%ld:%s ] Subscribe %s ( %ld sessions)\n", subscriber->GetFd(), chUid.c_str(), subscriber->Id().c_str(), chSubscribers.size());
 
 	chApp->Trigger(hook_t::type::join, chName, subscriber->Id(), {});
 }
 
-void cpublicchannel::UnSubscribe(const std::shared_ptr<csubscriber>& subscriber) {
+void cpublicchannel::UnSubscribe(const std::string& sessId) {
 	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-	chSubscribers.erase(subscriber->Id());
+	syslog.print(1, "[ PUBLIC:%s ] UnSubscribe %s ( %ld sessions)\n", chUid.c_str(), sessId.c_str(), chSubscribers.size());
 
-	syslog.print(1, "[ PUBLIC:%s ] UnSubscribe %s ( %ld sessions)\n", chUid.c_str(), subscriber->Id().c_str(), chSubscribers.size());
+	chSubscribers.erase(sessId);
 
-	chApp->Trigger(hook_t::type::leave, chName, subscriber->Id(), {});
+	chApp->Trigger(hook_t::type::leave, chName, sessId, {});
 
 	if (chSubscribers.empty() and chMode == autoclose_t::yes) {
 		chChannels->UnRegister(chUid);

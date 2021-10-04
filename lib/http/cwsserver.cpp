@@ -4,7 +4,7 @@ using namespace inet;
 
 void cwsserver::WsData(fd_t fd, uint events, inet::socket_t so, const std::weak_ptr<inet::cpoll>& poll) {
 	if (so) {
-		if (events == EPOLLIN) { 
+		if (events == EPOLLIN) {
 			so->OnSocketRecv(); 
 		}
 		else if (events == EPOLLOUT) { 
@@ -32,7 +32,7 @@ ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& path, c
 ssize_t cwsserver::OnTcpAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
-		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR, std::bind(&cwsserver::WsAccept, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll));
+		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP, std::bind(&cwsserver::WsAccept, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll));
 	}
 	return res;
 }
@@ -52,7 +52,7 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
 				{
 					if (res = WsUpgrade(so, path, headers); res == 0) {
 						if (auto&& con = OnWsUpgrade(so, path, headers); con) {
-							res = self->PollUpdate(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR, std::bind(&cwsserver::WsData, this, std::placeholders::_1, std::placeholders::_2, con, poll));
+							res = self->PollUpdate(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP, std::bind(&cwsserver::WsData, this, std::placeholders::_1, std::placeholders::_2, con, poll));
 							if (res != 0) {
 								con->OnSocketError(res); /* Handler must close connection and free resources by itself */
 							}
@@ -78,7 +78,7 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
 cwsserver::cwsserver(const std::string& name, const std::string& HostPort, const inet::ssl_ctx_t& SslCtx, size_t httpMaxHeaderSize) :
 	inet::ctcpserver{ name, false, 1500, 2000, true }, HttpMaxHeaderSize{ httpMaxHeaderSize }
 {
-	TcpListen(HostPort, true, true, false, 4096, SslCtx);
+	TcpListen(HostPort, true, true, true, 4096, SslCtx);
 }
 
 cwsserver::~cwsserver() {

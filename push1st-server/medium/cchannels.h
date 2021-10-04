@@ -24,6 +24,7 @@ public:
 	}
 	void UnRegister(const std::string& name);
 private:
+	friend class cbroker;
 	core::cspinlock Sync;
 	//std::shared_mutex Sync;
 	std::unordered_map<std::string, std::shared_ptr<cchannel>> Channels;

@@ -12,13 +12,13 @@ void cprivatechannel::Subscribe(const std::shared_ptr<csubscriber>& subscriber) 
 	chApp->Trigger(hook_t::type::join, chName, subscriber->Id(), {});
 }
 
-void cprivatechannel::UnSubscribe(const std::shared_ptr<csubscriber>& subscriber) {
+void cprivatechannel::UnSubscribe(const std::string& sessId) {
 	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-	chSubscribers.erase(subscriber->Id());
+	syslog.print(1, "[ PUBLIC:%s ] UnSubscribe %s ( %ld sessions)\n", chUid.c_str(), sessId.c_str(), chSubscribers.size());
 
-	syslog.print(1, "[ PRIVATE:%s ] UnSubscribe %s ( %ld sessions)\n", chUid.c_str(), subscriber->Id().c_str(), chSubscribers.size());
+	chSubscribers.erase(sessId);
 
-	chApp->Trigger(hook_t::type::leave, chName, subscriber->Id(), {});
+	chApp->Trigger(hook_t::type::leave, chName, sessId, {});
 
 	if (chSubscribers.empty() and chMode == autoclose_t::yes) {
 		chChannels->UnRegister(chUid);

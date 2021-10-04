@@ -19,12 +19,16 @@ public:
 	cchannel(const std::shared_ptr<cchannels>& channels, const std::string& cuid, const std::string& name, const app_t& app, channel_t type, autoclose_t mode);
 	virtual ~cchannel();
 	virtual inline void Subscribe(const std::shared_ptr<csubscriber>& subscriber) = 0;
-	virtual inline void UnSubscribe(const std::shared_ptr<csubscriber>& subscriber) = 0;
+	virtual inline void UnSubscribe(const std::string& subscriber) = 0;
 	virtual size_t Push(message_t&& msg);
 	virtual inline void GetUsers(usersids_t&, userslist_t&) = 0;
 	inline channel_t::type Type() { return chType; }
+
+	inline size_t CountSubscribers() { return chSubscribers.size(); }
+
 protected:
 	channel_t chType{ channel_t::type::none };
+	
 	autoclose_t chMode{ autoclose_t::yes };
 	std::string chUid, chName;
 	app_t chApp;

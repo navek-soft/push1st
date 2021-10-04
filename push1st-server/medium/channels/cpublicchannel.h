@@ -8,7 +8,7 @@ public:
 	virtual ~cpublicchannel();
 
 	virtual void Subscribe(const std::shared_ptr<csubscriber>& subscriber) override;
-	virtual void UnSubscribe(const std::shared_ptr<csubscriber>& subscriber) override;
+	virtual void UnSubscribe(const std::string& subscriber) override;
 	virtual inline void GetUsers(usersids_t&, userslist_t&) override { ; }
 };
 

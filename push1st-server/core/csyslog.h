@@ -14,7 +14,7 @@ namespace core {
 			if (StdErr) { setvbuf(StdErr, NULL, _IOLBF, 0); }
 		}
 		inline void print(size_t lvl, const char* fmt, ...) const { if (logLevel >= lvl) { va_list args; va_start(args, fmt); vfprintf(StdOut, fmt, args); va_end(args); } }
-		inline void trace(const char* fmt, ...) const { if (logLevel >= 4) { va_list args; va_start(args, fmt); vfprintf(StdOut, fmt, args); va_end(args); } }
+		inline void trace(const char* fmt, ...) const { if (logLevel >= 4) { va_list args; va_start(args, fmt); vfprintf(StdOut, fmt, args); va_end(args); fflush(StdOut); } }
 		inline void error(const char* fmt, ...) const { va_list args; va_start(args, fmt); vfprintf(StdErr, fmt, args); va_end(args); fflush(StdErr); }
 		inline void exit(const char* fmt, ...) const { va_list args; va_start(args, fmt); vfprintf(StdErr, fmt, args); va_end(args); fflush(StdErr); ::exit(EXIT_FAILURE); }
 		struct cob {

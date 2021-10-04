@@ -2,6 +2,7 @@
 #include "chooks.h"
 #include "ccluster.h"
 #include "cchannels.h"
+#include "channels/cchannel.h"
 #include "cwebsocketserver.h"
 #include "capiserver.h"
 #include "ccredentials.h"
@@ -29,6 +30,16 @@ int cbroker::Run() {
 
 void cbroker::OnIdle() {
     //printf("timeout\n");
+    if (1) {
+        printf("Channels: ( %ld )", Channels->Channels.size());
+        if (!Channels->Channels.empty()) {
+            printf("\t");
+            for (auto&& ch : Channels->Channels) {
+                printf("%s ( %ld ) ", ch.first.c_str(), ch.second->CountSubscribers());
+            }
+        }
+        printf("\n");
+    }
 }
 
 void cbroker::Initialize(const core::cconfig& config) {

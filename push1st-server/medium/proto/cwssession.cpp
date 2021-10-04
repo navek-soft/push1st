@@ -64,10 +64,10 @@ void cwssession::OnSocketSend() {
 #endif
 
 void cwssession::OnSocketError(ssize_t err) {
-	syslog.error("[ RAW:%s ] Error ( %s )\n", Id().c_str(), std::strerror((int)-err));
+	syslog.trace("[ RAW:%ld:%s ] Error ( %s ) (%ld)\n", Fd(), Id().c_str(), std::strerror((int)-err), SubscribedTo.size());
 	for (auto&& it : SubscribedTo) {
 		if (auto&& ch{ it.second.lock() }; ch) {
-			ch->UnSubscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
+			ch->UnSubscribe(subsId);
 		}
 	}
 	SocketClose();
@@ -91,7 +91,7 @@ static inline std::pair<std::string_view, std::string_view> ExplodePathName(std:
 
 bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& headers) {
 	
-	syslog.trace("[ RAW:%ld:%s ] Connect\n", Fd(), Id().c_str());
+	//syslog.trace("[ RAW:%ld:%s ] Connect\n", Fd(), Id().c_str());
 
 	SetSendTimeout(500);
 
@@ -120,8 +120,9 @@ cwssession::cwssession(const std::shared_ptr<cchannels>& channels, const app_t& 
 	MaxMessageLength{ maxMessageLength }, KeepAlive{ keepAlive }, Channels{ channels }, App{ app }, EnablePushOnChannels{ pushOnChannels }
 {
 	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
+	//syslog.trace("[ RAW:%ld:%s ] New\n", Fd(), Id().c_str());
 }
 
 cwssession::~cwssession() {
-	syslog.trace("[ RAW:%s ] Destroy\n", Id().c_str());
+	//syslog.trace("[ RAW:%ld:%s ] Destroy\n", Fd(), Id().c_str());
 }

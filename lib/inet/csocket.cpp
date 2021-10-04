@@ -16,6 +16,7 @@ int csocket::SocketClose() const {
 			poll->PollDelete(fdSocket);
 		}
 		else {
+			::shutdown(fdSocket, SHUT_RDWR);
 			::close(fdSocket);
 			fdSocket = -1;
 		}
@@ -83,6 +84,7 @@ ssize_t csocket::write_nossl(const void* data, size_t length, size_t& nwrited, u
 		}
 		break;
 	}
+
 	return nwrite > 0 && !length ? 0 : -errno;
 }
 
@@ -130,6 +132,7 @@ ssize_t csocket::read_nossl(void* data, size_t length, size_t& nreaded, uint fla
 		}
 		break;
 	}
+
 	return nread > 0 && !length ? 0 : ((flags & MSG_DONTWAIT) && errno == EAGAIN) ? 0 : -errno;
 }
 
