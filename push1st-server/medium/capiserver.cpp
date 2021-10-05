@@ -69,16 +69,6 @@ void capiserver::ApiResponse(const inet::csocket& fd, const std::string_view& co
 	}
 }
 
-capiserver::ctcpapiserver::ctcpapiserver(capiserver& api, config::interface_t config) :
-	inet::chttpserver{ "ws:srv", std::string{ config.Tcp.hostport() }, config.Ssl.Context(), 8192 }, Api{ api }
-{
-	syslog.ob.print("Api", "Web ... enable %s proto, listen on %s, route /%s/", config.Ssl.Enable ? "https" : "http", std::string{ config.Tcp.hostport() }.c_str(), config.Path.c_str());
-}
-
-capiserver::ctcpapiserver::~ctcpapiserver() {
-
-}
-
 void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) {
 	if(!ApiRoutes.call(fd,method,path,headers,std::move(content))) {
 		HttpWriteResponse(fd, "404");
@@ -89,6 +79,7 @@ void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& 
 void capiserver::Listen(const std::shared_ptr<inet::cpoll>& poll) 
 {
 	if (ApiTcp) { ApiTcp->Listen(poll); }
+	if (ApiUnix) { ApiUnix->Listen(poll); }
 }
 
 
@@ -98,12 +89,68 @@ capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::sh
 	if (!config.Tcp.empty()) {
 		ApiTcp = std::make_shared<ctcpapiserver>(*this, config);
 	}
-	if (ApiTcp) {
-		ApiRoutes.add("/" + config.Path + "/?/events/", std::bind(&capiserver::ApiOnEvents, this,
-			std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+	if (!config.Unix.empty()) {
+		ApiUnix = std::make_shared<cunixapiserver>(*this, config);
 	}
+
+	ApiRoutes.add("/" + config.Path + "/?/events/", std::bind(&capiserver::ApiOnEvents, this,
+		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 }
 
 capiserver::~capiserver() {
 
+}
+
+capiserver::ctcpapiserver::ctcpapiserver(capiserver& api, config::interface_t config) :
+	inet::chttpserver{ "tapi:srv", std::string{ config.Tcp.hostport() }, config.Ssl.Context(), MaxHttpHeaderSize }, Api{ api }
+{
+	syslog.ob.print("Api", "Web ... enable %s proto, listen on %s, route /%s/", config.Ssl.Enable ? "https" : "http", std::string{ config.Tcp.hostport() }.c_str(), config.Path.c_str());
+}
+
+capiserver::ctcpapiserver::~ctcpapiserver() {
+	
+}
+
+ssize_t capiserver::cunixapiserver::OnUnixAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
+	ssize_t res{ -1 };
+	if (auto&& self{ poll.lock() }; self) {
+		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR, std::bind(&cunixapiserver::OnHttpData, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll));
+	}
+	return res;
+}
+
+void capiserver::cunixapiserver::OnHttpData(fd_t fd, uint events, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
+	ssize_t res{ -1 };
+	if (auto&& self{ poll.lock() }; self) {
+		std::string_view method; http::uri_t path; http::headers_t headers;  std::string request, content;
+		inet::csocket so(fd, sa, ssl, poll);
+		if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
+			OnHttpRequest(so, method, path, headers, std::move(request), std::move(content));
+		}
+		else {
+			so.SocketClose();
+		}
+		return;
+	}
+	inet::Close(fd);
+}
+
+capiserver::cunixapiserver::cunixapiserver(capiserver& api, config::interface_t config, size_t httpMaxHeaderSize) :
+	inet::cunixserver{ "uapi:srv", false, 30 }, Api{ api }, HttpMaxHeaderSize{ httpMaxHeaderSize }
+{
+	std::filesystem::path saFile{ config.Unix.path() };
+
+	std::filesystem::create_directories(saFile.parent_path());
+
+	if (auto res = UnixListen(config.Unix.url(), true, 16); res == 0) {
+		syslog.ob.print("Api", "Unix ... enable, listen on %s, route /%s/", saFile.c_str(), config.Path.c_str());
+	}
+	else {
+		syslog.error("Unix API Initialize server error ( %s )\n", std::strerror(-(int)res));
+		throw std::runtime_error("Unix API server exception");
+	}
+}
+
+capiserver::cunixapiserver::~cunixapiserver() {
+	UnixClose();
 }

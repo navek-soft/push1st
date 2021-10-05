@@ -9,7 +9,7 @@ csubscriber::csubscriber(const std::string& ip, uint16_t port)
 {
 	uint64_t id{ ++SessionId };
 	char sess[128];
-	snprintf(sess, 127, "%lu.%08lu", id, abs(mrand48()) % 10000000);
+	snprintf(sess, 127, "%lu.%08lu", id, std::abs(mrand48()) % 10000000ul);
 	subsId.assign(sess);
 }
 

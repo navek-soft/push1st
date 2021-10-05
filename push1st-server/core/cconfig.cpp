@@ -285,20 +285,26 @@ void cconfig::Load(const std::filesystem::path& configfile) {
 
 
 bool cconfig::cdsn::assign(const std::string& dsn) {
-	static const std::regex re(R"(^([\w-]+://)?(?:([^:@]+)(?:\:(.+))?@)?(([^:/]+)(?::(\d+))?)(([^?]*)(.*)))");
+	static const std::regex re(R"(^([\w-]+://)?((?:([^:@]+)(?:\:(.+))?@)?(([^:/]+)(?::(\d+))?)(([^?]*)(.*))))");
 	Value.assign(dsn);
 	std::string_view src{ Value };
 	std::cmatch match;
 	if (std::regex_match(src.begin(), src.end(), match, re)) {
 		Proto = std::string_view{ match[1].first, (size_t)match[1].length() };
-		User = std::string_view{ match[2].first,(size_t)match[2].length() };
-		Pwd = std::string_view{ match[3].first,(size_t)match[3].length() };
-		HostPort = std::string_view{ match[4].first,(size_t)match[4].length() };
-		Host = std::string_view{ match[5].first,(size_t)match[5].length() };
-		Port = std::string_view{ match[6].first,(size_t)match[6].length() };
-		Url = std::string_view{ match[7].first,(size_t)match[7].length() };
-		Path = std::string_view{ match[8].first,(size_t)match[8].length() };
-		Args = std::string_view{ match[9].first,(size_t)match[9].length() };
+		if (!(strncasecmp(Proto.data(), "unix://", 7) == 0 or strncasecmp(Proto.data(), "file://", 7) == 0)) {
+			User = std::string_view{ match[3].first,(size_t)match[3].length() };
+			Pwd = std::string_view{ match[4].first,(size_t)match[4].length() };
+			HostPort = std::string_view{ match[5].first,(size_t)match[5].length() };
+			Host = std::string_view{ match[6].first,(size_t)match[6].length() };
+			Port = std::string_view{ match[7].first,(size_t)match[7].length() };
+			Url = std::string_view{ match[8].first,(size_t)match[8].length() };
+			Path = std::string_view{ match[9].first,(size_t)match[9].length() };
+			Args = std::string_view{ match[10].first,(size_t)match[10].length() };
+		}
+		else {
+			Path = std::string_view{ match[2].first,(size_t)match[2].length() };
+			Args = std::string_view{ match[10].first,(size_t)match[10].length() };
+		}
 		return true;
 	}
 	Value.clear();
