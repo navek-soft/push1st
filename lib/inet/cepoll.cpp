@@ -38,7 +38,7 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 		pthread_sigmask(SIG_BLOCK, &epoll_sig_mask, NULL);
 		ssize_t nevents{ 0 };
 		while (1) {
-			if (nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), 50/*msTimeout*/); nevents > 0) {
+			if (nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), msTimeout); nevents > 0) {
 
 				while (nevents--) {
 					if (auto&& hFd{ self->fdHandlers.find(events_list[nevents].data.fd) }; hFd != self->fdHandlers.end())
@@ -55,25 +55,12 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 				continue;
 			}
 			else if (!nevents) {
-				/* Timeout exceeded */
-
-				/*
-				std::string dump;
-				for (auto&& f : self->fdQueueGC) {
-					dump.append(":").append(std::to_string(f)).append(" ");
-				}
-				printf("GC#%ld %s\n", self->fdPoll, dump.c_str());
-				*/
 				continue;
-			}
-			else if (errno == -1) {
-				printf("%ld: %ld ( %s )\n", self->fdPoll, nevents, std::strerror(errno));
 			}
 
 
 #ifdef DEBUG
 			if (errno == EINTR) { 
-				printf("EINTR: %ld: %ld ( %s )\n", self->fdPoll, nevents, std::strerror(errno));
 				continue; 
 			}
 #endif // DEBUG
@@ -91,7 +78,6 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 		fprintf(stderr, "[ SERVER:%s ] Unhandled exception\n", self->NameOf());
 		raise(SIGHUP);
 	}
-	printf("#poll: %ld\n", self->fdPoll);
 }
 
 ssize_t cpoll::Listen(int numEventsMax, int pollTimeoutMs) {

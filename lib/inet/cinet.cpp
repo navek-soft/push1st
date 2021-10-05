@@ -179,7 +179,7 @@ ssize_t inet::UnixServer(int& fd, const sockaddr_storage& sa, bool nonblock, int
 	return 0;
 }
 
-ssize_t inet::UnixAccept(fd_t fd, ssize_t& cli, sockaddr_storage& sa, bool nonblock) {
+ssize_t inet::UnixAccept(fd_t fd, fd_t& cli, sockaddr_storage& sa, bool nonblock) {
 	socklen_t len{ sizeof(sockaddr_storage) };
 	if (cli = accept4((int)fd, (sockaddr*)&sa, &len, SOCK_CLOEXEC | (nonblock ? SOCK_NONBLOCK : 0)); cli > 0) {
 		return 0;
