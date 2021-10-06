@@ -7,6 +7,7 @@
 
 int main(int argc, char* argv[])
 {
+    std::srand((uint)std::time(nullptr));
 #if TEST != 1
     broker_t&& broker{ std::make_shared<cbroker>() };
     try

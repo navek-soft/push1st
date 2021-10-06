@@ -140,6 +140,44 @@ ssize_t inet::TcpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, st
 	return res;
 }
 
+ssize_t inet::SslCreateClientContext(ssl_ctx_t& sslCtx) {
+	if (sslCtx = std::shared_ptr<SSL_CTX>{ SSL_CTX_new(TLS_client_method()),[](SSL_CTX* ctx) { SSL_CTX_free(ctx); } }; sslCtx) {
+		return 0;
+	}
+	return -EINVAL;
+}
+
+ssize_t inet::SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout, const inet::ssl_ctx_t& ctx, inet::ssl_t& ssl) {
+	ssize_t res{ 0 };
+	fd = -1;
+
+	if (ctx) {
+		if (ssl = std::shared_ptr<SSL>(SSL_new(ctx.get()), [](SSL* ssl) { SSL_free(ssl); }); !ssl) {
+			return -EINVAL;
+		}
+	}
+	else {
+		return -EINVAL;
+	}
+
+	if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_STREAM | (nonblock ? SOCK_NONBLOCK : 0), 0); fd > 0) {
+		if (conntimeout) { inet::SetSendTimeout(fd, conntimeout); }
+		
+		SSL_set_fd(ssl.get(), (int)fd);
+
+		if (::connect((int)fd, (sockaddr*)&sa, sizeof(sockaddr_storage)) == 0) {
+			return 0;
+		}
+		if (res = -errno; errno == EINPROGRESS) {
+			return res;
+		}
+		ssl.reset();
+		::close((int)fd);
+		fd = -1;
+	}
+	return res;
+}
+
 ssize_t inet::TcpServer(int& fd, const sockaddr_storage& sa, bool reuseaddress, bool reuseport, bool nonblock, int maxlisten) {
 	ssize_t res{ 0 };
 	fd = -1;

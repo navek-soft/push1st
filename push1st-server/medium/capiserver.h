@@ -15,9 +15,10 @@ class capiserver : public inet::chttpconnection
 		ctcpapiserver(capiserver& api, config::interface_t config);
 		virtual ~ctcpapiserver();
 	protected:
-		virtual void OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) override {
+		virtual inline void OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) override {
 			Api.OnHttpRequest(fd, method, path, headers, std::move(request), std::move(content));
 		}
+		virtual void OnHttpError(const inet::csocket& fd, ssize_t err);
 		virtual inline std::shared_ptr<inet::ctcpserver> TcpSelf() override { return std::dynamic_pointer_cast<inet::ctcpserver>(shared_from_this()); }
 	private:
 		capiserver& Api;
@@ -30,6 +31,7 @@ class capiserver : public inet::chttpconnection
 		void OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) {
 			Api.OnHttpRequest(fd, method, path, headers, std::move(request), std::move(content));
 		}
+		virtual void OnHttpError(const inet::csocket& fd, ssize_t err);
 		virtual inline std::shared_ptr<inet::cunixserver> UnixSelf() override { return std::dynamic_pointer_cast<inet::cunixserver>(shared_from_this()); }
 	private:
 		virtual ssize_t OnUnixAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) override;
@@ -47,6 +49,8 @@ protected:
 private:
 	inline void ApiResponse(const inet::csocket& fd, const std::string_view& code, const std::string& response = {}, bool close = true);
 	void ApiOnEvents(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, std::string&&);
+	void ApiOnToken(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, std::string&&);
+	void ApiOnWebHook(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, std::string&&);
 	std::shared_ptr<cchannels> Channels;
 	std::shared_ptr<ccredentials> Credentials;
 	std::shared_ptr<ctcpapiserver> ApiTcp;

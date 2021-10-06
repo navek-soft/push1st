@@ -9,16 +9,6 @@ class chook;
 class ccredentials : public std::enable_shared_from_this<ccredentials>
 {
 	class capplication : public config::credential_t {
-		class cmatch {
-		public:
-			cmatch() { ; }
-			cmatch(const std::string& pattern);
-			cmatch(const cmatch& ma) : Pattern{ ma.Pattern } { ; }
-			~cmatch() = default;
-			inline bool Match(const std::string& channel) { return Pattern.front() == '*' or Pattern.compare(0, Pattern.size(), channel) == 0; }
-		private:
-			std::string Pattern;
-		};
 	public:
 		capplication(const std::shared_ptr<cbroker>& broker, const config::credential_t& app);
 		~capplication() = default;
@@ -29,7 +19,8 @@ class ccredentials : public std::enable_shared_from_this<ccredentials>
 		std::string Token(const std::string& session, const std::string& channel, const std::string& custom_data);
 		void Trigger(hook_t::type type, sid_t channel, sid_t session, data_t);
 	private:
-		std::unordered_multimap<hook_t::type, std::pair<cmatch /* channel matcher */, std::shared_ptr<chook> /* hook endpoint */>> HookEndpoints;
+		hook_t HookTriggers;
+		std::vector<std::unique_ptr<chook>> HookEndpoints;
 	};
 public:
 	using app_t = capplication;

@@ -5,11 +5,16 @@
 namespace inet {
 	class csocket {
 	public:
-		csocket(fd_t so, const sockaddr_storage& sa, const std::shared_ptr<struct ssl_st>& ssl, const std::weak_ptr<inet::cpoll>& poll) :
+		csocket(fd_t so, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) :
 			fdSocket{ so }, fdSsl{ ssl }, fdPoll{ poll }
 		{
 			if (ssl) { write_fn = &csocket::write_ssl; read_fn = &csocket::read_ssl; }
 			bcopy(&sa, &fdSa, sizeof(sockaddr_storage));
+		}
+		csocket(fd_t so,const inet::ssl_t& ssl) :
+			fdSocket{ so }, fdSsl{ ssl }
+		{
+			if (ssl) { write_fn = &csocket::write_ssl; read_fn = &csocket::read_ssl; }
 		}
 		csocket(const csocket&) = delete;
 		csocket(const csocket&& so) : 

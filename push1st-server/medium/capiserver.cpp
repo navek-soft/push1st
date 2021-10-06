@@ -59,6 +59,33 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
 	}
 }
 
+
+void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
+	if (method == "POST") {
+		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
+			if (json::value_t request; cjson::unserialize(content, request) and request.is_object() and request.contains("session") and request.contains("channel")) {
+				auto&& token{ app->Token(request["session"].get<std::string>(), request["channel"].get<std::string>(), !request.contains("data") ? std::string{} : request["data"].get<std::string>()) };
+				ApiResponse(fd, "200", token);
+			}
+			else {
+				ApiResponse(fd, "400");
+			}
+		}
+		else {
+			ApiResponse(fd, "403");
+		}
+	}
+	else {
+		ApiResponse(fd, "400");
+	}
+}
+
+void capiserver::ApiOnWebHook(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
+	printf("\n\nWEBHOOK:%s\n%s\n\n", std::string{ method }.c_str(), content.c_str());
+	ApiResponse(fd, "200", {}, strncasecmp(http::GetValue(headers, "Connection", "Close").data(), "Keep-Alive", 10) == 0);
+}
+
+
 void capiserver::ApiResponse(const inet::csocket& fd, const std::string_view& code, const std::string& response, bool close) {
 	if (close or KeepAliveTimeout.empty()) {
 		HttpWriteResponse(fd, code, response, { {"Connection","Close"}, {"Content-Type", "application/json; charset=utf-8"} });
@@ -70,6 +97,9 @@ void capiserver::ApiResponse(const inet::csocket& fd, const std::string_view& co
 }
 
 void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) {
+
+	syslog.print(3, "[ API:%ld:%s ] %s\n", fd.Fd(), std::string{ method }.c_str(), std::string{ path.uriFull }.c_str());
+
 	if(!ApiRoutes.call(fd,method,path,headers,std::move(content))) {
 		HttpWriteResponse(fd, "404");
 		fd.SocketClose();
@@ -93,13 +123,26 @@ capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::sh
 		ApiUnix = std::make_shared<cunixapiserver>(*this, config);
 	}
 
+	/* Push event endpoint */
 	ApiRoutes.add("/" + config.Path + "/?/events/", std::bind(&capiserver::ApiOnEvents, this,
+		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+	/* Generate private\presense session token */
+	ApiRoutes.add("/" + config.Path + "/?/token/", std::bind(&capiserver::ApiOnToken, this,
+		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+
+	ApiRoutes.add("/webhook/*", std::bind(&capiserver::ApiOnWebHook, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 }
 
 capiserver::~capiserver() {
 
 }
+
+void capiserver::ctcpapiserver::OnHttpError(const inet::csocket& fd, ssize_t err) {
+	syslog.error("[ API ] tcp server request error ( %s )\n", std::strerror(-(int)err));
+	fd.SocketClose();
+}
+
 
 capiserver::ctcpapiserver::ctcpapiserver(capiserver& api, config::interface_t config) :
 	inet::chttpserver{ "tapi:srv", std::string{ config.Tcp.hostport() }, config.Ssl.Context(), MaxHttpHeaderSize }, Api{ api }
@@ -119,6 +162,11 @@ ssize_t capiserver::cunixapiserver::OnUnixAccept(fd_t fd, const sockaddr_storage
 	return res;
 }
 
+void capiserver::cunixapiserver::OnHttpError(const inet::csocket& fd, ssize_t err) {
+	syslog.error("[ API ] unix server request error ( %s )\n", std::strerror(-(int)err));
+	fd.SocketClose();
+}
+
 void capiserver::cunixapiserver::OnHttpData(fd_t fd, uint events, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
@@ -128,7 +176,7 @@ void capiserver::cunixapiserver::OnHttpData(fd_t fd, uint events, const sockaddr
 			OnHttpRequest(so, method, path, headers, std::move(request), std::move(content));
 		}
 		else {
-			so.SocketClose();
+			OnHttpError(so, res);
 		}
 		return;
 	}
@@ -142,7 +190,7 @@ capiserver::cunixapiserver::cunixapiserver(capiserver& api, config::interface_t 
 
 	std::filesystem::create_directories(saFile.parent_path());
 
-	if (auto res = UnixListen(config.Unix.url(), true, 16); res == 0) {
+	if (auto res = UnixListen(config.Unix.path(), true, 16); res == 0) {
 		syslog.ob.print("Api", "Unix ... enable, listen on %s, route /%s/", saFile.c_str(), config.Path.c_str());
 	}
 	else {

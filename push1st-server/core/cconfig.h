@@ -35,6 +35,9 @@ namespace core {
 			inline const std::string_view& path() const { return Path; }
 			inline const std::string_view& args() const { return Args; }
 			inline std::string baseurl() const { std::string url{ Proto }; url.append(HostPort).append(Path).append(Path.empty() or Path.back() != '/' ? "/" : ""); return url; }
+			inline bool isweb() const { return strncasecmp(Proto.data(), "http://", 7) == 0 or strncasecmp(Proto.data(), "https://", 8) == 0; }
+			inline bool ishttp() const { return strncasecmp(Proto.data(), "http://", 7) == 0; }
+			inline bool ishttps() const { return strncasecmp(Proto.data(), "https://", 8) == 0; }
 		private:
 			std::string Value;
 			std::string_view Proto, User, Pwd, HostPort, Host, Port, Url, Path, Args;
@@ -97,9 +100,10 @@ namespace core {
 		struct credential_t {
 			std::string Id, Name, Key, Secret;
 			channel_t Channels{ channel_t::type::none };
+			hook_t Hooks{ hook_t::type::none };
 			bool OptionClientMessages{ false }, OptionStatistic{ false };
 			std::unordered_set<std::string> Origins;
-			std::unordered_multimap<hook_trigger_t,std::pair<std::string, std::string>> Hooks;
+			std::unordered_set<std::string> Endpoints;
 			credential_t() { ; }
 			credential_t(const credential_t& cred);
 		private:

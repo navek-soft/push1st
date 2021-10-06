@@ -33,7 +33,9 @@ namespace inet {
 	ssize_t UdpServer(fd_t& fd, const sockaddr_storage& sa, bool reuseaddress, bool reuseport, bool nonblock, int maxlisten);
 	ssize_t UnixServer(fd_t& fd, const sockaddr_storage& sa, bool nonblock, int maxlisten);
 	ssize_t UnixAccept(fd_t fd, fd_t& cli, sockaddr_storage& sa, bool nonblock);
+	ssize_t SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout, const inet::ssl_ctx_t& ctx, inet::ssl_t& ssl);
 	ssize_t SslCreateSelfSignedContext(ssl_ctx_t& sslCtx);
+	ssize_t SslCreateClientContext(ssl_ctx_t& sslCtx);
 	ssize_t SslCreateContext(ssl_ctx_t& sslCtx, const std::string& certFile, const std::string& privateKeyFile, bool novalidate);
 	ssize_t SslAcceptConnection(ssize_t cli, const ssl_ctx_t& sslCtx, ssl_t& sslCli);
 	ssize_t SslSetGlobalContext(const ssl_ctx_t& sslCtx);

@@ -9,19 +9,21 @@
 #include <csignal>
 #include "../core/csyslog.h"
 
-std::shared_ptr<chook> cbroker::RegisterHook(const std::string& endpoint) {
-    if (dsn_t dsn{ endpoint }; dsn.proto() == "http://" or dsn.proto() == "https://") {
+std::unique_ptr<chook> cbroker::RegisterHook(const std::string& endpoint) {
+    if (dsn_t dsn{ endpoint }; dsn.isweb()) {
         std::string endpointId;
         endpointId.assign(dsn.proto()).append(dsn.hostport());
-        if (auto&& it{ Hooks.find(endpointId) }; it != Hooks.end()) {
-            return it->second;
+        std::shared_ptr<cconnection> connection;
+        if (auto&& it{ HookConnections.find(endpointId) }; it != HookConnections.end()) {
+            connection = it->second;
         }
-        return Hooks.emplace(endpointId, std::make_shared<cwebhook>(endpoint)).first->second;
+        else {
+            connection = std::make_shared<cconnection>(dsn);
+            HookConnections.emplace(endpointId, connection);
+        }
+        return std::make_unique<cwebhook>(connection, endpoint);
     }
-    if (auto&& it{ Hooks.find(endpoint) }; it != Hooks.end()) {
-        return it->second;
-    }
-    return Hooks.emplace(endpoint, std::make_shared<cluahook>(endpoint)).first->second;
+    return std::make_unique<cluahook>(endpoint);
 }
 
 int cbroker::Run() {
@@ -30,7 +32,7 @@ int cbroker::Run() {
 
 void cbroker::OnIdle() {
     //printf("timeout\n");
-    if (1) {
+    if (0) {
         printf("Channels: ( %ld )", Channels->Channels.size());
         if (!Channels->Channels.empty()) {
             printf("\t");

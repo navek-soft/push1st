@@ -4,6 +4,7 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
+#include "../core/csyslog.h"
 
 static inline uint8_t hex(char h, char l) {
 	if (h >= '0' and h <= '9') { h = (uint8_t)(h - '0'); } else if (h >= 'a' and h <= 'f') { h = (uint8_t)((h - 'a') + 10); } else return 0;
@@ -48,33 +49,19 @@ bool ccredentials::capplication::Validate(std::string_view token, const std::str
 	}
 	return false;
 }
-void ccredentials::capplication::Trigger(hook_t::type type, sid_t channel, sid_t session, data_t data) {
-	for (auto&& [from, to] = HookEndpoints.equal_range(type); from != to; ++from) {
-		if (from->second.first.Match(channel)) {
-			from->second.second->Trigger(Id, channel, session, data);
-		}
-	}
-}
 
-ccredentials::capplication::cmatch::cmatch(const std::string& pattern) {
-	if (pattern == "*") {
-		Pattern = pattern;
-	}
-	else if (auto pos{ pattern.find_first_of('*') }; pos != std::string::npos) {
-		Pattern = pattern.substr(0, pos);
-	}
-	else {
-		Pattern = pattern;
+void ccredentials::capplication::Trigger(hook_t::type type, sid_t channel, sid_t session, data_t data) {
+	if (Hooks & type and !HookEndpoints.empty()) {
+		syslog.trace("[ HOOK:%s ] %s ( %s, %s ) \n", Id.c_str(), str(type), channel.c_str(), session.c_str());
+		for (auto&& ep : HookEndpoints) { ep->Trigger(type, Id, channel, session, data); } 
 	}
 }
 
 ccredentials::capplication::capplication(const std::shared_ptr<cbroker>& broker, const config::credential_t& app) :
 	credential_t{ app } 
 {
-	for (auto&& [tp, hook] : Hooks) {
-		if (!hook.first.empty() and !hook.second.empty()) {
-			HookEndpoints.emplace(tp, std::make_pair(hook.first, broker->RegisterHook(hook.second)));
-		}
+	for (auto&& ep : Endpoints) {
+		HookEndpoints.emplace_back(broker->RegisterHook(ep));
 	}
 }
 

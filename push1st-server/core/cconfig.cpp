@@ -157,8 +157,8 @@ void cconfig::interface_t::load(const std::filesystem::path& path, const yaml_t&
 
 cconfig::credential_t::credential_t(const credential_t& cred) :
 	Id{ std::move(cred.Id) }, Name{ std::move(cred.Name) }, Key{ std::move(cred.Key) }, Secret{ std::move(cred.Secret) },
-	Channels{ cred.Channels }, OptionClientMessages{ cred.OptionClientMessages }, OptionStatistic{ cred.OptionStatistic },
-	Origins{ std::move(cred.Origins) }, Hooks{ std::move(cred.Hooks) }
+	Channels{ cred.Channels }, Hooks{ std::move(cred.Hooks) }, OptionClientMessages{ cred.OptionClientMessages }, OptionStatistic{ cred.OptionStatistic },
+	Origins{ std::move(cred.Origins) }, Endpoints{ std::move(cred.Endpoints) }
 {
 	;
 }
@@ -180,59 +180,23 @@ void cconfig::credential_t::load(const std::filesystem::path& path) {
 			}
 
 			if (cred.second["hook"].IsDefined()) {
-				if (cred.second["hook"]["register"].IsSequence()) {
-					for (auto&& item : cred.second["hook"]["register"]) {
-						if (item.IsMap()) {
-							for (auto&& hook : item) {
-								if (auto endpoint{ hook.second.as<std::string>() }; !endpoint.empty() and 
-									(endpoint.compare(0, 7, "http://") == 0 or endpoint.compare(0, 8, "https://") == 0 or endpoint.compare(0, 6, "lua://") == 0))
-								{
-									Hooks.emplace(hook_t::type::reg, std::make_pair(hook.first.as<std::string>(), endpoint));
+				if (cred.second["hook"]["trigger"].IsSequence()) {
+					Hooks = Map(cred.second["hook"]["trigger"], {
+						{"register", hook_t::type::reg},{"unregister",hook_t::type::unreg},{"join",hook_t::type::join},{"leave",hook_t::type::leave},{"push",hook_t::type::push} },
+						hook_t::type::none);
+					if (Hooks != hook_t::type::none) {
+						if (cred.second["hook"]["endpoint"].IsSequence()) {
+							for (auto&& item : cred.second["hook"]["endpoint"]) {
+								if (auto endpoint{ item.as<std::string>() };
+									(endpoint.compare(0, 7, "http://") == 0 or endpoint.compare(0, 8, "https://") == 0 or endpoint.compare(0, 6, "lua://") == 0)) {
+									Endpoints.emplace(endpoint);
 								}
 							}
 						}
-					}
-					for (auto&& item : cred.second["hook"]["unregister"]) {
-						if (item.IsMap()) {
-							for (auto&& hook : item) {
-								if (auto endpoint{ hook.second.as<std::string>() }; !endpoint.empty() and
-									(endpoint.compare(0, 7, "http://") == 0 or endpoint.compare(0, 8, "https://") == 0 or endpoint.compare(0, 6, "lua://") == 0))
-								{
-									Hooks.emplace(hook_t::type::unreg, std::make_pair(hook.first.as<std::string>(), endpoint));
-								}
-							}
-						}
-					}
-					for (auto&& item : cred.second["hook"]["join"]) {
-						if (item.IsMap()) {
-							for (auto&& hook : item) {
-								if (auto endpoint{ hook.second.as<std::string>() }; !endpoint.empty() and
-									(endpoint.compare(0, 7, "http://") == 0 or endpoint.compare(0, 8, "https://") == 0 or endpoint.compare(0, 6, "lua://") == 0))
-								{
-									Hooks.emplace(hook_t::type::join, std::make_pair(hook.first.as<std::string>(), endpoint));
-								}
-							}
-						}
-					}
-					for (auto&& item : cred.second["hook"]["leave"]) {
-						if (item.IsMap()) {
-							for (auto&& hook : item) {
-								if (auto endpoint{ hook.second.as<std::string>() }; !endpoint.empty() and
-									(endpoint.compare(0, 7, "http://") == 0 or endpoint.compare(0, 8, "https://") == 0 or endpoint.compare(0, 6, "lua://") == 0))
-								{
-									Hooks.emplace(hook_t::type::leave, std::make_pair(hook.first.as<std::string>(), endpoint));
-								}
-							}
-						}
-					}
-					for (auto&& item : cred.second["hook"]["push"]) {
-						if (item.IsMap()) {
-							for (auto&& hook : item) {
-								if (auto endpoint{ hook.second.as<std::string>() }; !endpoint.empty() and
-									(endpoint.compare(0, 7, "http://") == 0 or endpoint.compare(0, 8, "https://") == 0 or endpoint.compare(0, 6, "lua://") == 0))
-								{
-									Hooks.emplace(hook_t::type::push, std::make_pair(hook.first.as<std::string>(), endpoint));
-								}
+						else if (cred.second["hook"]["endpoint"].IsScalar()) {
+							if (auto endpoint{ cred.second["hook"]["endpoint"].as<std::string>() };
+								(endpoint.compare(0, 7, "http://") == 0 or endpoint.compare(0, 8, "https://") == 0 or endpoint.compare(0, 6, "lua://") == 0)) {
+								Endpoints.emplace(endpoint);
 							}
 						}
 					}

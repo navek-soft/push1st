@@ -17,7 +17,7 @@ void cunixserver::OnAccept(fd_t fd, uint events, std::weak_ptr<cpoll> poll) {
 			fprintf(stderr, "[ UNIXSERVER:%s(%ld) ] connection error: %s\n", NameOf(), cli, inet::GetErrorStr(res));
 			inet::Close(cli);
 		}
-		else {
+		else if(res != -EAGAIN) {
 			fprintf(stderr, "[ UNIXSERVER:%s(%ld) ] accept error: %s\n", NameOf(), fd, inet::GetErrorStr(res));
 		}
 		return;
@@ -38,9 +38,9 @@ void cunixserver::Listen(const std::shared_ptr<cpoll>& poll) {
 	}
 }
 
-ssize_t cunixserver::UnixListen(const std::string_view& listenHostPort, bool nonblock, int maxlisten) {
+ssize_t cunixserver::UnixListen(const std::string_view& listenFilePath, bool nonblock, int maxlisten) {
 	ssize_t res{ -1 };
-	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, listenHostPort, "0", AF_UNIX)) == 0 and (res = inet::UnixServer(srvFd,sa, nonblock, maxlisten)) == 0) {
+	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, listenFilePath, "0", AF_UNIX)) == 0 and (res = inet::UnixServer(srvFd,sa, nonblock, maxlisten)) == 0) {
 		return res;
 	}
 	inet::Close(srvFd);

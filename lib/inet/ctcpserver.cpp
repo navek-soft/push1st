@@ -20,7 +20,7 @@ void ctcpserver::OnAccept(fd_t fd, uint events, std::weak_ptr<cpoll> poll) {
 			fprintf(stderr, "[ TCPSERVER:%s(%ld) ] connection error: %s\n", NameOf(), cli, inet::GetErrorStr(res));
 			inet::Close(cli);
 		}
-		else {
+		else if (res != -EAGAIN) {
 			fprintf(stderr, "[ TCPSERVER:%s(%ld) ] accept error: %s\n", NameOf(), fd, inet::GetErrorStr(res));
 		}
 		return;

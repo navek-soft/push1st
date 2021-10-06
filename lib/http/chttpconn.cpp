@@ -11,7 +11,11 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
 
 		request.resize(nread);
 
-		if (res = http::ParseRequest(std::string_view{ request.data(), request.size() }, method, path, headers, data, contentLength); res > 0) {
+		/* 
+		* TODO:	Data can be contains multiple request, create another method with virtual callback handler
+		*/
+
+		if (res = http::ParseRequest(std::string_view{ request.data(),request.size() }, method, path, headers, data, contentLength); res > 0) {
 			content = data;
 			return 0;
 		}
@@ -37,6 +41,26 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
 	}
 	return res;
 }
+
+ssize_t chttpconnection::HttpWriteRequest(const inet::csocket& fd, const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers, const std::string_view& request) {
+	std::string reply;
+
+	reply.reserve(2048 + request.length());
+	reply.append(method).append(" ").append(uri).append(" HTTP/1.1").append("\r\n");
+
+	if (!request.empty()) { reply.append("Content-Length: ").append(std::to_string(request.size())).append("\r\n"); }
+
+	HttpServerHeaders(headers);
+
+	for (auto&& [h, v] : headers) { reply.append(h).append(": ").append(v).append("\r\n"); }
+	reply.append("\r\n");
+
+	reply.append(request);
+
+	size_t nwrite{ 0 };
+	return fd.SocketSend(reply.data(), reply.length(), nwrite, 0);
+}
+
 
 ssize_t chttpconnection::HttpWriteResponse(const inet::csocket& fd, const std::string_view& code, const std::string_view& response, std::unordered_map<std::string_view, std::string>&& headers) {
 	std::string reply;

@@ -4,6 +4,7 @@
 #include <vector>
 
 class chook;
+class cconnection;
 class ccluster;
 class ccredentials;
 class cwebsocketserver;
@@ -15,7 +16,7 @@ class cbroker : public std::enable_shared_from_this<cbroker>
 public:
 	cbroker();
 	~cbroker();
-	std::shared_ptr<chook> RegisterHook(const std::string& endpoint);
+	std::unique_ptr<chook> RegisterHook(const std::string& endpoint);
 
 	void Initialize(const core::cconfig& config);
 
@@ -31,7 +32,7 @@ private:
 	std::shared_ptr<cwebsocketserver> WsServer;
 	std::shared_ptr<capiserver> ApiServer;
 	std::vector<std::shared_ptr<inet::cpoll>> ServerPoll;
-	std::unordered_map<std::string, std::shared_ptr<chook>> Hooks;
+	std::unordered_map<std::string, std::shared_ptr<cconnection>> HookConnections;
 };
 
 using broker_t = std::shared_ptr<cbroker>;

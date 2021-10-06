@@ -17,7 +17,6 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)chttp.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)chttpconn.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)chttpserver.cpp" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)crouter.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)cwebsocket.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)cwsconn.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)cwsserver.cpp" />

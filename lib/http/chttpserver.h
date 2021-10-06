@@ -10,6 +10,7 @@ namespace inet {
 		virtual ~chttpserver();
 	protected:
 		virtual void OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) = 0;
+		virtual void OnHttpError(const inet::csocket& fd, ssize_t err) = 0;
 		virtual inline std::shared_ptr<inet::ctcpserver> TcpSelf() = 0;
 	private:
 		virtual ssize_t OnTcpAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) override;

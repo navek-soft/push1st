@@ -30,7 +30,7 @@ void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr
 				
 				if (EnablePushOnChannels & ch->Type()) {
 					ch->Push(std::move(message));
-					App->Trigger(hook_t::type::push, message->at("channel"), Id(), { data, length });
+					//App->Trigger(hook_t::type::push, message->at("channel"), Id(), { data, length });
 					syslog.print(4, "[ RAW:%s ] Push ( %s/%s )\n", Id().c_str(), msg["channel"].get<std::string>().c_str(), msg["event"].get<std::string>().c_str());
 				}
 				else {
