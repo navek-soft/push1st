@@ -190,7 +190,7 @@ ssize_t inet::TcpServer(int& fd, const sockaddr_storage& sa, bool reuseaddress, 
 	return 0;
 }
 
-ssize_t inet::UdpServer(int& fd, const sockaddr_storage& sa, bool reuseaddress, bool reuseport, bool nonblock, int maxlisten) {
+ssize_t inet::UdpServer(int& fd, const sockaddr_storage& sa, bool reuseaddress, bool reuseport, bool nonblock) {
 	ssize_t res{ 0 };
 	fd = -1;
 	if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_DGRAM | (nonblock ? SOCK_NONBLOCK : 0), IPPROTO_UDP); fd <= 0) { return -errno; }

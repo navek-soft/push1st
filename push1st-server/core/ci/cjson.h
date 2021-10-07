@@ -14,8 +14,14 @@ public:
 		return document.dump(0);
 	}
 	static inline bool unserialize(const std::string_view& document, value_t& value) {
-		value = std::move(value_t::parse(document.begin(), document.end()));
-		return !value.empty();
+		try {
+			value = std::move(value_t::parse(document.begin(), document.end()));
+			return !value.empty();
+		}
+		catch (std::exception& ex) {
+
+		}
+		return false;
 	}
 };
 

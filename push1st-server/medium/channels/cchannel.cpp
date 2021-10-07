@@ -46,6 +46,7 @@ size_t cchannel::Push(message_t&& message) {
 				std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
 				chSubscribers.erase(sessLeave.front());
 			}
+			OnSubscriberLeave(sessLeave.front());
 			sessLeave.pop_front();
 		}
 

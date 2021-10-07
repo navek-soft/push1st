@@ -5,6 +5,15 @@
 
 static std::atomic_uint64_t MsgId{ (uint64_t)std::chrono::system_clock::now().time_since_epoch().count() };
 
+message_t msg::make(json::value_t&& t, const std::string& producer) {
+	message_t msg{ new json::value_t{ std::move(t) } };
+	(*msg)["#msg-id"] = ++MsgId;
+	(*msg)["#msg-arrival"] = std::chrono::system_clock::now().time_since_epoch().count();
+	(*msg)["#msg-from"] = producer;
+	(*msg)["#msg-delivery"] = "broadcast";
+	return msg;
+}
+
 message_t msg::unserialize(const std::string_view& data, const std::string& producer) {
 	try {
 		auto&& msg{ std::make_shared<json::value_t>() };

@@ -102,21 +102,16 @@ void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& op
 void cconfig::cluster_t::load(const std::filesystem::path& path, const yaml_t& options) {
 	if (options.IsDefined() and options.IsMap()) {
 		Listen = options["listen"];
-		Node = Value<ssize_t>(options["node"], -1);
+		//Node = Value<ssize_t>(options["node"], -1);
+		PingInterval = (std::time_t)Value<size_t>(options["ping-interval"], PingInterval);
 		Sync = Map(options["sync"], { {"session",sync_t::type::session}, {"stat",sync_t::type::stat}, {"health",sync_t::type::health} }, sync_t::type::none);
 
 		if (options["family"].IsSequence()) {
 			for (auto&& node : options["family"]) {
-				if (node.IsMap()) {
-					for (auto&& host : node) {
-						if (host.first.IsScalar() and host.second.IsScalar()) {
-							Nodes.emplace(Value<ssize_t>(host.first, 0), Value<std::string>(host.second, {}));
-						}
-					}
-				}
+				Nodes.emplace(Value<std::string>(node.second, {}));
 			}
 		}
-		Enable = !Listen.empty() and Node > 0;
+		Enable = !Listen.empty();
 	}
 	else {
 		Enable = false;

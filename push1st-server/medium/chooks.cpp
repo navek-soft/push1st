@@ -1,8 +1,7 @@
 #include "chooks.h"
 #include "../core/csyslog.h"
-#include "../core/ci/cjson.h"
 
-void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, data_t msg)
+void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&& msg)
 { 
 	webConnection->Write("POST", "/webhook/", {
 			{"Content-Type","application/json"},
@@ -13,7 +12,7 @@ void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t ses
 				{"app",app},
 				{"channel",channel},
 				{"session",session},
-				{"data",msg.first? std::string_view {(const char*)msg.first.get(),msg.second} : std::string_view{}},
+				{"data", json::serialize(std::move(msg))},
 			}));
 }
 

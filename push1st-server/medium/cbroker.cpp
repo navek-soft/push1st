@@ -9,6 +9,10 @@
 #include <csignal>
 #include "../core/csyslog.h"
 
+std::shared_ptr<cchannel> cbroker::GetChannel(const std::string& appId, const std::string& chName) {
+    return Channels->Get(appId, chName);
+}
+
 std::unique_ptr<chook> cbroker::RegisterHook(const std::string& endpoint) {
     if (dsn_t dsn{ endpoint }; dsn.isweb()) {
         std::string endpointId;
@@ -49,7 +53,8 @@ void cbroker::Initialize(const core::cconfig& config) {
     if (config.Server.Proto.empty()) throw std::runtime_error("Protocols not specified");
     if (!config.Server.Threads) throw std::runtime_error("Invalid worker threads number ( zero count )");
 
-    Channels = std::make_shared<cchannels>();
+    Cluster = std::make_shared<ccluster>(shared_from_this(), config.Cluster);
+    Channels = std::make_shared<cchannels>(Cluster);
     Credentials = std::make_shared<ccredentials>(shared_from_this(), config.Credentials);
     ApiServer = std::make_shared<capiserver>(Channels, Credentials, config.Api);
     if (!config.Server.Proto.empty()) { WsServer = std::make_shared<cwebsocketserver>(Channels, Credentials, config.Server); }

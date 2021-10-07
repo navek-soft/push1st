@@ -10,6 +10,7 @@ class ccredentials;
 class cwebsocketserver;
 class capiserver;
 class cchannels;
+class cchannel;
 
 class cbroker : public std::enable_shared_from_this<cbroker>
 {
@@ -19,9 +20,8 @@ public:
 	std::unique_ptr<chook> RegisterHook(const std::string& endpoint);
 
 	void Initialize(const core::cconfig& config);
-
+	std::shared_ptr<cchannel> GetChannel(const std::string& appId, const std::string& chName);
 	int Run();
-
 private:
 	void OnIdle();
 	int WaitFor(std::initializer_list<int>&& signals);

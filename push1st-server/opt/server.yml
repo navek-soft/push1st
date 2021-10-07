@@ -6,7 +6,7 @@ ssl:
 
 # channels configuration section
 server:
-    proto: [pusher, mqtt, websocket ]       # enabled proto
+    proto: [ pusher, mqtt, websocket ]       # enabled proto
     threads: 5                  # number of worker threads
     max-request-payload: 65400  # global max request payload length less or equal 65400
     listen: tcp://*:6001   # false, tcp://<host>:<port>
@@ -29,13 +29,9 @@ server:
 
 cluster:
 #    listen: disable # udp://<host>:<port>, multicast://<multicast-group-address>:<port>/<bind-iface-ip-address>
+    ping-interval: 30 # 0 - to disable ping
     listen: udp://*:8001 # strongly recommended bind to internal IP or close port with iptables
-    node: 1000
-    family:
-        - 1000: localhost
-        - 1001: node1.beam.local
-        - 1002: node2.beam.local
-    sync: [session,stat,health]
+    family: [ node1.beam.local, node2.beam.local ]
 
 api:
     keep-alive-timeout: 10          # http api keep-alive connection timeout

@@ -50,10 +50,10 @@ bool ccredentials::capplication::Validate(std::string_view token, const std::str
 	return false;
 }
 
-void ccredentials::capplication::Trigger(hook_t::type type, sid_t channel, sid_t session, data_t data) {
-	if (Hooks & type and !HookEndpoints.empty()) {
-		syslog.trace("[ HOOK:%s ] %s ( %s, %s ) \n", Id.c_str(), str(type), channel.c_str(), session.c_str());
-		for (auto&& ep : HookEndpoints) { ep->Trigger(type, Id, channel, session, data); } 
+void ccredentials::capplication::Trigger(channel_t::type type, hook_t::type trigger, sid_t channel, sid_t session, json::value_t&& data) {
+	if (Hooks & trigger and !HookEndpoints.empty()) {
+		syslog.trace("[ HOOK:%s ] %s ( %s, %s ) \n", Id.c_str(), str(trigger), channel.c_str(), session.c_str());
+		for (auto&& ep : HookEndpoints) { ep->Trigger(trigger, Id, channel, session, std::move(data)); }
 	}
 }
 

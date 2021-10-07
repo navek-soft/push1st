@@ -3,6 +3,8 @@
 #include "../inet/csocket.h"
 #include "../core/ci/cspinlock.h"
 #include "../http/chttpconn.h"
+#include "cmessage.h"
+#include "../core/ci/cjson.h"
 
 class cconnection : public inet::chttpconnection {
 public:
@@ -19,14 +21,14 @@ private:
 class chook {
 public:
 	virtual ~chook() { ; }
-	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, data_t) = 0;
+	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) = 0;
 };
 
 class cwebhook : public chook {
 public:
 	cwebhook(const std::shared_ptr<cconnection>& con, const std::string& endpoint) : webConnection{ con }, webEndpoint{ endpoint }{; }
 	virtual ~cwebhook() { ; }
-	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, data_t) override;
+	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) override;
 private:
 	std::shared_ptr<cconnection> webConnection;
 	dsn_t webEndpoint;
@@ -36,5 +38,5 @@ class cluahook : public chook {
 public:
 	cluahook(const std::string& endpoint) { ; }
 	virtual ~cluahook() { ; }
-	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, data_t) override { ; }
+	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) override { ; }
 };

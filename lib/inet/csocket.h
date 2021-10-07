@@ -25,11 +25,14 @@ namespace inet {
 			bcopy(&so.fdSa, &fdSa, sizeof(sockaddr_storage));
 			if (fdSsl) { write_fn = &csocket::write_ssl; read_fn = &csocket::read_ssl; }
 		}
+
+		inline csocket& operator = (const csocket&& so);
 		virtual ~csocket() { ; }
 		virtual inline void OnSocketConnect() { ; }
 		virtual inline void OnSocketRecv() { ; }
 		virtual inline void OnSocketSend() { ; }
 		virtual inline void OnSocketError(ssize_t err) { ; }
+		inline operator bool() { return fdSocket > 0; }
 	public:
 		inline void SocketUpdateEvents(uint events);
 		inline ssize_t SocketSend(const void* data, size_t length, size_t& nwrite, uint flags) const { return (this->*write_fn)(data, length, nwrite, flags); }
@@ -71,6 +74,18 @@ namespace inet {
 		ssize_t(csocket::* write_to_fn)(const sockaddr_storage& sa, const void* data, size_t length, size_t& nwrite, uint flags) const { &csocket::write_to_nossl };
 		ssize_t(csocket::* read_from_fn)(sockaddr_storage& sa, void* data, size_t length, size_t& nread, uint flags) const { &csocket::read_from_nossl };
 	};
+
+	inline csocket& csocket::operator = (const csocket&& so)
+	{
+		fdSocket = so.fdSocket;
+		fdSsl = so.fdSsl;
+		fdPoll = so.fdPoll;
+		so.fdSocket = -1;
+		so.fdSsl.reset();
+		bcopy(&so.fdSa, &fdSa, sizeof(sockaddr_storage));
+		if (fdSsl) { write_fn = &csocket::write_ssl; read_fn = &csocket::read_ssl; }
+		return *this;
+	}
 
 	inline void csocket::SocketUpdateEvents(uint events) {
 		if (auto&& poll{ fdPoll.lock() }; poll and fdSocket > 0) {

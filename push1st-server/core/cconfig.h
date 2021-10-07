@@ -78,10 +78,10 @@ namespace core {
 		} Server;
 		struct cluster_t {
 			bool Enable{ false };
-			ssize_t Node;
 			sync_t Sync{ sync_t::type::none };
+			std::time_t PingInterval{ 30 };
 			cdsn Listen;
-			std::unordered_map<ssize_t, std::string> Nodes;
+			std::unordered_set<std::string> Nodes;
 		private:
 			friend class cconfig;
 			void load(const std::filesystem::path& path, const yaml_t& options);

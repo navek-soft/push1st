@@ -2,7 +2,7 @@
 #include "../medium.h"
 #include "../ccredentials.h"
 #include <shared_mutex>
-#include <deque>
+#include <unordered_set>
 #include "../cmessage.h"
 
 enum class autoclose_t { yes = 1, no = 2};
@@ -11,7 +11,7 @@ class csubscriber;
 class cchannels;
 
 
-using usersids_t = std::deque<std::string>;
+using usersids_t = std::unordered_set<std::string>;
 using userslist_t = std::unordered_map<std::string, std::string>;
 
 class cchannel {
@@ -23,9 +23,12 @@ public:
 	virtual size_t Push(message_t&& msg);
 	virtual inline void GetUsers(usersids_t&, userslist_t&) = 0;
 	inline channel_t::type Type() { return chType; }
-
 	inline size_t CountSubscribers() { return chSubscribers.size(); }
-
+	virtual inline void OnClusterJoin(const json::value_t& val) { ; }
+	virtual inline void OnClusterLeave(const json::value_t& val) { ; }
+	virtual inline void OnClusterPush(message_t&& msg) { cchannel::Push(std::move(msg)); }
+protected:
+	virtual inline void OnSubscriberLeave(const std::string& subscriber) = 0;
 protected:
 	channel_t chType{ channel_t::type::none };
 	
