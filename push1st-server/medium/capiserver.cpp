@@ -186,15 +186,21 @@ void capiserver::cunixapiserver::OnHttpData(fd_t fd, uint events, const sockaddr
 capiserver::cunixapiserver::cunixapiserver(capiserver& api, config::interface_t config, size_t httpMaxHeaderSize) :
 	inet::cunixserver{ "uapi:srv", false, 30 }, Api{ api }, HttpMaxHeaderSize{ httpMaxHeaderSize }
 {
-	std::filesystem::path saFile{ config.Unix.path() };
+	try {
+		std::filesystem::path saFile{ config.Unix.path() };
 
-	std::filesystem::create_directories(saFile.parent_path());
+		std::filesystem::create_directories(saFile.parent_path());
 
-	if (auto res = UnixListen(config.Unix.path(), true, 16); res == 0) {
-		syslog.ob.print("Api", "Unix ... enable, listen on %s, route /%s/", saFile.c_str(), config.Path.c_str());
+		if (auto res = UnixListen(config.Unix.path(), true, 16); res == 0) {
+			syslog.ob.print("Api", "Unix ... enable, listen on %s, route /%s/", saFile.c_str(), config.Path.c_str());
+		}
+		else {
+			syslog.error("Unix API Initialize server error ( %s )\n", std::strerror(-(int)res));
+			throw std::runtime_error("Unix API server exception");
+		}
 	}
-	else {
-		syslog.error("Unix API Initialize server error ( %s )\n", std::strerror(-(int)res));
+	catch (std::exception& ex) {
+		syslog.error("Unix API Initialize server error ( %s )\n", ex.what());
 		throw std::runtime_error("Unix API server exception");
 	}
 }

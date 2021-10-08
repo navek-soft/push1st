@@ -76,7 +76,8 @@ clean:
 	rm -rf ${BIN_DIR}/${BIN_EXEC}
 
 version:
-	@echo "#include \"version.h\"\nconst char* version::number{ \"${BUILD_TS}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${VERSION_NAME}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"  > ./version.cpp
+	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${VERSION_NAME}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"
+	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${VERSION_NAME}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"  > ./version.cpp
 
 deb: 
 	sudo chmod +x ./makedeb
