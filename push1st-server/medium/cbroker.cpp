@@ -37,7 +37,7 @@ int cbroker::Run() {
 void cbroker::OnIdle() {
     //printf("timeout\n");
     static size_t stat_counter{ 0 };
-    if ((++stat_counter) % 10) {
+    if (!((++stat_counter) % 10)) {
         printf("Channels: ( %ld )", Channels->Channels.size());
         if (!Channels->Channels.empty()) {
             printf("\t");
