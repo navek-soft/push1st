@@ -80,7 +80,7 @@ version:
 
 deb: 
 	sudo chmod +x ./makedeb
-	./makedeb ${BUILD_TS}.${BUILD_NO} ${VERSION_NAME} ${BRANCH_NAME}
+	./makedeb push1st package-${BRANCH_NAME} ${BUILD_TS}.${BUILD_NO} ${VERSION_NAME} ${BRANCH_NAME}
 	@echo "\033[1;32mmake deb \033[0m ${BIN_DIR}/naveksoft-beam.deb"
 
 archive:
