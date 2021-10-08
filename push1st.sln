@@ -22,6 +22,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{02C7B5F7-B
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "make", "make", "{A7E7FAB1-BF0E-4110-9517-8166C517D706}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ubuntu.yml = .github\workflows\ubuntu.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
