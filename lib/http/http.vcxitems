@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <ItemsProjectGuid>{c2d2ebf3-bc54-42fb-8667-2265135b5469}</ItemsProjectGuid>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectCapability Include="SourceItemsFromImports" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)chttp.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)chttpconn.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)chttpserver.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)cwebsocket.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)cwsconn.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)cwsserver.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)httpmsg.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)chttp.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)chttpconn.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)chttpserver.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)crouter.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)cwebsocket.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)cwsconn.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)cwsserver.h" />
+  </ItemGroup>
+</Project>
