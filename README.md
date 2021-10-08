@@ -5,7 +5,7 @@ PUB/SUB multiple protocol message broker server (Pusher, MQTT, RAW websocket)
  - Cross type channel messaging ( auto casting message between channel format )
  - Broadcast, Multicast, Unicast - message delivery, 
  - TTL for message
- - Muti-applications support ( credentials for every app )
+ - Multi-applications support ( credentials for every app )
  - Improved hooks  ( multiple http/https webhook with keeap-alive, lua hook,  for every app, triggered by register, unregister, join, leave or push into channel )
  - Support Pusher, Simple RawWebsocket ( with multiple channel subscription ), MQTT protocols
  - Support Keep-Alive for API and WebHook
