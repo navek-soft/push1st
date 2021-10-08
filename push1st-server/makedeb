@@ -69,8 +69,9 @@ chmod 0440 $DEB_SOFT_DIR/$SOFT_PROGRAM.logrotate
 
 ##############################
 # DEBIAN/control
-echo "Package: naveksoft-$SOFT_PROGRAM
+echo "Package: $SOFT_PROGRAM
 Version: $SOFT_NO.$SOFT_VERSION-$SOFT_REV
+Provides: naveksoft
 Maintainer: NavekSoft Inc. <contact@naveksoft.com>
 Architecture: amd64
 Section: misc
