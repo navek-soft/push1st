@@ -1,6 +1,6 @@
 #pragma once
 #include "medium.h"
-#include "../inet/cudpserver.h"
+#include "../../lib/inet/cudpserver.h"
 #include "../core/ci/cjson.h"
 #include "../core/ci/cspinlock.h"
 #include "ccredentials.h"

@@ -31,7 +31,7 @@ cluster:
 #    listen: disable # udp://<host>:<port>, multicast://<multicast-group-address>:<port>/<bind-iface-ip-address>
     ping-interval: 30 # 0 - to disable ping
     listen: udp://*:8001 # strongly recommended bind to internal IP or close port with iptables
-    family: [ node1.beam.local, node2.beam.local ]
+    family: [ node1.push1st.local, node2.push1st.local ]
 
 api:
     keep-alive-timeout: 10          # http api keep-alive connection timeout
@@ -39,7 +39,7 @@ api:
     ssl: { enable: false, *default-ssl }
     path: /apps/
     whitelist: []
-    listen: [ tcp://*:6002/, unix://opt/naveksoft/beam-server/beam.api ]
+    listen: [ tcp://*:6002/, unix:///opt/naveksoft/push1st/push1st.api ]
 
 credentials: 
     - apps/*.yml

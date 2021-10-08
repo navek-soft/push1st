@@ -1,5 +1,5 @@
 #pragma once
-#include "../http/cwsserver.h"
+#include "../../lib/http/cwsserver.h"
 #include "../core/cconfig.h"
 #include "ccredentials.h"
 

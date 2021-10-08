@@ -1,10 +1,10 @@
 #pragma once
-#include "../http/chttpserver.h"
-#include "../inet/cunixserver.h"
-#include "../http/chttpconn.h"
+#include "../../lib/http/chttpserver.h"
+#include "../../lib/inet/cunixserver.h"
+#include "../../lib/http/chttpconn.h"
 #include "../core/cconfig.h"
 #include "ccredentials.h"
-#include "../http/crouter.h"
+#include "../../lib/http/crouter.h"
 
 class cchannels;
 

@@ -10,4 +10,3 @@ app-test:
     endpoint:
         - http://127.0.0.1:6002/
         - http://localhost:6002/
-#        - https://beam.naveksoft.local/

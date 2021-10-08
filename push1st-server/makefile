@@ -2,15 +2,15 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
 SOURCES += $(call rwildcard,../lib/http/,*.cpp)
 SOURCES += $(call rwildcard,../lib/inet/,*.cpp)
-SOURCES += $(call rwildcard,push1st-server/,*.cpp)
+SOURCES += $(call rwildcard,../push1st-server/,*.cpp)
 
-INC                                     = -I ../lib/http -I ../lib/lua
+INC                                     = -I ../lib/http -I ../lib/inet
 CC                                      = g++
 CC_FLAGS                                = -W"no-format" -std=c++17 -fno-strict-aliasing
 CC_DFLAGS                               = ${INC}
-LIBS                                    = -lcrypto -lssl -llua5.3 -static-libgcc -static-libstdc++ \
-                                        -Wl,-Bstatic -lyaml-cpp \
-                                        -Wl,-Bdynamic -pthread
+LIBS                                    = -lcrypto -lssl -static-libgcc -static-libstdc++ \
+										-Wl,-Bstatic -lyaml-cpp \
+										-Wl,-Bdynamic -pthread
 
 
 VERSION_NAME                            = $(shell git describe `git rev-list --tags --max-count=1`)
@@ -26,6 +26,10 @@ endif
 
 ifeq ($(VERSION_NAME),)
 	VERSION_NAME := $(tag)
+endif
+
+ifeq ($(VERSION_NAME),)
+	VERSION_NAME := dev
 endif
 
 ifeq ($(REV_NAME),)
@@ -80,9 +84,9 @@ deb:
 	@echo "\033[1;32mmake deb \033[0m ${BIN_DIR}/naveksoft-beam.deb"
 
 archive:
-	mkdir -p scripts
-	cp build/${BIN_EXEC} beam-server
-	cp events-hook.lua scripts/events-hook.lua
-	cp -n server.yaml server.example.yaml
-	tar cvjf ${BIN_DIR}/naveksoft-beam.tar.bz2 beam-server server.example.yaml scripts/events-hook.lua
-	@echo "\033[1;32mmake tar \033[0m ${BIN_DIR}/naveksoft-beam.tar.bz2"
+	mkdir -p package-${BRANCH_NAME}/scripts package-${BRANCH_NAME}/apps
+	cp build/${BIN_EXEC} package-${BRANCH_NAME}/push1st
+	cp -n opt/server.example.yml package-${BRANCH_NAME}/server.example.yml
+	cp -n opt/apps/app.example.yml package-${BRANCH_NAME}/apps/app.example.yml
+	tar -cvjf push1st-${BRANCH_NAME}.tar.bz2 --transform='s/package-${BRANCH_NAME}\///g'  package-${BRANCH_NAME}/*
+	@echo "\033[1;32mmake tar \033[0m push1st-${BRANCH_NAME}.tar.bz2"

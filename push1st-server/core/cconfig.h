@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include "ci/cflag.h"
 #include "ci/cyaml.h"
-#include "../inet/cinet.h"
+#include "../../lib/inet/cinet.h"
 #include <ctime>
 
 namespace core {

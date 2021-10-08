@@ -1,6 +1,6 @@
 #pragma once
 #include "../core/cconfig.h"
-#include "../inet/cepoll.h"
+#include "../../lib/inet/cepoll.h"
 #include <vector>
 
 class chook;
