@@ -1,0 +1,142 @@
+#!/bin/bash
+INSTALL_DIR=opt/naveksoft
+SOFT_DESCRIPTION="Message Broker server"
+SOFT_PROGRAM=$1
+SOFT_PACKAGE=$2
+SOFT_NO=$3
+SOFT_VERSION=$4
+SOFT_REV=$5
+SOFT_BIN="$SOFT_PACKAGE/$SOFT_PROGRAM"
+DEB_BASE="$SOFT_PACKAGE/install/"
+DEB_DIR="$DEB_BASE/DEBIAN"
+INST_DIR="/$INSTALL_DIR/$SOFT_PROGRAM"
+DEB_SOFT_DIR="$DEB_BASE/$INSTALL_DIR/$SOFT_PROGRAM"
+
+##############################
+# build DEB package structure
+rm -rf $DEB_BASE
+mkdir -p $DEB_DIR $DEB_SOFT_DIR
+
+touch $DEB_DIR/{changelog,conffiles,control,copyright,dirs,md5sums,postinst,prerm}
+chmod +x $DEB_DIR/{postinst,prerm}
+
+rsync -r --exclude=*.tplc  --exclude=DEBIAN $SOFT_PACKAGE/* $DEB_SOFT_DIR
+
+##############################
+# create service file
+echo "[Unit]
+Description=NavekSoft $SOFT_DESCRIPTION
+After=network.target
+[Service]
+Type=simple
+User=root
+Group=root
+Restart=always
+RestartSec=1
+StandardOutput=append:/var/log/$SOFT_PROGRAM.log
+StandardError=append:/var/log/$SOFT_PROGRAM.err
+LimitNOFILE=65535
+WorkingDirectory=$INST_DIR
+ExecStart=$INST_DIR/$SOFT_PROGRAM -c $INST_DIR/server.yml -V3
+ExecStop=/bin/kill -s QUIT \$MAINPID
+
+[Install]
+WantedBy=multi-user.target" > $DEB_SOFT_DIR/$SOFT_PROGRAM.service
+
+chmod 0440 $DEB_SOFT_DIR/$SOFT_PROGRAM.service
+
+##############################
+# create logrotate file
+echo "/var/log/$SOFT_PROGRAM.log {
+  rotate 10
+  daily
+  compress
+  missingok
+  notifempty
+  copytruncate
+}
+
+/var/log/$SOFT_PROGRAM.err {
+  rotate 10
+  daily
+  compress
+  missingok
+  notifempty
+  copytruncate
+}" > $DEB_SOFT_DIR/$SOFT_PROGRAM.logrotate
+
+chmod 0440 $DEB_SOFT_DIR/$SOFT_PROGRAM.logrotate
+
+##############################
+# DEBIAN/control
+echo "Package: naveksoft-$SOFT_PROGRAM
+Version: $SOFT_NO.$SOFT_VERSION-$SOFT_REV
+Provides: naveksoft
+Maintainer: NavekSoft Inc. <contact@naveksoft.com>
+Architecture: amd64
+Section: misc
+Description: $SOFT_DESCRIPTION ( by NavekSoft Inc )
+Depends: libssl1.1
+Priority: optional
+Origin: https://www.naveksoft.com" > $DEB_DIR/control
+
+##############################
+# DEBIAN/changelog
+echo "$SOFT_PROGRAM ($SOFT_VERSION) stable; urgency=medium
+* Version (dev branch).
+-- NavekSoft Inc. <www.naveksoft.com>" > $DEB_DIR/changelog
+
+##############################
+# DEBIAN/postinst
+echo "#!/bin/bash -eu
+
+set -E
+
+# Trap non-normal exit signals:
+# 1/HUP, 2/INT, 3/QUIT, 15/TERM, ERR
+trap err_handler 1 2 3 15 ERR
+function err_handler {
+        local exit_status=${1:-$?}
+        logger -s -p \"syslog.err\" -t \"naveksoft-$PROGRAM.deb\" \"naveksoft-$PROGRAM.deb script '\$0' error code $exit_status (line $BASH_LINENO: '\$BASH_COMMAND')\"
+        exit $exit_status
+}
+
+# luarocks install lua-cjson2
+
+cp -s -f $INST_DIR/$SOFT_PROGRAM.logrotate /etc/logrotate.d/$SOFT_PROGRAM
+cp -s -f $INST_DIR/$SOFT_PROGRAM.service /etc/systemd/system/$SOFT_PROGRAM.service
+cp -n $INST_DIR/server.example.yml $INST_DIR/server.yml
+systemctl enable /etc/systemd/system/$SOFT_PROGRAM.service
+systemctl daemon-reload
+
+exit 0" > $DEB_DIR/postinst
+
+##############################
+# DEBIAN/prerm
+echo "#!/bin/bash -eu
+set -E
+
+trap err_handler 1 2 3 15 ERR
+function err_handler {
+        local exit_status=${1:-$?}
+        logger -s -p \"syslog.err\" -t \"$SOFT_PROGRAM-$SOFT_REV.deb\" \"$SOFT_PROGRAM-$SOFT_REV.deb script '\$0' error code $exit_status (line $BASH_LINENO: '\$BASH_COMMAND')\"
+        exit $exit_status
+}
+
+systemctl stop $SOFT_PROGRAM
+systemctl disable $SOFT_PROGRAM
+rm -rf /etc/logrotate.d/$SOFT_PROGRAM
+rm -rf /etc/systemd/system/$SOFT_PROGRAM.service
+systemctl daemon-reload
+systemctl reset-failed
+
+exit 0" > $DEB_DIR/prerm
+
+##############################
+# MD5 cecksum
+md5deep -r $DEB_SOFT_DIR > $DEB_DIR/md5sums
+
+##############################
+# make DEB package
+chmod -R 0755 ./$DEB_BASE
+fakeroot dpkg-deb --build ./$DEB_BASE $SOFT_PROGRAM-$SOFT_REV.deb

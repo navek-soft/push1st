@@ -152,6 +152,8 @@ void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<in
 			case proto::op_t::push:
 				OnClusterPush(sa, { (char*)frame->data.payload,nread - sizeof(proto::hdr_t) });
 				break;
+			default:
+				break;
 			}
 		}
 		else {

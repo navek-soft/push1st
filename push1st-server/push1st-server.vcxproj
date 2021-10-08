@@ -86,6 +86,7 @@
     <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="core\ci\ccmd.cpp" />
     <ClCompile Include="medium\capiserver.cpp" />
     <ClCompile Include="core\ci\cjson.cpp" />
     <ClCompile Include="medium\channels\cpresencechannel.cpp" />
@@ -105,12 +106,15 @@
     <ClCompile Include="medium\ccredentials.cpp" />
     <ClCompile Include="medium\chooks.cpp" />
     <ClCompile Include="test\test-http-route.cpp" />
+    <ClCompile Include="version.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="opt\apps\default.yml" />
-    <None Include="opt\server.yml" />
+    <None Include="makefile" />
+    <None Include="opt\apps\app.example.yml" />
+    <None Include="opt\server.example.yml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="core\ci\ccmd.h" />
     <ClInclude Include="medium\capiserver.h" />
     <ClInclude Include="core\ci\cspinlock.h" />
     <ClInclude Include="core\ci\nlohmann\json.hpp" />
@@ -134,6 +138,10 @@
     <ClInclude Include="medium\ccredentials.h" />
     <ClInclude Include="medium\chooks.h" />
     <ClInclude Include="medium\medium.h" />
+    <ClInclude Include="version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="makedeb" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

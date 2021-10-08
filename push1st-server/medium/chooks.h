@@ -1,8 +1,8 @@
 #pragma once
 #include "medium.h"
-#include "../inet/csocket.h"
+#include "../../lib/inet/csocket.h"
 #include "../core/ci/cspinlock.h"
-#include "../http/chttpconn.h"
+#include "../../lib/http/chttpconn.h"
 #include "cmessage.h"
 #include "../core/ci/cjson.h"
 

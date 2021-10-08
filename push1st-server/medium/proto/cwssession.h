@@ -1,6 +1,6 @@
-#include "../http/cwsconn.h"
+#include "../../../lib/http/cwsconn.h"
+#include "../../../lib/http/chttp.h"
 #include "../csubscriber.h"
-#include "../http/chttp.h"
 #include "../ccredentials.h"
 #include "../cchannels.h"
 #include "../../core/ci/cspinlock.h"
