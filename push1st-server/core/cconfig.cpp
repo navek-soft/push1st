@@ -108,7 +108,7 @@ void cconfig::cluster_t::load(const std::filesystem::path& path, const yaml_t& o
 
 		if (options["family"].IsSequence()) {
 			for (auto&& node : options["family"]) {
-				Nodes.emplace(Value<std::string>(node.second, {}));
+				Nodes.emplace(Value<std::string>(node, {}));
 			}
 		}
 		Enable = !Listen.empty();
@@ -225,9 +225,15 @@ void cconfig::credentials_t::load(const std::filesystem::path& basedir, const ya
 	}
 }
 
-void cconfig::Load(const std::filesystem::path& configfile) {
+void cconfig::Load(std::filesystem::path configfile) {
 	syslog.ob.print("Config file", "%s", configfile.c_str());
 	try {
+		std::filesystem::path progPath{ program_invocation_name };
+		
+		if (configfile.is_relative()) {
+			configfile = progPath.parent_path() / progPath;
+		}
+
 		Path = configfile.parent_path();
 
 		auto&& cfgOptions{ yaml::load(configfile) };
@@ -238,7 +244,8 @@ void cconfig::Load(const std::filesystem::path& configfile) {
 		Credentials.load(Path, cfgOptions["credentials"]);
 	}
 	catch (std::exception& ex) {
-		syslog.exit("Load config file ( %s )\n\tException ... %s\n", configfile.c_str(), ex.what());
+		printf("Load config file ( %s )\n\tException ... %s\n", configfile.c_str(), ex.what());
+		exit(0);
 	}
 }
 

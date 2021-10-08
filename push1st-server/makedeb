@@ -20,7 +20,7 @@ mkdir -p $DEB_DIR $DEB_SOFT_DIR
 touch $DEB_DIR/{changelog,conffiles,control,copyright,dirs,md5sums,postinst,prerm}
 chmod +x $DEB_DIR/{postinst,prerm}
 
-rsync -r --exclude=*.tplc  --exclude=DEBIAN $SOFT_PACKAGE/* $DEB_SOFT_DIR
+rsync -r --exclude=*.tplc  --exclude=install $SOFT_PACKAGE/* $DEB_SOFT_DIR
 
 ##############################
 # create service file

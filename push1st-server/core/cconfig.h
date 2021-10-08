@@ -45,7 +45,7 @@ namespace core {
 	public:
 		cconfig() { ; }
 		~cconfig() { ; }
-		void Load(const std::filesystem::path& configfile);
+		void Load(std::filesystem::path configfile);
 	public:
 		using proto_t = core::ci::cflag<core::cconfig::protocols_t>;
 		using sync_t = core::ci::cflag<core::cconfig::cluster_sync_t>;

@@ -29,7 +29,7 @@ void cudpserver::Listen(const std::shared_ptr<cpoll>& poll) {
 
 ssize_t cudpserver::UdpListen(const std::string_view& listenHostPort, bool reuseaddress, bool reuseport, bool nonblock) {
 	ssize_t res{ -1 };
-	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, listenHostPort, "0", AF_INET)) == 0 and (res = inet::UdpServer(srvFd, sa, reuseaddress, reuseport, nonblock) == 0)) {
+	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, listenHostPort, "0", AF_INET)) == 0 and (res = inet::UdpServer(srvFd, sa, reuseaddress, reuseport, nonblock)) == 0) {
 		return res;
 	}
 	inet::Close(srvFd);

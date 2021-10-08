@@ -196,13 +196,15 @@ ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster
 		syslog.ob.print("Cluster", " ... enable, listen on %s", std::string{ config.Listen.hostport() }.c_str());
 
 		for (auto&& nIt : config.Nodes) {
-			if (std::unique_ptr<cnode> node{ new cnode }; node and inet::GetSockAddr(node->NodeAddress, nIt, config.Listen.port(), AF_INET) == 0) {
-				node->NodeIp = inet::GetIp4(node->NodeAddress);
-				syslog.ob.print("Node", "%s ... enable, address %s", nIt.c_str(), inet::GetIp(node->NodeAddress).c_str());
-				clusNodes.emplace(node->NodeIp, std::move(node));
-			}
-			else {
-				syslog.ob.print("Node", "%s ... disabled ( address not resolved )", nIt.c_str());
+			if (!nIt.empty()) {
+				if (std::unique_ptr<cnode> node{ new cnode }; node and inet::GetSockAddr(node->NodeAddress, nIt, config.Listen.port(), AF_INET) == 0) {
+					node->NodeIp = inet::GetIp4(node->NodeAddress);
+					syslog.ob.print("Node", "%s ... enable, address %s", nIt.c_str(), inet::GetIp(node->NodeAddress).c_str());
+					clusNodes.emplace(node->NodeIp, std::move(node));
+				}
+				else {
+					syslog.ob.print("Node", "%s ... disabled ( address not resolved )", nIt.c_str());
+				}
 			}
 		}
 
