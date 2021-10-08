@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{02C7B5F7-B
 		test\pusher-cli.js = test\pusher-cli.js
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "make", "make", "{A7E7FAB1-BF0E-4110-9517-8166C517D706}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		lib\http\http.vcxitems*{c2d2ebf3-bc54-42fb-8667-2265135b5469}*SharedItemsImports = 9

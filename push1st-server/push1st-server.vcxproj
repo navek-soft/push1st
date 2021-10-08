@@ -105,8 +105,10 @@
     <ClCompile Include="medium\ccredentials.cpp" />
     <ClCompile Include="medium\chooks.cpp" />
     <ClCompile Include="test\test-http-route.cpp" />
+    <ClCompile Include="version.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="makefile" />
     <None Include="opt\apps\default.yml" />
     <None Include="opt\server.yml" />
   </ItemGroup>
@@ -134,6 +136,7 @@
     <ClInclude Include="medium\ccredentials.h" />
     <ClInclude Include="medium\chooks.h" />
     <ClInclude Include="medium\medium.h" />
+    <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
