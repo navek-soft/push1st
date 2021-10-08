@@ -168,7 +168,7 @@ void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<in
 void ccluster::Push(channel_t::type type, const app_t& app, sid_t channel, message_t&& msg)
 { 
 	if (clusFd and app->IsAllowTrigger(type, hook_t::type::push)) {
-		Send(proto::Pack(hook_t::type::push, { {"app", app->Id },{"channel", channel },{"data", msg::ref(msg)} }));
+		Send(proto::Pack(hook_t::type::push, { {"app", app->Id },{"channel", channel },{"data", (*msg)} }));
 	}
 }
 

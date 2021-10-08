@@ -24,16 +24,16 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
 		auto&& tmStart{ std::chrono::system_clock::now().time_since_epoch().count() };
 		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
 			if (message_t message; !content.empty() and (message = msg::unserialize(content, "api"))) {
-				auto&& msg{ msg::ref(message) };
-				if (msg.contains("channels") and msg["channels"].is_array() and msg.contains("name")) {
+//				auto&& msg{ msg::ref(message) };
+				if ((*message).contains("channels") and (*message)["channels"].is_array() and (*message).contains("name")) {
 					json::object_t reply;
-					reply["msg-id"] = msg["#msg-id"];
+					reply["msg-id"] = (*message)["#msg-id"];
 					reply["channels"] = json::object_t{};
 					std::string chName;
-					for (auto&& chIt : msg["channels"]) {
+					for (auto&& chIt : (*message)["channels"]) {
 						chName = chIt.get<std::string>();
 						if (auto&& ch{ Channels->Get(app,chName) }; ch) {
-							reply["channels"][chName] = ch->Push(dupChannelMessage(msg, chName));
+							reply["channels"][chName] = ch->Push(dupChannelMessage((*message), chName));
 						}
 						else {
 							reply["channels"][chName] = (size_t)0;
@@ -81,7 +81,6 @@ void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const ine
 }
 
 void capiserver::ApiOnWebHook(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
-	printf("\n\nWEBHOOK:%s\n%s\n\n", std::string{ method }.c_str(), content.c_str());
 	ApiResponse(fd, "200", {}, strncasecmp(http::GetValue(headers, "Connection", "Close").data(), "Keep-Alive", 10) == 0);
 }
 

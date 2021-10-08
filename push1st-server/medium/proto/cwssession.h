@@ -63,10 +63,9 @@ private:
 
 
 inline std::string cwssession::Pack(const message_t& message) {
-	auto&& msg{ msg::ref(message) };
 	return json::serialize({
-		{"event", msg["event"]}, {"channel", msg["channel"]},
-		{"#msg-time", std::chrono::system_clock::now().time_since_epoch().count() - msg["#msg-arrival"].get<size_t>()},
-		{"data", msg["data"]}, {"#msg-id", msg["#msg-id"]}, {"#msg-from", msg["#msg-from"]}
+		{"event", (*message)["event"]}, {"channel", (*message)["channel"]},
+		{"#msg-time", std::chrono::system_clock::now().time_since_epoch().count() - (*message)["#msg-arrival"].get<size_t>()},
+		{"data", (*message)["data"]}, {"#msg-id", (*message)["#msg-id"]}, {"#msg-from", (*message)["#msg-from"]}
 	});
 }

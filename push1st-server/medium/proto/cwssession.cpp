@@ -24,17 +24,16 @@ message_t cwssession::UnPack(data_t&& data) {
 
 void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	if (auto&& message{ UnPack({std::move(data),length}) }; message) {
-		auto msg{ msg::ref(message) };
-		if (auto&& chIt{ SubscribedTo.find(msg["channel"].get<std::string>())}; chIt != SubscribedTo.end()) {
+		if (auto&& chIt{ SubscribedTo.find((*message)["channel"].get<std::string>())}; chIt != SubscribedTo.end()) {
 			if (std::shared_ptr<cchannel> ch{ chIt->second.lock() }; ch) {
 				
 				if (EnablePushOnChannels & ch->Type()) {
 					ch->Push(std::move(message));
 					//App->Trigger(hook_t::type::push, message->at("channel"), Id(), { data, length });
-					syslog.print(4, "[ RAW:%s ] Push ( %s/%s )\n", Id().c_str(), msg["channel"].get<std::string>().c_str(), msg["event"].get<std::string>().c_str());
+					syslog.print(4, "[ RAW:%s ] Push ( %s/%s )\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
 				}
 				else {
-					syslog.print(4, "[ RAW:%s ] Push ( %s ) disable by config\n", Id().c_str(), msg["channel"].get<std::string>().c_str(), msg["event"].get<std::string>().c_str());
+					syslog.print(4, "[ RAW:%s ] Push ( %s ) disable by config\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
 				}
 			}
 			else {
@@ -43,7 +42,7 @@ void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr
 			return;
 		}
 		else {
-			syslog.print(4, "[ RAW:%s ] Push ( %s ) no channel subscription\n", Id().c_str(), msg["channel"].get<std::string>().c_str(), msg["event"].get<std::string>().c_str());
+			syslog.print(4, "[ RAW:%s ] Push ( %s ) no channel subscription\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
 		}
 	}
 }

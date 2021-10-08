@@ -8,8 +8,6 @@ namespace msg {
 
 	object_t unserialize(const std::string_view& data, const std::string& producer);
 	inline object_t unserialize(data_t&& data, const std::string& producer) { return unserialize(to_string(data), producer); }
-	inline json::value_t& ref(const object_t& obj) { return *(obj.get()); }
-
 	object_t make(json::value_t&& t, const std::string& producer);
 }
 

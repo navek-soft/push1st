@@ -36,7 +36,8 @@ int cbroker::Run() {
 
 void cbroker::OnIdle() {
     //printf("timeout\n");
-    if (0) {
+    static size_t stat_counter{ 0 };
+    if ((++stat_counter) % 10) {
         printf("Channels: ( %ld )", Channels->Channels.size());
         if (!Channels->Channels.empty()) {
             printf("\t");
@@ -46,6 +47,7 @@ void cbroker::OnIdle() {
         }
         printf("\n");
     }
+    Cluster->Ping();
 }
 
 void cbroker::Initialize(const core::cconfig& config) {
