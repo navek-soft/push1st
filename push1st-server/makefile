@@ -13,7 +13,7 @@ LIBS                                    = -lcrypto -lssl -static-libgcc -static-
 										-Wl,-Bdynamic -pthread
 
 
-VERSION_NAME                            = $(shell git describe `git rev-list --tags --max-count=1`)
+VERSION_NAME                            = $(shell git describe --tags `git rev-list --tags --max-count=1`)
 REV_NAME                                = $(shell git rev-parse --short HEAD)
 BRANCH_NAME                             = $(shell git rev-parse --abbrev-ref HEAD)
 TIMESTAMP                               = $(shell date "+%Y%m%d%H%M%S")
@@ -29,7 +29,7 @@ ifeq ($(VERSION_NAME),)
 endif
 
 ifeq ($(VERSION_NAME),)
-	VERSION_NAME := dev
+	VERSION_NAME := 0.1
 endif
 
 ifeq ($(REV_NAME),)
@@ -81,7 +81,7 @@ version:
 deb: 
 	sudo chmod +x ./makedeb
 	./makedeb push1st package-${BRANCH_NAME} ${BUILD_TS}.${BUILD_NO} ${VERSION_NAME} ${BRANCH_NAME}
-	@echo "\033[1;32mmake deb \033[0m ${BIN_DIR}/naveksoft-beam.deb"
+	@echo "\033[1;32mmake deb \033[0m push1st-${BRANCH_NAME}.deb"
 
 archive:
 	mkdir -p package-${BRANCH_NAME}/scripts package-${BRANCH_NAME}/apps
