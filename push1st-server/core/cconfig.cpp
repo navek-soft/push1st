@@ -251,7 +251,7 @@ void cconfig::Load(std::filesystem::path configfile) {
 
 
 bool cconfig::cdsn::assign(const std::string& dsn) {
-	static const std::regex re(R"(^([\w-]+://)?((?:([^:@]+)(?:\:(.+))?@)?(([^:/]+)(?::(\d+))?)(([^?]*)(.*))))");
+	static const std::regex re(R"(^([\w-]+://?)?((?:([^:@]+)(?:\:(.+))?@)?(/?([^:/]+)(?::(\d+))?)(([^?]*)(.*))))");
 	Value.assign(dsn);
 	std::string_view src{ Value };
 	std::cmatch match;
