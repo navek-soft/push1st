@@ -87,8 +87,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="core\ci\ccmd.cpp" />
+    <ClCompile Include="core\lua\clua.cpp" />
     <ClCompile Include="medium\capiserver.cpp" />
-    <ClCompile Include="core\ci\cjson.cpp" />
     <ClCompile Include="medium\channels\cpresencechannel.cpp" />
     <ClCompile Include="medium\channels\cprivatechannel.cpp" />
     <ClCompile Include="medium\proto\cpushersession.cpp" />
@@ -115,6 +115,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core\ci\ccmd.h" />
+    <ClInclude Include="core\lua\clua.h" />
     <ClInclude Include="medium\capiserver.h" />
     <ClInclude Include="core\ci\cspinlock.h" />
     <ClInclude Include="core\ci\nlohmann\json.hpp" />
@@ -149,7 +150,7 @@
       <PreprocessorDefinitions>DEBUG</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp</LibraryDependencies>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;lua5.3</LibraryDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -157,7 +158,7 @@
       <CppLanguageStandard>c++17</CppLanguageStandard>
     </ClCompile>
     <Link>
-      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp</LibraryDependencies>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;lua5.3</LibraryDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
