@@ -13,7 +13,7 @@ LIBS                                    = -lcrypto -lssl -llua5.3 -static-libgcc
 										-Wl,-Bdynamic -pthread
 
 
-VERSION_NAME                            = $(shell git describe --tags `git rev-list --tags --max-count=1`)
+VERSION_NAME                            = $(shell git describe `git rev-list --tags --max-count=1`)
 REV_NAME                                = $(shell git rev-parse --short HEAD)
 BRANCH_NAME                             = $(shell git rev-parse --abbrev-ref HEAD)
 TIMESTAMP                               = $(shell date "+%Y%m%d%H%M%S")
@@ -59,8 +59,8 @@ clean:
 	rm -rf ${BIN_DIR}/${BIN_EXEC}
 
 version:
-	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${VERSION_NAME}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"
-	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${VERSION_NAME}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"  > ./version.cpp
+	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${BUILD_TS}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"
+	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${BUILD_TS}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"  > ./version.cpp
 
 deb: 
 	sudo chmod +x ./makedeb
