@@ -8,7 +8,7 @@ INC                                     = -I ../lib/http -I ../lib/inet
 CC                                      = g++
 CC_FLAGS                                = -W"no-format" -std=c++17 -fno-strict-aliasing
 CC_DFLAGS                               = ${INC}
-LIBS                                    = -lcrypto -lssl -static-libgcc -static-libstdc++ \
+LIBS                                    = -lcrypto -lssl -ldl -static-libgcc -static-libstdc++ \
 										-Wl,-Bstatic -lyaml-cpp -llua5.3\
 										-Wl,-Bdynamic -pthread
 
