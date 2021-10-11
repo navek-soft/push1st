@@ -76,7 +76,7 @@ Maintainer: NavekSoft Inc. <contact@naveksoft.com>
 Architecture: amd64
 Section: misc
 Description: $SOFT_DESCRIPTION ( by NavekSoft Inc )
-Depends: libssl1.1
+Depends: libssl1.1 lua5.3 liblua5.3-0
 Priority: optional
 Origin: https://www.naveksoft.com" > $DEB_DIR/control
 
