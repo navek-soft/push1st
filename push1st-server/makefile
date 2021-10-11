@@ -64,7 +64,7 @@ version:
 
 deb: 
 	sudo chmod +x ./makedeb
-	./makedeb push1st package-${BRANCH_NAME} ${BUILD_TS}.${BUILD_NO} ${VERSION_NAME} ${BRANCH_NAME}
+	./makedeb push1st package-${BRANCH_NAME} ${VERSION_NAME}.${BUILD_NO} ${BUILD_TS} ${BRANCH_NAME}
 	@echo "\033[1;32mmake deb \033[0m push1st-${BRANCH_NAME}.deb"
 
 archive:
