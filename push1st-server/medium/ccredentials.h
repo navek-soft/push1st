@@ -13,14 +13,19 @@ class ccredentials : public std::enable_shared_from_this<ccredentials>
 	public:
 		capplication(const std::shared_ptr<cbroker>& broker, const config::credential_t& app);
 		~capplication() = default;
-		inline bool IsAllowChannel(channel_t::type type, const std::string& session, const std::string_view& channel, const std::string_view& token, const std::string& data = {}) {
-			return (Channels & type) and ((type == channel_t::type::pub) or Validate(token, session, std::string{ channel }, data));
+		inline bool IsAllowChannelSession(channel_t::type type, const std::string& session, const std::string_view& channel, const std::string_view& token, const std::string& data = {}, const std::string& origin = {}) {
+			return (Channels & type) and (Origins.empty() or Origins.count(origin)) and  ((type == channel_t::type::pub ) or ValidateSession(token, session, std::string{ channel }, data, origin));
+		}
+		inline bool IsAllowChannelToken(channel_t::type type, const std::string& session, const std::string_view& channel, const std::string_view& token, const std::string& data = {}, const std::string& origin = {}) {
+			return (Channels & type) and (Origins.empty() or Origins.count(origin)) and ((type == channel_t::type::pub) or ValidateToken(token, session, std::string{ channel }, data, origin));
 		}
 		inline bool IsAllowTrigger(channel_t::type type, hook_t::type trigger) {
 			return (Channels & type) and (Hooks & trigger);
 		}
-		bool Validate(std::string_view token, const std::string& session, const std::string& channel, const std::string& custom_data);
-		std::string Token(const std::string& session, const std::string& channel, const std::string& custom_data);
+		std::string SessionToken(const std::string& session, const std::string& channel, const std::string& custom_data);
+		std::string AccessToken(const std::string& origin, const std::string& channel, size_t ttl);
+		bool ValidateSession(std::string_view token, const std::string& session, const std::string& channel, const std::string& custom_data, const std::string& origin);
+		bool ValidateToken(std::string_view token, const std::string& session, const std::string& channel, const std::string& custom_data, const std::string& origin);
 		void Trigger(channel_t::type type, hook_t::type trigger, sid_t channel, sid_t session, json::value_t&&);
 	private:
 		std::vector<std::unique_ptr<chook>> HookEndpoints;

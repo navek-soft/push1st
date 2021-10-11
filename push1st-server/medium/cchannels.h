@@ -30,6 +30,10 @@ public:
 		}
 		return {};
 	}
+	inline std::unordered_map<std::string, std::shared_ptr<cchannel>> List() {
+		std::unique_lock<decltype(Sync)> lock{ Sync };
+		return { Channels.begin(),Channels.end() };
+	}
 	void UnRegister(const std::string& name);
 private:
 	friend class cbroker;

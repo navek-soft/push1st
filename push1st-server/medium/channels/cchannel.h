@@ -27,6 +27,8 @@ public:
 	virtual inline void OnClusterJoin(const json::value_t& val) { ; }
 	virtual inline void OnClusterLeave(const json::value_t& val) { ; }
 	virtual inline void OnClusterPush(message_t&& msg) { cchannel::Push(std::move(msg)); }
+	virtual json::value_t ApiStats();
+	virtual json::value_t ApiOverview();
 protected:
 	virtual inline void OnSubscriberLeave(const std::string& subscriber) = 0;
 protected:

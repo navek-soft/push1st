@@ -20,7 +20,7 @@ namespace http {
 
 			inline bool compare(const std::vector<std::string_view>& r, std::vector<std::string_view>& args) const {
 				for (size_t n{ 1 }; n < path.size(); ++n) {
-					if (path[n] == "?") { args.emplace_back(r[n]);  continue; }
+					if (path[n] == "?") { args.emplace_back(n < r.size() ? r[n] : std::string_view{} ); continue; }
 					if (path[n] == "*") { args.insert(args.end(), r.begin() + n, r.end()); return true; }
 					if (path[n] != r[n]) { return false; }
 				}

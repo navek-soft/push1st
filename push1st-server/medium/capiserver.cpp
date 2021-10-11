@@ -59,16 +59,55 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
 	}
 }
 
+void capiserver::ApiOnChannels(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
+	if (method == "GET") {
+		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
+			if (vals[1].empty()) {
+				json::array_t chList;
+				for (auto&& [chName, chObj] : Channels->List()) {
+					/* All channels list, filter by app-id */
+					if (std::strncmp(app->Id.data(), chName.data(), app->Id.length()) == 0) {
+						chList.emplace_back(chObj->ApiStats());
+					}
+				}
+				ApiResponse(fd, "200", json::serialize(chList), strncasecmp(http::GetValue(headers, "Connection", "Close").data(), "Keep-Alive", 10) == 0);
+			}
+			else if (auto&& ch{ Channels->Get(app,std::string{vals[1]}) }; ch) {
+				ApiResponse(fd, "200", json::serialize(ch->ApiOverview()), strncasecmp(http::GetValue(headers, "Connection", "Close").data(), "Keep-Alive", 10) == 0);
+			}
+			else {
+				ApiResponse(fd, "404");
+			}
+		}
+		else {
+			ApiResponse(fd, "403");
+		}
+	}
+	else {
+		ApiResponse(fd, "400");
+	}
+}
 
 void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
 	if (method == "POST") {
 		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
-			if (json::value_t request; cjson::unserialize(content, request) and request.is_object() and request.contains("session") and request.contains("channel")) {
-				auto&& token{ app->Token(request["session"].get<std::string>(), request["channel"].get<std::string>(), !request.contains("data") ? std::string{} : request["data"].get<std::string>()) };
-				ApiResponse(fd, "200", token);
+			if (vals[1] == "session") {
+				if (json::value_t request; cjson::unserialize(content, request) and request.is_object() and request.contains("session") and request.contains("channel")) {
+					auto&& token{ app->SessionToken(request["session"].get<std::string>(), request["channel"].get<std::string>(), !request.contains("data") ? std::string{} : request["data"].get<std::string>()) };
+					ApiResponse(fd, "200", token);
+				}
+				else {
+					ApiResponse(fd, "400");
+				}
 			}
-			else {
-				ApiResponse(fd, "400");
+			else if (vals[1] == "access") {
+				if (json::value_t request; cjson::unserialize(content, request) and request.is_object() and request.contains("origin") and request.contains("channel") and request.contains("ttl")) {
+					auto&& token{ app->AccessToken(request["origin"].get<std::string>(), request["channel"].get<std::string>(), request["ttl"].is_number() ? request["ttl"].get<size_t>() : 0) };
+					ApiResponse(fd, "200", token);
+				}
+				else {
+					ApiResponse(fd, "400");
+				}
 			}
 		}
 		else {
@@ -126,11 +165,17 @@ capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::sh
 	ApiRoutes.add("/" + config.Path + "/?/events/", std::bind(&capiserver::ApiOnEvents, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	/* Generate private\presense session token */
-	ApiRoutes.add("/" + config.Path + "/?/token/", std::bind(&capiserver::ApiOnToken, this,
+	ApiRoutes.add("/" + config.Path + "/?/token/?/", std::bind(&capiserver::ApiOnToken, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 
+	ApiRoutes.add("/" + config.Path + "/?/channels/?/", std::bind(&capiserver::ApiOnChannels, this,
+		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+
+#ifdef DEBUG
 	ApiRoutes.add("/webhook/*", std::bind(&capiserver::ApiOnWebHook, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+#endif // DEBUG
+
 }
 
 capiserver::~capiserver() {

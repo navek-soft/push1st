@@ -4,6 +4,31 @@
 #include "../csubscriber.h"
 #include "../cchannels.h"
 
+json::value_t cchannel::ApiStats() {
+	return json::object_t{
+		{"channel", chName },
+		{"type", str(chType)},
+		{"close",chMode == autoclose_t::yes ? "auto" : "manual"},
+		{"sess_count",chSubscribers.size()}
+	};
+}
+
+json::value_t cchannel::ApiOverview() {
+	json::array_t sess;
+	{
+		std::shared_lock<decltype(chSubscribersLock)> lock;
+		for (auto&& [sid, ses] : chSubscribers) {
+			sess.emplace_back(sid);
+		}
+	}
+	return json::object_t{
+		{"channel", chName },
+		{"type", str(chType)},
+		{"close",chMode == autoclose_t::yes ? "auto" : "manual"},
+		{"sessions",sess}
+	};
+}
+
 size_t cchannel::Push(message_t&& message) {
 	std::forward_list<std::string> sessLeave;
 	size_t nSubscribers{ 0 };
