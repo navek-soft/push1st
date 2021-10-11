@@ -13,33 +13,16 @@ LIBS                                    = -lcrypto -lssl -llua5.3 -static-libgcc
 										-Wl,-Bdynamic -pthread
 
 
-VERSION_NAME                            = $(tag) #$(shell git describe --tags `git rev-list --tags --max-count=1`)
-REV_NAME                                = $(name) #$(shell git rev-parse --short HEAD)
-BRANCH_NAME                             = $(branch) #$(shell git rev-parse --abbrev-ref HEAD)
+VERSION_NAME                            = $(shell git describe --tags `git rev-list --tags --max-count=1`)
+REV_NAME                                = $(shell git rev-parse --short HEAD)
+BRANCH_NAME                             = $(shell git rev-parse --abbrev-ref HEAD)
 TIMESTAMP                               = $(shell date "+%Y%m%d%H%M%S")
 BUILD_NO                                = $(build)
-BUILD_TS								= $(shell date "+%y%j")
+BUILD_TS				= $(shell date "+%y%j")
 
 ifeq ($(BUILD_NO),)
 	BUILD_NO := 0
 endif
-
-ifeq ($(VERSION_NAME),)
-	VERSION_NAME := $(tag)
-endif
-
-ifeq ($(VERSION_NAME),)
-	VERSION_NAME := 0.1
-endif
-
-ifeq ($(REV_NAME),)
-	REV_NAME := ${TIMESTAMP}
-endif
-
-ifeq ($(BRANCH_NAME),)
-	BRANCH_NAME := dev
-endif
-
 
 
 BIN_EXEC   = push1st-${VERSION_NAME}-${BRANCH_NAME}
