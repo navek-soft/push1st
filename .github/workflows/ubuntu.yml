@@ -27,9 +27,10 @@ jobs:
         with:
           submodules: recursive
       - name: Set globals
-          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
-          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+        run: |
+            echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+            echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+            echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
 #      - name: Install build dependencies
 #        run: sudo apt -y install libyaml-cpp-dev libssl-dev lua5.3 liblua5.3-dev md5deep fakeroot
 #      - name: Build binaries and upload to nexus
