@@ -13,7 +13,7 @@ LIBS                                    = -lcrypto -lssl -llua5.3 -static-libgcc
 										-Wl,-Bdynamic -pthread
 
 
-VERSION_NAME                            = $(ver) #$(shell git describe `git rev-list --tags --max-count=1`)
+VERSION_NAME                            = $(ver)#$(shell git describe `git rev-list --tags --max-count=1`)
 REV_NAME                                = $(shell git rev-parse --short HEAD)
 BRANCH_NAME                             = $(shell git rev-parse --abbrev-ref HEAD)
 TIMESTAMP                               = $(shell date "+%Y%m%d%H%M%S")
