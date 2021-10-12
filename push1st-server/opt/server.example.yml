@@ -32,6 +32,7 @@ cluster:
     ping-interval: 30 # 0 - to disable ping
     listen: udp://*:8001 # strongly recommended bind to internal IP or close port with iptables
     family: [ node1.push1st.local, node2.push1st.local ]
+    sync: [ register, unregister, join, leave, push ]
 
 api:
     keep-alive-timeout: 10          # http api keep-alive connection timeout

@@ -35,19 +35,18 @@ int cbroker::Run() {
 }
 
 void cbroker::OnIdle() {
-    //printf("timeout\n");
     static size_t stat_counter{ 0 };
-    if (!((++stat_counter) % 10)) {
-        printf("Channels: ( %ld )", Channels->Channels.size());
+    if (syslog.is(4) and !((++stat_counter) % 10)) {
+        syslog.print(4, "Channels: ( %ld )", Channels->Channels.size());
         if (!Channels->Channels.empty()) {
-            printf(" ");
+            syslog.print(4, " ");
             for (auto&& ch : Channels->Channels) {
-                printf("%s ( %ld ) ", ch.first.c_str(), ch.second->CountSubscribers());
+                syslog.print(4, "%s ( %ld ) ", ch.first.c_str(), ch.second->CountSubscribers());
             }
         }
-        printf("\n");
+        syslog.print(4, "\n");
     }
-    //Cluster->Ping();
+    Cluster->Ping();
 }
 
 void cbroker::Initialize(const core::cconfig& config) {

@@ -31,7 +31,7 @@ namespace proto {
 			auto hdr{ (hdr_t*)frame.first.get() };
 			hdr->fr = 0;
 			hdr->sf = 1;
-			hdr->lt = 0;
+			hdr->lt = 1;
 			hdr->op = op;
 			hdr->data.sh.len = (uint16_t)packedData.size();
 			std::memcpy(hdr->data.sh.payload, packedData.data(), packedData.size());
@@ -202,7 +202,7 @@ void ccluster::Ping() {
 }
 
 ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster_t& config) :
-	inet::cudpserver("clus:srv"), Broker{ broker }, clusPingInterval{ config.PingInterval }
+	inet::cudpserver("clus:srv"), Broker{ broker }, clusPingInterval{ config.PingInterval }, clusSync{ config.Sync }
 {
 	if (config.Enable) {
 		

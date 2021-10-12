@@ -11,10 +11,10 @@
 namespace core {
 	class cconfig {
 		enum class protocols_t { none = 0, pusher = 1, websocket = 2, mqtt3 = 4 };
-		enum class cluster_sync_t { none = 0, session = 1, stat = 2, health = 4};
 		enum class api_driver_t { disable = 0, pusher = 1, push1st = 2 };
 		enum class channels_t { none = 0, pub = 1, priv = 2, pres = 4, prot = 8 };
 		enum class hook_trigger_t { none = 0, reg = 1, unreg = 2, join = 4, leave = 8, push = 16 };
+		using cluster_sync_t = hook_trigger_t;
 
 		class cdsn {
 		public:
