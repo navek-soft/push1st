@@ -6,10 +6,10 @@ Push1ST is open source PUB/SUB multiple protocol message broker server (Pusher, 
  - [x] Broadcast, Multicast, Unicast - message delivery, 
  - [x] Muti-applications support ( credentials for every app )
  - [x] Improved hooks  ( multiple http/https webhooks, lua hook,  for every app, triggered by register, unregister, join, leave or push into channel )
- - Support multiple prtocols 
- - [x] Pusher
- - [x] Raw WebSocket ( with multiple channel subscription )
- - [ ] MQTT protocols (todo)
+ - [x] Support multiple prtocols 
+  - [x] Pusher
+  - [x] Raw WebSocket ( with multiple channel subscription )
+  - [ ] MQTT protocols (todo)
  - [x] Support Keep-Alive for API and WebHook
  - [x] Public, Private, Presence channels support
  - [x] Permanent or auto-closing channel 
