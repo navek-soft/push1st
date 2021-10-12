@@ -54,9 +54,9 @@ Build from source code [build instruction](/readme/build.md).
 - [Клиенты Pusher](https://pusher.com/docs/channels/channels_libraries/libraries/)
 - Либой WebSocket client для RawWebSocket
 
-ws://localhost:6001/pusher/app/{{app-key}}/ 
+ws://localhost:6001/pusher/app/`{{app-key}}`/ 
 
-ws://localhost:6001/ws/app/{{app-key}}/{channel-name-1}/{channel-name-2}/[?session=prefix&[token=access-token]]
+ws://localhost:6001/ws/app/`{{app-key}}`/`{channel-name-1}`/`{channel-name-2}`/[?`session=prefix`&`token=access-token`]
 
 
 [Push1ST API](/readme/api.md)
