@@ -23,7 +23,7 @@ curl --location --request POST 'http://localhost:6002/apps/app-test/token/sessio
 
 Метод | Запрос | Тело запроса | Ответ 
 ----- | ------ | -------------| -----
-POST | {{api-server}}/{{app-id}}/token/access/ | {<br>"channel": "*", `# * for any channel`<br>"origin": "*", `# * any origin`<br>"ttl": 0 `# seconds token time, 0 - infinite`<br>} | 200 OK `token-string`
+POST | {{api-server}}/{{app-id}}/token/access/ | {<br>"channel": "\*", `# * for any channel`<br>"origin": "\*", `# * any origin`<br>"ttl": 0 `# seconds token time, 0 - infinite`<br>} | 200 OK `token-string`
 
 Пример:
 ```bash
