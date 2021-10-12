@@ -1,5 +1,5 @@
 # NavekSoft Push1ST
-Push1ST is open source PUB/SUB multiple protocol message broker server (Pusher, MQTT, RAW websocket) 
+Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket) 
 
 ## Key features
  - [x] Cross type channel messaging ( auto casting message between channel protocol format )
@@ -18,7 +18,7 @@ Push1ST is open source PUB/SUB multiple protocol message broker server (Pusher, 
  - [x] API access token, Pusher key generation, channels API
  - [x] Support WebSocket push messaging
  - [x] Websocket channel authorization by Bearer access token
- - [ ] IP whitelist for every enabled protocol (todo)
+ - [ ] IP whitelist for every enabled protocol
  - [x] Suitable for distributed one-to-many communications and distributed applications 
  - [x] TCP/IP as basic communication protocol
  - [x] ws/wss proto ( auto generate self-signed certificate if cer\key not specified )
@@ -48,8 +48,13 @@ Build from source code [build instruction](/readme/build.md).
   
 ```
 
-
 ## API documentation
+
+[Push1ST support several API requests](/readme/api.md)
+
+- Key, Token generation methods
+- Channels info
+- Push events to channels
 
 ## Support
 
