@@ -15,7 +15,7 @@
 
 ###### Make Push1ST
 ```bash
-	cd push1st
+	cd push1st-server
 	make build=0 ver=0 bname=src all
 ```
 
