@@ -29,7 +29,7 @@ Install from APT ( Ubuntu, Debian ) repository [installation guide](/readme/inst
 
 Build from source code [build instruction](/readme/build.md).
 
-## Usage, run push1st server
+## Run push1st server
 
 После установки или сборки необходимо сконфигурировать ( [Configure push1st](/readme/configure.md) ) сервер. Push1ST по умолчанию устанаваливается в директорию /opt/naveksoft/push1st
 В случае установки из репозитория сервер регистрируется как служба systemd ( служба не запускается автоматически, необходм ручной запуск. )
@@ -48,9 +48,18 @@ Build from source code [build instruction](/readme/build.md).
   
 ```
 
-## API documentation
+## Usage and API 
 
-[Push1ST support several API requests](/readme/api.md)
+Для подключения клиентов к каналам необходимо воспользоваться библиотеками:
+- Pusher ( для Pusher )
+- Либой WebSocket client
+
+ws://localhost:6001/pusher/app/{{app-key}}/ 
+
+ws://localhost:6001/ws/app/{{app-key}}/{channel-name-1}/{channel-name-2}/[?session=prefix&[token=access-token]]
+
+
+[Push1ST API](/readme/api.md)
 
 - Key, Token generation methods
 - Channels info
