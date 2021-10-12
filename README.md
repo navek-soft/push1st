@@ -25,7 +25,7 @@ Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher]
 
 ## Installation guide
 
-Install from APT ( Ubuntu, Debian ) repository installation [instruction guide](/readme/installation.md).
+Install from APT ( Ubuntu, Debian ) repository [installation guide](/readme/installation.md).
 
 Build from source code [build instruction](/readme/build.md).
 
