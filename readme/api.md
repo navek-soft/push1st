@@ -11,11 +11,8 @@
 }
 ```
 
-`POST` | `{{api-server}}/{{app-id}}/token/session/`
------- | ------------------------------------------
-Body   | {<br>"session": "1234", `# pusher session id`<br>"channel": "private-user.1", `# channel subscription name`<br>"data": "" `# custom data (optional)`<br>}
-Response       | 200 OK `token-string`
-       
+`Response` 200 OK `token-string`
+
 Пример:
 ```bash
 curl --location --request POST 'http://localhost:6002/apps/app-test/token/session/' \
