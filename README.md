@@ -31,7 +31,7 @@ Build from source code [build instruction](/readme/build.md).
 
 ## Usage, run push1st server
 
-После установки или сборки необходимо сконфигурировать ( [Configure push1st] (/readme/configure.md) ) сервер. Push1ST по умолчанию устанаваливается в директорию /opt/naveksoft/push1st
+После установки или сборки необходимо сконфигурировать ( [Configure push1st](/readme/configure.md) ) сервер. Push1ST по умолчанию устанаваливается в директорию /opt/naveksoft/push1st
 В случае установки из репозитория сервер регистрируется как служба systemd ( служба не запускается автоматически, необходм ручной запуск. )
 
 ```bash
