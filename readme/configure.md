@@ -1,6 +1,9 @@
 ### Конфигурирование Push1ST
 
-#### Параметры сервера
+По умолчанию файлы конфигурации находятся в /opt/naveksoft/push1st/server.example.yaml
+Каждое приложение (application) описывается отдельным yaml файлом
+
+#### Параметры сервера (server.yaml)
 
 ```yaml
 # ssl forward declaration
@@ -51,7 +54,7 @@ credentials:
     - apps/*.yml
 ```
 
-#### Регистрация приложения и установка разрешений
+#### Регистрация приложения и установка разрешений ( apps/app.example.yaml)
 
 ```yaml
 app-test:   # Application ID ( used in API request methods )
