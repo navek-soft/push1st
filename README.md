@@ -7,9 +7,9 @@ Push1ST is open source PUB/SUB multiple protocol message broker server (Pusher, 
  - [x] Muti-applications support ( credentials for every app )
  - [x] Improved hooks  ( multiple http/https webhooks, lua hook,  for every app, triggered by register, unregister, join, leave or push into channel )
  - [x] Support multiple prtocols 
-  - [x] Pusher
-  - [x] Raw WebSocket ( with multiple channel subscription )
-  - [ ] MQTT protocols (todo)
+   - [x] Pusher
+   - [x] Raw WebSocket ( with multiple channel subscription )
+   - [ ] MQTT protocols (todo)
  - [x] Support Keep-Alive for API and WebHook
  - [x] Public, Private, Presence channels support
  - [x] Permanent or auto-closing channel 
@@ -31,7 +31,7 @@ Build from source code [build instruction](/readme/build.md).
 
 ## Usage, run push1st server
 
-После установки или сборки необходимо сконфигурировать ( Конфигурирование push1st ) сервер. Push1ST по умолчанию устанаваливается в директорию /opt/naveksoft/push1st
+После установки или сборки необходимо сконфигурировать ( [Configure push1st] (/readme/configure.md) ) сервер. Push1ST по умолчанию устанаваливается в директорию /opt/naveksoft/push1st
 В случае установки из репозитория сервер регистрируется как служба systemd ( служба не запускается автоматически, необходм ручной запуск. )
 
 ```bash
@@ -41,10 +41,10 @@ Build from source code [build instruction](/readme/build.md).
  Для запуска push1st из командной строки ( не как служба )
 
 ```bash
-  /opt/naveksoft/push1st -c /opt/naveksoft/push1st/server.yml -V4
+  /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V4
   
-  # Для просомтра все параметров коммандой строки
-  /opt/naveksoft/push1st --help
+  # Для просмотра всех параметров коммандой строки
+  /opt/naveksoft/push1st/push1st --help
   
 ```
 
