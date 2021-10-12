@@ -40,14 +40,14 @@ void cbroker::OnIdle() {
     if (!((++stat_counter) % 10)) {
         printf("Channels: ( %ld )", Channels->Channels.size());
         if (!Channels->Channels.empty()) {
-            printf("\t");
+            printf(" ");
             for (auto&& ch : Channels->Channels) {
                 printf("%s ( %ld ) ", ch.first.c_str(), ch.second->CountSubscribers());
             }
         }
         printf("\n");
     }
-    Cluster->Ping();
+    //Cluster->Ping();
 }
 
 void cbroker::Initialize(const core::cconfig& config) {
@@ -61,15 +61,17 @@ void cbroker::Initialize(const core::cconfig& config) {
     ApiServer = std::make_shared<capiserver>(Channels, Credentials, config.Api);
     if (!config.Server.Proto.empty()) { WsServer = std::make_shared<cwebsocketserver>(Channels, Credentials, config.Server); }
 
+    syslog.ob.flush(1);
+
     ServerPoll.reserve(config.Server.Threads);
     for (auto n{ config.Server.Threads }; n--;) {
         ServerPoll.emplace_back(std::make_shared<inet::cpoll>());
         if (WsServer) { WsServer->Listen(ServerPoll.back()); }
         ApiServer->Listen(ServerPoll.back());
+        Cluster->Listen(ServerPoll.back());
         ServerPoll.back()->Listen();
     }
  
-    syslog.ob.flush(1);
 
     WaitFor({ SIGINT, SIGQUIT, SIGABRT, SIGSEGV, SIGHUP });
 
