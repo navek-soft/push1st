@@ -15,15 +15,22 @@ LIBS                                    = -lcrypto -lssl -llua5.3 -static-libgcc
 
 VERSION_NAME                            = $(ver)#$(shell git describe `git rev-list --tags --max-count=1`)
 REV_NAME                                = $(shell git rev-parse --short HEAD)
-BRANCH_NAME                             = $(shell git branch --show-current)
+BRANCH_NAME                             = $(bname)#$(shell git rev-parse --abbrev-ref HEAD)
 TIMESTAMP                               = $(shell date "+%Y%m%d%H%M%S")
 BUILD_NO                                = $(build)
-BUILD_TS				= $(shell date "+%y%j")
+BUILD_TS								= $(shell date "+%y%j")
 
 ifeq ($(BUILD_NO),)
-	BUILD_NO := 0
+	BUILD_NO := ${BUILD_TS}
 endif
 
+ifeq ($(BRANCH_NAME),)
+	BRANCH_NAME := src
+endif
+
+ifeq ($(VERSION_NAME),)
+	VERSION_NAME := dev
+endif
 
 BIN_EXEC   = push1st-${VERSION_NAME}-${BRANCH_NAME}
 BIN_DIR    = build
