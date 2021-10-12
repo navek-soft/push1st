@@ -51,8 +51,8 @@ Build from source code [build instruction](/readme/build.md).
 ## Usage and API 
 
 Для подключения клиентов к каналам необходимо воспользоваться библиотеками:
-- Pusher ( для Pusher )
-- Либой WebSocket client
+- [Клиенты Pusher](https://pusher.com/docs/channels/channels_libraries/libraries/)
+- Либой WebSocket client для RawWebSocket
 
 ws://localhost:6001/pusher/app/{{app-key}}/ 
 
