@@ -15,7 +15,7 @@
 class cwssession : public inet::cwsconnection, public inet::csocket, public csubscriber, public std::enable_shared_from_this<cwssession>
 {
 public:
-	cwssession(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels, std::time_t keepAlive);
+	cwssession(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels, std::time_t keepAlive, const std::string& sessPrefix = {});
 	virtual ~cwssession();
 
 	virtual bool OnWsConnect(const http::uri_t& path, const http::headers_t& headers);

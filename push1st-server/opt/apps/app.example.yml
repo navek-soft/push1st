@@ -4,7 +4,7 @@ app-test:
   secret: "secret"
   options: { client-messages: true, statistic: false }
   channels: [ public, private, presence, protected ]
-  origins: [ "localhost" ]
+  origins: [ ]
   hook:
     trigger: [ register, unregister, join, leave, push ]
     endpoint:

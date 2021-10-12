@@ -36,7 +36,7 @@ size_t cchannel::Push(message_t&& message) {
 	msg::delivery_t delivery{ (*message)["#msg-delivery"].get<std::string_view>() == "broadcast" ? msg::delivery_t::broadcast :
 		((*message)["#msg-delivery"].get<std::string_view>() == "multicast" ? msg::delivery_t::multicast : msg::delivery_t::unicast) };
 
-	if (!(*message).contains("socket_id") or (*message)["socket_id"].get<std::string_view>().empty()) {
+	if (delivery == msg::delivery_t::broadcast) {
 		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
 		for (auto&& [sess, subs] : chSubscribers) {
 			if (sess != (*message)["#msg-from"].get<std::string_view>()) {
@@ -52,15 +52,33 @@ size_t cchannel::Push(message_t&& message) {
 			}
 		}
 	}
-	else {
-		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		if (auto&& subs{ chSubscribers.find((*message)["socket_id"]) }; subs != chSubscribers.end()) {
-			if (auto&& subsSelf{ subs->second.lock() }; subsSelf) {
-				subsSelf->Push(message);
-				++nSubscribers;
+	else if((*message).contains("socket_id") and !(*message)["socket_id"].empty()) {
+		std::string SessionId{ (*message)["socket_id"] };
+		if (delivery == msg::delivery_t::multicast) {
+			SessionId.push_back('.');
+			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+			for (auto&& [sess, subs] : chSubscribers) {
+				if (sess.compare(0, SessionId.length(), SessionId) == 0) {
+					if (auto&& subsSelf{ subs.lock() }; subsSelf) {
+						subsSelf->Push(message);
+						++nSubscribers;
+					}
+					else {
+						sessLeave.emplace_front(sess);
+					}
+				}
 			}
-			else {
-				sessLeave.emplace_front(subs->first);
+		}
+		else {
+			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+			if (auto&& subs{ chSubscribers.find(SessionId) }; subs != chSubscribers.end()) {
+				if (auto&& subsSelf{ subs->second.lock() }; subsSelf) {
+					subsSelf->Push(message);
+					++nSubscribers;
+				}
+				else {
+					sessLeave.emplace_front(subs->first);
+				}
 			}
 		}
 	}

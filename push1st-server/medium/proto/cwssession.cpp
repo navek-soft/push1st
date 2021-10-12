@@ -28,17 +28,21 @@ void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr
 			if (auto&& chIt{ SubscribedTo.find((*message)["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
 				if (std::shared_ptr<cchannel> ch{ chIt->second.lock() }; ch) {
 
+
 					if (EnablePushOnChannels & ch->Type()) {
+						ch->Push(std::move(message));
+						/*
 						if (!(*message).contains("delivery") or (*message)["delivery"] != "unicast") {
 							ch->Push(std::move(message));
 						}
 						else {
 							App->Trigger(ch->Type(), hook_t::type::push, (*message)["channel"].get<std::string>(), Id(), std::move(*message));
 						}
-						syslog.print(4, "[ RAW:%s ] Push ( %s/%s )\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
+						*/
+						syslog.print(7, "[ RAW:%s ] Push ( %s/%s )\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
 					}
 					else {
-						syslog.print(4, "[ RAW:%s ] Push ( %s ) disable by config\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
+						syslog.print(7, "[ RAW:%s ] Push ( %s ) disable by config\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
 					}
 				}
 				else {
@@ -124,8 +128,8 @@ bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& hea
 	return true;
 }
 
-cwssession::cwssession(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels, std::time_t keepAlive) :
-	inet::csocket{ std::move(fd) }, csubscriber{ GetAddress(), GetPort() }, 
+cwssession::cwssession(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels, std::time_t keepAlive, const std::string& sessPrefix) :
+	inet::csocket{ std::move(fd) }, csubscriber{ GetAddress(), GetPort(), sessPrefix },
 	MaxMessageLength{ maxMessageLength }, KeepAlive{ keepAlive }, Channels{ channels }, App{ app }, EnablePushOnChannels{ pushOnChannels }
 {
 	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);

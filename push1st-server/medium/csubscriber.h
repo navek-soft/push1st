@@ -5,7 +5,7 @@
 class csubscriber
 {
 public:
-	csubscriber(const std::string& ip, uint16_t port);
+	csubscriber(const std::string& ip, uint16_t port, const std::string& prefix = {});
 	virtual ~csubscriber();
 	inline sid_t Id() { return subsId; }
 	virtual inline fd_t GetFd() = 0;

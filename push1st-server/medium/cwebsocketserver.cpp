@@ -36,7 +36,7 @@ cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, c
 	if (config.Proto & proto_t::type::websocket) {
 		syslog.ob.print("Proto", "WebSocket ... enable %s proto, listen on %s, route /%s/", config.Ssl.Enable ? "https" : "http", std::string{ config.Listen.hostport() }.c_str(), config.WebSocket.Path.c_str());
 		ProtoRoutes[config.WebSocket.Path] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
-			if (auto&& conn{ std::make_shared<cwssession>(channels, app, fd, config.WebSocket.MaxPayloadSize, config.WebSocket.PushOn,config.WebSocket.ActivityTimeout) }; conn and conn->OnWsConnect(path, headers)) {
+			if (auto&& conn{ std::make_shared<cwssession>(channels, app, fd, config.WebSocket.MaxPayloadSize, config.WebSocket.PushOn,config.WebSocket.ActivityTimeout, std::string{path.arg("session")}) }; conn and conn->OnWsConnect(path, headers)) {
 				return std::dynamic_pointer_cast<inet::csocket>(conn);
 			}
 			return {};
