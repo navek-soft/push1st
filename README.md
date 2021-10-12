@@ -28,3 +28,21 @@ Push1ST is open source PUB/SUB multiple protocol message broker server (Pusher, 
 Install from APT ( Ubuntu, Debian ) repository installation [instruction guide](/readme/installation.md).
 
 Build from source code [build instruction](/readme/build.md).
+
+## Usage, run push1st server
+
+После установки или сборки необходимо сконфигурировать ( Конфигурирование push1st ) сервер. Push1ST по умолчанию устанаваливается в директорию /opt/naveksoft/push1st
+В случае установки из репозитория сервер запускается как служба systemd. ( После установки сервис не запускается автоматически. Необходим ручной запуск сервиса. )
+
+```bash
+  sudo service push1st start
+ ```
+
+## API documentation
+
+## Support
+
+## Author 
+
+## License
+
