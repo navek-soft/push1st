@@ -6,11 +6,4 @@
 
 Метод | Запрос | Тело запроса
 ----- | ------ | -------------
-POST | {{api-server}}/{{app-id}}/token/session/ | \
-```json \
-{ \
-  "session": "1234", \
-  "channel": "private-user.1", \
-  "data": "event data payload" \
-} \
-```
+POST | {{api-server}}/{{app-id}}/token/session/ | <br>```json<br>{<br> "session": "1234",<br> "channel": "private-user.1",<br> "data": "event data payload"<br>}```
