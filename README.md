@@ -23,7 +23,7 @@ PUB/SUB multiple protocol message broker (Pusher, MQTT, RAW websocket)
 
 ## Installation guide
 
-Install from APT ( Ubuntu, Debian ) repository Installation [instruction guide](/readme/installation.md).
+Install from APT ( Ubuntu, Debian ) repository installation [instruction guide](/readme/installation.md).
 
 Build from source code [build instruction](/readme/build.md).
 
