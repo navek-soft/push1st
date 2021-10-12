@@ -6,4 +6,4 @@
 
 Метод | Запрос | Тело запроса
 ----- | ------ | -------------
-POST | {{api-server}}/{{app-id}}/token/session/ | {<br><p>"session": "1234",<br>    "channel": "private-user.1",<br>    "data": "event data payload"<br>}</p>
+POST | {{api-server}}/{{app-id}}/token/session/ | {<br>"session": "1234" # pusher session id,<br>"channel": "private-user.1" # channel subscription name,<br>"data": "" # optional custom presence channel data<br>}
