@@ -1,7 +1,5 @@
 ## Installation guide
 
-### Install from apt repository
-
 ###### Import repository key
 
 ```bash
