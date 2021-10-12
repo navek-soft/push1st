@@ -32,11 +32,22 @@ Build from source code [build instruction](/readme/build.md).
 ## Usage, run push1st server
 
 После установки или сборки необходимо сконфигурировать ( Конфигурирование push1st ) сервер. Push1ST по умолчанию устанаваливается в директорию /opt/naveksoft/push1st
-В случае установки из репозитория сервер запускается как служба systemd. ( После установки сервис не запускается автоматически. Необходим ручной запуск сервиса. )
+В случае установки из репозитория сервер регистрируется как служба systemd ( служба не запускается автоматически, необходм ручной запуск. )
 
 ```bash
   sudo service push1st start
- ```
+```
+ 
+ Для запуска push1st из командной строки ( не как служба )
+
+```bash
+  /opt/naveksoft/push1st -c /opt/naveksoft/push1st/server.yml -V4
+  
+  # Для просомтра все параметров коммандой строки
+  /opt/naveksoft/push1st --help
+  
+```
+
 
 ## API documentation
 
