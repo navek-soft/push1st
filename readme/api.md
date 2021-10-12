@@ -5,9 +5,9 @@
 `POST` `{{api-server}}/{{app-id}}/token/session/`
 ```json
 {
-  "session": "1234", # ewrfwer
+  "session": "1234",
   "channel": "channel name",
-  "data": {}
+  "data": ""
 }
 ```
 
