@@ -48,3 +48,43 @@ curl --location --request POST 'http://localhost:6002/apps/app-test/token/access
     "ttl": 0
 }'
 ```
+
+
+#### Отправка сообщения в канал
+
+`POST` `{{api-server}}/{{app-id}}/events/`
+```json
+{
+    "name":"event_name",
+    "channels":[
+        "channel2"
+    ],
+    "socket_id":"",
+    "data": "event data payload"
+}
+```
+
+`Response` 200 OK 
+```json
+{
+    "channels": {
+        "channel2": 1
+    },
+    "msg-id": 1634029747778812625,
+    "time": 171101
+}
+```
+
+Пример:
+```bash
+curl --location --request POST 'http://localhost:6002/apps/app-test/events' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name":"event_name",
+    "channels":[
+        "channel2"
+    ],
+    "socket_id":"",
+    "data": "event data payload"
+}'
+```
