@@ -15,7 +15,7 @@ LIBS                                    = -lcrypto -lssl -llua5.3 -static-libgcc
 
 VERSION_NAME                            = $(ver)#$(shell git describe `git rev-list --tags --max-count=1`)
 REV_NAME                                = $(shell git rev-parse --short HEAD)
-BRANCH_NAME                             = $(shell git rev-parse --abbrev-ref HEAD)
+BRANCH_NAME                             = $(shell git branch --show-current)
 TIMESTAMP                               = $(shell date "+%Y%m%d%H%M%S")
 BUILD_NO                                = $(build)
 BUILD_TS				= $(shell date "+%y%j")
