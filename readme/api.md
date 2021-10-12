@@ -3,12 +3,13 @@
 #### Создание токена для авторизации Pusher private, presence каналах
 
 > `POST` `{{api-server}}/{{app-id}}/token/session/`
->      {
->             "session": "1234", `# pusher session id`
->             "channel": "private-user.1", `# channel subscription name`
->             "data": "" `# custom data (optional)`
->      }
-
+```json
+{
+       "session": "1234", `# pusher session id`
+       "channel": "private-user.1", `# channel subscription name`
+       "data": "" `# custom data (optional)`
+}
+```
 
 `POST` | `{{api-server}}/{{app-id}}/token/session/`
 ------ | ------------------------------------------
