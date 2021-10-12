@@ -104,7 +104,7 @@ void cconfig::cluster_t::load(const std::filesystem::path& path, const yaml_t& o
 		Listen = options["listen"];
 		//Node = Value<ssize_t>(options["node"], -1);
 		PingInterval = (std::time_t)Value<size_t>(options["ping-interval"], PingInterval);
-		Sync = Map(options["hook"]["trigger"], {
+		Sync = Map(options["sync"], {
 				{"register", sync_t::type::reg},{"unregister",sync_t::type::unreg},{"join",sync_t::type::join},{"leave",sync_t::type::leave},{"push",sync_t::type::push} }, sync_t::type::none);
 
 		if (options["family"].IsSequence()) {
