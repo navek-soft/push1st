@@ -1,5 +1,7 @@
 ### Push1ST API
 
+[Postman collection](/readme/Push1ST API.postman_collection.json)
+
 #### Создание токена для авторизации Pusher private, presence каналах
 
 `POST` `{{api-server}}/{{app-id}}/token/session/`
