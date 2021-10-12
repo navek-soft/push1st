@@ -5,10 +5,10 @@
 `POST` `{{api-server}}/{{app-id}}/token/session/`
 ```json
 {
-       "session": "1234", # pusher session id
-       "channel": "private-user.1", # channel subscription name
-# optional presence channel custom data
-#      "data": "" 
+       "session": "1234", // pusher session id
+       "channel": "private-user.1", // channel subscription name
+// optional presence channel custom data
+//      "data": "" 
 }
 ```
 
