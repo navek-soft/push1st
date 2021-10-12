@@ -1,8 +1,6 @@
 ### Push1ST API
 
-#### Key, Token generation
-
-###### Создание токена для авторизации Pusher private, presence каналах
+#### Создание токена для авторизации Pusher private, presence каналах
 
 Метод | Запрос | Тело запроса | Ответ 
 ----- | ------ | -------------| -----
@@ -19,7 +17,7 @@ curl --location --request POST 'http://localhost:6002/apps/app-test/token/sessio
 }'
 ```
 
-###### Создание Bearer access token
+#### __Создание Bearer access token__
 
 Метод | Запрос | Тело запроса | Ответ 
 ----- | ------ | -------------| -----
