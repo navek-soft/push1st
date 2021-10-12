@@ -4,18 +4,42 @@
 #include "../csubscriber.h"
 #include "../cchannels.h"
 
+json::value_t cchannel::ApiStats() {
+	return json::object_t{
+		{"channel", chName },
+		{"type", str(chType)},
+		{"close",chMode == autoclose_t::yes ? "auto" : "manual"},
+		{"sess_count",chSubscribers.size()}
+	};
+}
+
+json::value_t cchannel::ApiOverview() {
+	json::array_t sess;
+	{
+		std::shared_lock<decltype(chSubscribersLock)> lock;
+		for (auto&& [sid, ses] : chSubscribers) {
+			sess.emplace_back(sid);
+		}
+	}
+	return json::object_t{
+		{"channel", chName },
+		{"type", str(chType)},
+		{"close",chMode == autoclose_t::yes ? "auto" : "manual"},
+		{"sessions",sess}
+	};
+}
+
 size_t cchannel::Push(message_t&& message) {
 	std::forward_list<std::string> sessLeave;
-	auto&& msg{ msg::ref(message) };
 	size_t nSubscribers{ 0 };
 
-	msg::delivery_t delivery{ msg["#msg-delivery"].get<std::string_view>() == "broadcast" ? msg::delivery_t::broadcast :
-		(msg["#msg-delivery"].get<std::string_view>() == "multicast" ? msg::delivery_t::multicast : msg::delivery_t::unicast) };
+	msg::delivery_t delivery{ (*message)["#msg-delivery"].get<std::string_view>() == "broadcast" ? msg::delivery_t::broadcast :
+		((*message)["#msg-delivery"].get<std::string_view>() == "multicast" ? msg::delivery_t::multicast : msg::delivery_t::unicast) };
 
-	if (!msg.contains("socket_id") or msg["socket_id"].get<std::string_view>().empty()) {
+	if (!(*message).contains("socket_id") or (*message)["socket_id"].get<std::string_view>().empty()) {
 		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
 		for (auto&& [sess, subs] : chSubscribers) {
-			if (sess != msg["#msg-from"].get<std::string_view>()) {
+			if (sess != (*message)["#msg-from"].get<std::string_view>()) {
 				if (auto&& subsSelf{ subs.lock() }; subsSelf) {
 					subsSelf->Push(message);
 					++nSubscribers;
@@ -30,7 +54,7 @@ size_t cchannel::Push(message_t&& message) {
 	}
 	else {
 		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		if (auto&& subs{ chSubscribers.find(msg["socket_id"]) }; subs != chSubscribers.end()) {
+		if (auto&& subs{ chSubscribers.find((*message)["socket_id"]) }; subs != chSubscribers.end()) {
 			if (auto&& subsSelf{ subs->second.lock() }; subsSelf) {
 				subsSelf->Push(message);
 				++nSubscribers;

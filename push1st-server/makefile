@@ -8,39 +8,29 @@ INC                                     = -I ../lib/http -I ../lib/inet
 CC                                      = g++
 CC_FLAGS                                = -W"no-format" -std=c++17 -fno-strict-aliasing
 CC_DFLAGS                               = ${INC}
-LIBS                                    = -lcrypto -lssl -static-libgcc -static-libstdc++ \
+LIBS                                    = -lcrypto -lssl -llua5.3 -static-libgcc -static-libstdc++ \
 										-Wl,-Bstatic -lyaml-cpp \
 										-Wl,-Bdynamic -pthread
 
 
-VERSION_NAME                            = $(shell git describe --tags `git rev-list --tags --max-count=1`)
+VERSION_NAME                            = $(ver)#$(shell git describe `git rev-list --tags --max-count=1`)
 REV_NAME                                = $(shell git rev-parse --short HEAD)
-BRANCH_NAME                             = $(shell git rev-parse --abbrev-ref HEAD)
+BRANCH_NAME                             = $(bname)#$(shell git rev-parse --abbrev-ref HEAD)
 TIMESTAMP                               = $(shell date "+%Y%m%d%H%M%S")
 BUILD_NO                                = $(build)
 BUILD_TS								= $(shell date "+%y%j")
 
 ifeq ($(BUILD_NO),)
-	BUILD_NO := 0
-endif
-
-ifeq ($(VERSION_NAME),)
-	VERSION_NAME := $(tag)
-endif
-
-ifeq ($(VERSION_NAME),)
-	VERSION_NAME := 0.1
-endif
-
-ifeq ($(REV_NAME),)
-	REV_NAME := ${TIMESTAMP}
+	BUILD_NO := ${BUILD_TS}
 endif
 
 ifeq ($(BRANCH_NAME),)
-	BRANCH_NAME := dev
+	BRANCH_NAME := src
 endif
 
-
+ifeq ($(VERSION_NAME),)
+	VERSION_NAME := dev
+endif
 
 BIN_EXEC   = push1st-${VERSION_NAME}-${BRANCH_NAME}
 BIN_DIR    = build
@@ -76,12 +66,12 @@ clean:
 	rm -rf ${BIN_DIR}/${BIN_EXEC}
 
 version:
-	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${VERSION_NAME}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"
-	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${VERSION_NAME}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"  > ./version.cpp
+	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${BUILD_TS}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"
+	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${BUILD_TS}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"  > ./version.cpp
 
 deb: 
 	sudo chmod +x ./makedeb
-	./makedeb push1st package-${BRANCH_NAME} ${BUILD_TS}.${BUILD_NO} ${VERSION_NAME} ${BRANCH_NAME}
+	./makedeb push1st package-${BRANCH_NAME} ${VERSION_NAME}.${BUILD_NO} ${BUILD_TS} ${BRANCH_NAME}
 	@echo "\033[1;32mmake deb \033[0m push1st-${BRANCH_NAME}.deb"
 
 archive:

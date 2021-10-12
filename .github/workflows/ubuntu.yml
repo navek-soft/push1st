@@ -27,11 +27,11 @@ jobs:
         with:
           submodules: recursive
       - name: Install build dependencies
-        run: sudo apt -y install libyaml-cpp-dev libssl-dev md5deep fakeroot
+        run: sudo apt -y install libyaml-cpp-dev libssl-dev lua5.3 liblua5.3-dev md5deep fakeroot
       - name: Build binaries and upload to nexus
         run: |
           cd push1st-server
-          make build=$GITHUB_RUN_NUMBER tag=${GITHUB_REF##*/} all
+          make build=$GITHUB_RUN_NUMBER ver="0.2" bname=${GITHUB_REF##*/} all
           curl -s --fail -v -H "Content-Type:multipart/form-data" -vvv -u "uploader:uploader1" --data-binary "@push1st-${GITHUB_REF##*/}.deb" https://nexus.naveksoft.com/repository/ubuntu-universe/
           curl -s --fail -v -u "uploader:uploader1" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-latest.tar.bz2
           curl -s --fail -v -u "uploader:uploader1" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-$GITHUB_RUN_NUMBER.tar.bz2

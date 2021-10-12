@@ -121,7 +121,7 @@ void cpresencechannel::UnSubscribe(const std::string& subscriber) {
 }
 
 cpresencechannel::cpresencechannel(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccluster>& cluster, const std::string& cuid, const std::string& name, const app_t& app, autoclose_t mode) :
-	cchannel(channels, cuid, name, app, channel_t::type::pub, mode), Cluster{ cluster }
+	cchannel(channels, cuid, name, app, channel_t::type::pres, mode), Cluster{ cluster }
 {
 
 	syslog.print(1, "[ PRESENCE:%s ] Register\n", chUid.c_str());

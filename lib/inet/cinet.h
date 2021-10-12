@@ -27,6 +27,7 @@ namespace inet {
 	ssize_t SetNonBlock(fd_t fd, bool nonblock);
 	ssize_t SetRecvTimeout(fd_t fd, size_t milliseconds);
 	ssize_t SetSendTimeout(fd_t fd, size_t milliseconds);
+	ssize_t SetUdpCork(fd_t fd, bool enable);
 	ssize_t TcpAccept(fd_t fd, fd_t& cli, sockaddr_storage& sa, bool nonblock);
 	ssize_t TcpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout = 0);
 	ssize_t TcpServer(fd_t& fd, const sockaddr_storage& sa, bool reuseaddress, bool reuseport, bool nonblock, int maxlisten);

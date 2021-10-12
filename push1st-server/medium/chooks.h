@@ -5,6 +5,7 @@
 #include "../../lib/http/chttpconn.h"
 #include "cmessage.h"
 #include "../core/ci/cjson.h"
+#include "../core/lua/clua.h"
 
 class cconnection : public inet::chttpconnection {
 public:
@@ -38,5 +39,8 @@ class cluahook : public chook {
 public:
 	cluahook(const std::string& endpoint) { ; }
 	virtual ~cluahook() { ; }
-	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) override { ; }
+	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) override;
+private:
+	std::filesystem::path luaScript;
+	clua::engine jitLua;
 };

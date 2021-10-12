@@ -36,6 +36,7 @@ private:
 private:
 	std::shared_ptr<cbroker> Broker;
 	std::time_t clusPingInterval{ 30 }, clusPingTime{ 0 };
+	sync_t clusSync{ sync_t::type::push };
 	inet::csocket clusFd{ -1,nullptr };
 	core::cspinlock clusLock;
 	std::unordered_map<uint32_t /* ip */, std::unique_ptr<cnode>> clusNodes;

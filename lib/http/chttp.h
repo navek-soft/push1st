@@ -15,7 +15,13 @@ namespace http {
 		inline std::string_view at(size_t idx) const { return uriPathList[idx]; }
 		inline std::string_view uri() const { return uriFull; }
 		inline std::string_view path() const { return uriPath; }
-		inline std::string_view arg(const std::string_view& name) const { return uriArgs.find(name)->second; }
+		inline std::string_view arg(const std::string_view& name) const {
+			if (auto&& it{ uriArgs.find(name) }; it != uriArgs.end()) {
+				return it->second;
+			}
+			return {};
+		}
+		inline auto args(const std::string_view& name) const { return uriArgs.equal_range(name); }
 	public:
 		std::string_view uriFull, uriPath;
 		std::vector<std::string_view> uriPathList;

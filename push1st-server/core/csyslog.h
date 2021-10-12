@@ -17,6 +17,7 @@ namespace core {
 		inline void trace(const char* fmt, ...) const { if (logLevel >= 4) { va_list args; va_start(args, fmt); vfprintf(StdOut, fmt, args); va_end(args); } }
 		inline void error(const char* fmt, ...) const { va_list args; va_start(args, fmt); vfprintf(StdErr, fmt, args); va_end(args); fflush(StdErr); }
 		inline void exit(const char* fmt, ...) const { va_list args; va_start(args, fmt); vfprintf(StdErr, fmt, args); va_end(args); fflush(StdErr); ::exit(EXIT_FAILURE); }
+		inline bool is(size_t lvl) const { return logLevel >= lvl; }
 		struct cob {
 		private:
 			static inline size_t logObWidth{ 21 };

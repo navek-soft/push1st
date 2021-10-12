@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/tcp.h>
+#include <netinet/udp.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <regex>
@@ -107,6 +108,13 @@ ssize_t inet::SetRecvTimeout(fd_t fd, size_t milliseconds) {
 	tv.tv_usec = (milliseconds % 1000) * 1000;
 	return setsockopt((int)fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv) == 0 ? 0 : -errno;
 }
+
+ssize_t inet::SetUdpCork(fd_t fd, bool enable) {
+	int cork = enable ? 1 : 0;
+	return setsockopt((int)fd, IPPROTO_UDP, UDP_CORK, &cork, sizeof(cork)) == 0 ? 0 : -errno;
+}
+
+
 
 ssize_t inet::SetSendTimeout(fd_t fd, size_t milliseconds) {
 	struct timeval tv;

@@ -4,6 +4,7 @@
 #include "ccredentials.h"
 #include "cbroker.h"
 #include "channels/cchannel.h"
+#include "../../lib/inet/ciface.h"
 
 namespace proto {
 	enum class op_t : uint8_t { noop = 0, ping = 1, reg = 2, unreg = 3, join = 4, leave = 5, push = 6 };
@@ -15,7 +16,10 @@ namespace proto {
 		uint8_t	sf : 1; /* start fragment */
 		uint8_t	lt : 2; /* length type : 1 (short), 2 (long), 3 (large) */
 		union {
-			uint8_t payload[0];
+			struct {
+				uint16_t len;
+				uint8_t payload[0];
+			} sh;
 		} data;
 	};
 #pragma pack(pop)
@@ -27,9 +31,10 @@ namespace proto {
 			auto hdr{ (hdr_t*)frame.first.get() };
 			hdr->fr = 0;
 			hdr->sf = 1;
-			hdr->lt = 0;
+			hdr->lt = 1;
 			hdr->op = op;
-			std::memcpy(hdr->data.payload, packedData.data(), packedData.size());
+			hdr->data.sh.len = (uint16_t)packedData.size();
+			std::memcpy(hdr->data.sh.payload, packedData.data(), packedData.size());
 			return frame;
 		}
 		return { nullptr,0 };
@@ -115,7 +120,7 @@ inline void ccluster::Send(data_t data) {
 		size_t nwrite{ 0 };
 		ssize_t res{ 0 };
 		for (auto&& [ip, node] : clusNodes) {
-			if (res = clusFd.SocketSend(node->NodeAddress, data.first.get(), data.second, nwrite, 0); res == 0) {
+			if (res = clusFd.SocketSend(node->NodeAddress, data.first.get(), data.second, nwrite, MSG_DONTWAIT); res == 0) {
 				continue;
 			}
 			syslog.error("[ CLUSTER ] Send to `%s` error ( %s )\n", inet::GetIp(node->NodeAddress).c_str(), std::strerror(-(int)res));
@@ -129,32 +134,40 @@ inline void ccluster::Send(data_t data) {
 void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	if (inet::csocket so{ fd,ssl }; so) {
 		struct sockaddr_storage sa;
-		size_t nread{ 0 };
-		proto::hdr_t* frame{ (proto::hdr_t*)alloca(proto::MaxFrameSize) };
+		ssize_t nread{ 0 };
+		uint8_t* data{ (uint8_t*)alloca(proto::MaxFrameSize) };
+		proto::hdr_t* frame{ (proto::hdr_t*)data };
 		
-		if (auto res = so.SocketRecv(sa, frame, proto::MaxFrameSize, nread, MSG_DONTWAIT); res == 0) {
-			switch (frame->op) {
-			case proto::op_t::ping:
-				OnClusterPing(sa, { (char*)frame->data.payload,nread - sizeof(proto::hdr_t) });
-				break;
-			case proto::op_t::reg:
-				OnClusterReg(sa, { (char*)frame->data.payload,nread - sizeof(proto::hdr_t) });
-				break;
-			case proto::op_t::unreg:
-				OnClusterUnReg(sa, { (char*)frame->data.payload,nread - sizeof(proto::hdr_t) });
-				break;
-			case proto::op_t::join:
-				OnClusterJoin(sa, { (char*)frame->data.payload,nread - sizeof(proto::hdr_t) });
-				break;
-			case proto::op_t::leave:
-				OnClusterLeave(sa, { (char*)frame->data.payload,nread - sizeof(proto::hdr_t) });
-				break;
-			case proto::op_t::push:
-				OnClusterPush(sa, { (char*)frame->data.payload,nread - sizeof(proto::hdr_t) });
-				break;
-			default:
-				break;
-			}
+		ssize_t res{ -1 };
+
+		
+		if (res = so.SocketRecv(sa, data, proto::MaxFrameSize, (size_t&)nread, MSG_DONTWAIT); res == 0) {
+			while(nread > 0) {
+				switch (frame->op) {
+				case proto::op_t::push:
+					OnClusterPush(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
+					break;
+				case proto::op_t::ping:
+					OnClusterPing(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
+					break;
+				case proto::op_t::reg:
+					OnClusterReg(sa, { (char*)frame->data.sh.payload, frame->data.sh.len } );
+					break;
+				case proto::op_t::unreg:
+					OnClusterUnReg(sa, { (char*)frame->data.sh.payload, frame->data.sh.len } );
+					break;
+				case proto::op_t::join:
+					OnClusterJoin(sa, { (char*)frame->data.sh.payload, frame->data.sh.len } );
+					break;
+				case proto::op_t::leave:
+					OnClusterLeave(sa, { (char*)frame->data.sh.payload, frame->data.sh.len } );
+					break;
+				default:
+					break;
+				}
+				nread -= frame->data.sh.len + sizeof(proto::hdr_t);
+				frame = (proto::hdr_t*)(((uint8_t*)frame) + frame->data.sh.len + sizeof(proto::hdr_t));
+			};
 		}
 		else {
 			syslog.error("[ CLUSTER ] Network error ( %s )\n", std::strerror(-(int)res));
@@ -168,7 +181,7 @@ void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<in
 void ccluster::Push(channel_t::type type, const app_t& app, sid_t channel, message_t&& msg)
 { 
 	if (clusFd and app->IsAllowTrigger(type, hook_t::type::push)) {
-		Send(proto::Pack(hook_t::type::push, { {"app", app->Id },{"channel", channel },{"data", msg::ref(msg)} }));
+		Send(proto::Pack(hook_t::type::push, { {"app", app->Id },{"channel", channel },{"data", (*msg)} }));
 	}
 }
 
@@ -189,7 +202,7 @@ void ccluster::Ping() {
 }
 
 ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster_t& config) :
-	inet::cudpserver("clus:srv"), Broker{ broker }, clusPingInterval{ config.PingInterval }
+	inet::cudpserver("clus:srv"), Broker{ broker }, clusPingInterval{ config.PingInterval }, clusSync{ config.Sync }
 {
 	if (config.Enable) {
 		
@@ -199,8 +212,13 @@ ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster
 			if (!nIt.empty()) {
 				if (std::unique_ptr<cnode> node{ new cnode }; node and inet::GetSockAddr(node->NodeAddress, nIt, config.Listen.port(), AF_INET) == 0) {
 					node->NodeIp = inet::GetIp4(node->NodeAddress);
-					syslog.ob.print("Node", "%s ... enable, address %s", nIt.c_str(), inet::GetIp(node->NodeAddress).c_str());
-					clusNodes.emplace(node->NodeIp, std::move(node));
+					if (!inet::IsLocalIp(node->NodeIp)) {
+						syslog.ob.print("Node", "%s ... enable, address %s", nIt.c_str(), inet::GetIp(node->NodeAddress).c_str());
+						clusNodes.emplace(node->NodeIp, std::move(node));
+					}
+					else {
+						syslog.ob.print("Node", "%s ... I'm, address %s", nIt.c_str(), inet::GetIp(node->NodeAddress).c_str());
+					}
 				}
 				else {
 					syslog.ob.print("Node", "%s ... disabled ( address not resolved )", nIt.c_str());
@@ -208,8 +226,9 @@ ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster
 			}
 		}
 
-		if (auto res = UdpListen(config.Listen.hostport(), true, true, true); res == 0) {
+		if (auto res = UdpListen(config.Listen.hostport(), true, true, false); res == 0) {
 			clusFd = std::move(Fd());
+			//inet::SetUdpCork(clusFd.Fd(), false);
 		}
 		else {
 			syslog.error("Cluster initialize server error ( %s )\n", std::strerror(-(int)res));

@@ -7,11 +7,10 @@
 #include <chrono>
 
 void cpushersession::OnPusherSubscribe(const message_t& message) {
-	auto&& data{ msg::ref(message) };
-	if (data["data"].is_object() and data["data"]["channel"].is_string() and !data["data"]["channel"].empty()) {
-		if (auto chName{ data["data"]["channel"].get<std::string>() }; !chName.empty() and chName.length() <= MaxChannelNameLength) {
-			if (auto chType{ ChannelType(chName) };  chType == channel_t::type::priv and data["data"]["auth"].is_string()) {
-				if (App->IsAllowChannel(chType, Id(), chName, data["data"]["auth"].get<std::string>())) {
+	if ((*message)["data"].is_object() and (*message)["data"]["channel"].is_string() and !(*message)["data"]["channel"].empty()) {
+		if (auto chName{ (*message)["data"]["channel"].get<std::string>() }; !chName.empty() and chName.length() <= MaxChannelNameLength) {
+			if (auto chType{ ChannelType(chName) };  chType == channel_t::type::priv and (*message)["data"]["auth"].is_string()) {
+				if (App->IsAllowChannelSession(chType, Id(), chName, (*message)["data"]["auth"].get<std::string>())) {
 					if (auto&& chSelf{ Channels->Register(chType, App, std::string{chName}) }; chSelf) {
 						SubscribedTo.emplace(chName, chSelf);
 						chSelf->Subscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
@@ -22,9 +21,9 @@ void cpushersession::OnPusherSubscribe(const message_t& message) {
 					}
 				}
 			}
-			else if (chType == channel_t::type::pres and data["data"]["auth"].is_string()) {
-				SessionPresenceData = data["data"]["channel_data"].is_string() ? data["data"]["channel_data"].get<std::string>() : std::string{};
-				if (App->IsAllowChannel(chType, Id(), chName, data["data"]["auth"].get<std::string>(), SessionPresenceData)) {
+			else if (chType == channel_t::type::pres and (*message)["data"]["auth"].is_string()) {
+				SessionPresenceData = (*message)["data"]["channel_data"].is_string() ? (*message)["data"]["channel_data"].get<std::string>() : std::string{};
+				if (App->IsAllowChannelSession(chType, Id(), chName, (*message)["data"]["auth"].get<std::string>(), SessionPresenceData)) {
 					if (auto&& chSelf{ Channels->Register(chType, App, std::string{chName}) }; chSelf) {
 
 						if (json::value_t ui; json::unserialize(SessionPresenceData, ui) and ui["user_id"].is_string()) { SessionUserId = ui["user_id"].get<std::string>(); }
@@ -42,7 +41,7 @@ void cpushersession::OnPusherSubscribe(const message_t& message) {
 					}
 				}
 			}
-			else if (chType == channel_t::type::pub and App->IsAllowChannel(chType, Id(), chName, {})) {
+			else if (chType == channel_t::type::pub and App->IsAllowChannelSession(chType, Id(), chName, {})) {
 				if (auto&& chSelf{ Channels->Register(chType, App, std::string{chName}) }; chSelf) {
 					SubscribedTo.emplace(chName, chSelf);
 					chSelf->Subscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
@@ -61,9 +60,8 @@ void cpushersession::OnPusherSubscribe(const message_t& message) {
 }
 
 void cpushersession::OnPusherUnSubscribe(const message_t& message) {
-	auto&& data{ msg::ref(message) };
-	if (data["data"].is_object() and data["data"]["channel"].is_string()) {
-		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
+	if ((*message)["data"].is_object() and (*message)["data"]["channel"].is_string()) {
+		if (auto&& chIt{ SubscribedTo.find((*message)["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
 			if (auto&& ch{ chIt->second.lock() }; ch) {
 				ch->UnSubscribe(subsId);
 			}
@@ -77,9 +75,8 @@ void cpushersession::OnPusherPing(const message_t& message) {
 }
 
 void cpushersession::OnPusherPush(const message_t& message) {
-	auto&& data{ msg::ref(message) };
-	if (auto&& chName{ data["channel"].get<std::string>() }; !chName.empty()) {
-		if (auto&& chIt{ SubscribedTo.find(data["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
+	if (auto&& chName{ (*message)["channel"].get<std::string>() }; !chName.empty()) {
+		if (auto&& chIt{ SubscribedTo.find((*message)["data"]["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
 			if (auto&& ch{ chIt->second.lock() }; ch) {
 				/*ch->Push(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
 				channels.Pull(sesApp, chName, shared_from_this(),
@@ -95,8 +92,7 @@ void cpushersession::OnPusherPush(const message_t& message) {
 
 void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	if (auto&& message{ UnPack(data, length) }; message) {
-		auto&& msg{ msg::ref(message) };
-		if (auto&& evName{ msg["event"].get<std::string>() }; !evName.empty()) {
+		if (auto&& evName{ (*message)["event"].get<std::string>() }; !evName.empty()) {
 			if (evName == "pusher:subscribe") {
 				OnPusherSubscribe(message);
 				return;
@@ -109,7 +105,7 @@ void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared
 				OnPusherUnSubscribe(message);
 				return;
 			}
-			else if (msg["channel"].is_string()) {
+			else if ((*message)["channel"].is_string()) {
 				OnPusherPush(message);
 				return;
 			}

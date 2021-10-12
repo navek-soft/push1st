@@ -23,28 +23,32 @@ message_t cwssession::UnPack(data_t&& data) {
 }
 
 void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
-	if (auto&& message{ UnPack({std::move(data),length}) }; message) {
-		auto msg{ msg::ref(message) };
-		if (auto&& chIt{ SubscribedTo.find(msg["channel"].get<std::string>())}; chIt != SubscribedTo.end()) {
-			if (std::shared_ptr<cchannel> ch{ chIt->second.lock() }; ch) {
-				
-				if (EnablePushOnChannels & ch->Type()) {
-					ch->Push(std::move(message));
-					//App->Trigger(hook_t::type::push, message->at("channel"), Id(), { data, length });
-					syslog.print(4, "[ RAW:%s ] Push ( %s/%s )\n", Id().c_str(), msg["channel"].get<std::string>().c_str(), msg["event"].get<std::string>().c_str());
+	try {
+		if (auto&& message{ UnPack({std::move(data),length}) }; message) {
+			if (auto&& chIt{ SubscribedTo.find((*message)["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
+				if (std::shared_ptr<cchannel> ch{ chIt->second.lock() }; ch) {
+
+					if (EnablePushOnChannels & ch->Type()) {
+						ch->Push(std::move(message));
+						//App->Trigger(hook_t::type::push, message->at("channel"), Id(), { data, length });
+						syslog.print(4, "[ RAW:%s ] Push ( %s/%s )\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
+					}
+					else {
+						syslog.print(4, "[ RAW:%s ] Push ( %s ) disable by config\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
+					}
 				}
 				else {
-					syslog.print(4, "[ RAW:%s ] Push ( %s ) disable by config\n", Id().c_str(), msg["channel"].get<std::string>().c_str(), msg["event"].get<std::string>().c_str());
+					syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, std::strerror(EBADSLT));
 				}
+				return;
 			}
 			else {
-				syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, std::strerror(EBADSLT));
+				syslog.print(4, "[ RAW:%s ] Push ( %s ) no channel subscription\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
 			}
-			return;
 		}
-		else {
-			syslog.print(4, "[ RAW:%s ] Push ( %s ) no channel subscription\n", Id().c_str(), msg["channel"].get<std::string>().c_str(), msg["event"].get<std::string>().c_str());
-		}
+	}
+	catch (std::exception& ex) {
+		syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, ex.what());
 	}
 }
 
@@ -97,19 +101,20 @@ bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& hea
 
 	size_t nchannels{ 0 };
 	for (auto&& it{ path.uriPathList.begin() + 4 }; it != path.uriPathList.end(); ++it) {
-		if (auto&& [chName, chToken] = ExplodePathName(*it); !chName.empty()) {
-			if (auto chType = ChannelType(*it); chType != channel_t::type::none and App->IsAllowChannel(chType, Id(), chName, chToken)) {
-				if (auto&& chSelf{ Channels->Register(chType, App, std::string{chName}) }; chSelf) {
-					SubscribedTo.emplace(chName,chSelf);
-					chSelf->Subscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
-					++nchannels;
-				}
+		std::string chName{ *it };
+		if (auto chType = ChannelType(*it); chType != channel_t::type::none and App->IsAllowChannelToken(chType, Id(), chName,
+			http::GetValue(headers, "authorization", path.arg("token")), {}, std::string{ http::GetValue(headers, "origin") })) 
+		{
+			if (auto&& chSelf{ Channels->Register(chType, App, chName) }; chSelf) {
+				SubscribedTo.emplace(chName, chSelf);
+				chSelf->Subscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
+				++nchannels;
 			}
 		}
 	}
 	if (!nchannels) {
 		syslog.trace("[ RAW:%ld:%s ] No channels subscriptions ( or invalid authorization )\n", Fd(), Id().c_str());
-		WsClose(close_t::InvalidPayload);
+		WsClose(close_t::PolicyViolation);
 		return false;
 	}
 	return true;

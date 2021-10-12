@@ -35,17 +35,18 @@ int cbroker::Run() {
 }
 
 void cbroker::OnIdle() {
-    //printf("timeout\n");
-    if (0) {
-        printf("Channels: ( %ld )", Channels->Channels.size());
+    static size_t stat_counter{ 0 };
+    if (syslog.is(4) and !((++stat_counter) % 10)) {
+        syslog.print(4, "Channels: ( %ld )", Channels->Channels.size());
         if (!Channels->Channels.empty()) {
-            printf("\t");
+            syslog.print(4, " ");
             for (auto&& ch : Channels->Channels) {
-                printf("%s ( %ld ) ", ch.first.c_str(), ch.second->CountSubscribers());
+                syslog.print(4, "%s ( %ld ) ", ch.first.c_str(), ch.second->CountSubscribers());
             }
         }
-        printf("\n");
+        syslog.print(4, "\n");
     }
+    Cluster->Ping();
 }
 
 void cbroker::Initialize(const core::cconfig& config) {
@@ -59,15 +60,17 @@ void cbroker::Initialize(const core::cconfig& config) {
     ApiServer = std::make_shared<capiserver>(Channels, Credentials, config.Api);
     if (!config.Server.Proto.empty()) { WsServer = std::make_shared<cwebsocketserver>(Channels, Credentials, config.Server); }
 
+    syslog.ob.flush(1);
+
     ServerPoll.reserve(config.Server.Threads);
     for (auto n{ config.Server.Threads }; n--;) {
         ServerPoll.emplace_back(std::make_shared<inet::cpoll>());
         if (WsServer) { WsServer->Listen(ServerPoll.back()); }
         ApiServer->Listen(ServerPoll.back());
+        Cluster->Listen(ServerPoll.back());
         ServerPoll.back()->Listen();
     }
  
-    syslog.ob.flush(1);
 
     WaitFor({ SIGINT, SIGQUIT, SIGABRT, SIGSEGV, SIGHUP });
 
