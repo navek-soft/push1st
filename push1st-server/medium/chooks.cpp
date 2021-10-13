@@ -3,7 +3,7 @@
 
 void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&& msg)
 { 
-	webConnection->Write("POST", "/webhook/", {
+	webConnection->Write("POST", webEndpoint.url(), {
 			{"Content-Type","application/json"},
 			{"Connection","keep-alive"},
 			{"Keep-Alive","30"} }, 
