@@ -50,6 +50,10 @@ inline bool cconnection::Reconnect() {
 	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, fdHostPort, fdSsl ? "443" : "80", AF_INET)) == 0 ) {
 		if (!fdSslCtx) {
 			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 2500)) == 0) {
+
+				inet::SetTcpCork(fdEndpoint, false);
+				//inet::SetTcpNoDelay(fdEndpoint, true);
+
 				::shutdown(fdEndpoint, SHUT_RD);
 				return true;
 			}
