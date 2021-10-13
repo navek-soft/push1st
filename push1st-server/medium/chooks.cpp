@@ -3,6 +3,7 @@
 
 void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&& msg)
 { 
+	syslog.print(7, "[ WEBHOOK:%s ] %s %s#%s\n", std::string{ webEndpoint.hostport() }.c_str(), str(trigger), app.c_str(), channel.c_str());
 	webConnection->Write("POST", webEndpoint.url(), {
 			{"Content-Type","application/json"},
 			{"Connection","keep-alive"},
