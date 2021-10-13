@@ -31,14 +31,7 @@ void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr
 
 					if (EnablePushOnChannels & ch->Type()) {
 						ch->Push(std::move(message));
-						/*
-						if (!(*message).contains("delivery") or (*message)["delivery"] != "unicast") {
-							ch->Push(std::move(message));
-						}
-						else {
-							App->Trigger(ch->Type(), hook_t::type::push, (*message)["channel"].get<std::string>(), Id(), std::move(*message));
-						}
-						*/
+						App->Trigger(ch->Type(), hook_t::type::push, (*message)["channel"].get<std::string>(), Id(), std::move(*message));
 						syslog.print(7, "[ RAW:%s ] Push ( %s/%s )\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
 					}
 					else {
