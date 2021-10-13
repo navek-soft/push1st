@@ -138,7 +138,7 @@ ccredentials::capplication::capplication(const std::shared_ptr<cbroker>& broker,
 	credential_t{ app } 
 {
 	for (auto&& ep : Endpoints) {
-		HookEndpoints.emplace_back(broker->RegisterHook(ep));
+		HookEndpoints.emplace_back(broker->RegisterHook(ep, app.OptionKeepAlive));
 	}
 }
 

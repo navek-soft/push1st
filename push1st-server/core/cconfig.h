@@ -101,7 +101,7 @@ namespace core {
 			std::string Id, Name, Key, Secret;
 			channel_t Channels{ channel_t::type::none };
 			hook_t Hooks{ hook_t::type::none };
-			bool OptionClientMessages{ false }, OptionStatistic{ false };
+			bool OptionClientMessages{ false }, OptionStatistic{ false }, OptionKeepAlive{ false };
 			std::unordered_set<std::string> Origins;
 			std::unordered_set<std::string> Endpoints;
 			credential_t() { ; }

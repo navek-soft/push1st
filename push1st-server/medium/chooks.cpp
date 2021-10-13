@@ -4,10 +4,10 @@
 void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&& msg)
 { 
 	syslog.print(7, "[ WEBHOOK:%s ] %s %s#%s\n", std::string{ webEndpoint.hostport() }.c_str(), str(trigger), app.c_str(), channel.c_str());
-	webConnection->Write("POST", webEndpoint.url(), {
+	Write("POST", webEndpoint.url(), {
 			{"Content-Type","application/json"},
-			{"Connection","keep-alive"},
-			{"Keep-Alive","30"} }, 
+			{"Connection", !fdKeepAlive ? "close" : "keep-alive"},
+			{"Keep-Alive","30"}}, 
 			json::serialize({
 				{"event",str(trigger)},
 				{"app",app},
@@ -17,30 +17,34 @@ void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t ses
 			}));
 }
 
-cconnection::cconnection(const dsn_t& endpoint) : 
-	fdHostPort{ endpoint.hostport() }
+
+cwebhook::cwebhook(const std::string& endpoint, bool keepalive) : 
+	webEndpoint{ endpoint }, fdKeepAlive{ keepalive }
 {
-	if (endpoint.ishttps()) {
+	if (webEndpoint.ishttps()) {
 		inet::SslCreateClientContext(fdSslCtx);
 	}
 }
 
-void cconnection::Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers, std::string&& request) {
+inline void cwebhook::Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers, std::string&& request) {
 	ssize_t res{ -ECONNRESET };
-	if (Reconnect()) {
+	std::unique_lock<decltype(fdLock)> lock(fdLock);
+	if (Connect()) {
 		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
+			if (!fdKeepAlive) { inet::Close(fdEndpoint); }
 			return;
 		}
-		else if (Reconnect()) {
+		if (inet::Close(fdEndpoint); Connect()) {
 			if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
+				if (!fdKeepAlive) { inet::Close(fdEndpoint); }
 				return;
 			}
 		}
 	}
-	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", fdHostPort.c_str(), std::strerror(-(int)res));
+	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 }
 
-inline bool cconnection::Reconnect() {
+inline bool cwebhook::Connect() {
 	if (fdEndpoint > 0 and inet::GetErrorNo(fdEndpoint) == 0) {
 		return true;
 	}
@@ -48,13 +52,11 @@ inline bool cconnection::Reconnect() {
 
 	ssize_t res{ -1 };
 
-	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, fdHostPort, fdSsl ? "443" : "80", AF_INET)) == 0 ) {
+	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, webEndpoint.hostport(), fdSsl ? "443" : "80", AF_INET)) == 0 ) {
 		if (!fdSslCtx) {
 			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 2500)) == 0) {
-
-				inet::SetTcpCork(fdEndpoint, false);
-				//inet::SetTcpNoDelay(fdEndpoint, true);
-
+				//inet::SetTcpCork(fdEndpoint, false);
+				inet::SetTcpNoDelay(fdEndpoint, true);
 				::shutdown(fdEndpoint, SHUT_RD);
 				return true;
 			}
@@ -64,9 +66,8 @@ inline bool cconnection::Reconnect() {
 			return true;
 		}
 	}
-
 	
-	syslog.error("[ HOOK ] Connect %s error ( %s )\n", fdHostPort.c_str(), std::strerror(-(int)res));
+	syslog.error("[ HOOK ] Connect %s error ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 	return false;
 }
 

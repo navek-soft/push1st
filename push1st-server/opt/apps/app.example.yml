@@ -6,7 +6,8 @@ app-test:
   channels: [ public, private, presence, protected ]
   origins: [ ]
   hook:
-    trigger: [ register, unregister, join, leave, push ]
+    trigger: [ register, unregister, join, leave ] #register, unregister, join, leave, push
+    keep-alive: false
     endpoint:
         - http://127.0.0.1:6002/
         - http://localhost:6002/
