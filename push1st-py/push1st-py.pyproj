@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>aca68828-d2d2-4d43-b06b-d17f846f209c</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>push1st_py.py</StartupFile>
+    <StartupFile>api.test.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
