@@ -78,6 +78,6 @@ archive:
 	mkdir -p package-${BRANCH_NAME}/scripts package-${BRANCH_NAME}/apps
 	cp build/${BIN_EXEC} package-${BRANCH_NAME}/push1st
 	cp -n opt/server.example.yml package-${BRANCH_NAME}/server.example.yml
-	cp -n opt/apps/app.example.yml package-${BRANCH_NAME}/apps/app.example.yml
+	cp -n opt/apps/app.example package-${BRANCH_NAME}/apps/app.example
 	tar -cvjf push1st-${BRANCH_NAME}.tar.bz2 --transform='s/package-${BRANCH_NAME}\///g'  package-${BRANCH_NAME}/*
 	@echo "\033[1;32mmake tar \033[0m push1st-${BRANCH_NAME}.tar.bz2"
