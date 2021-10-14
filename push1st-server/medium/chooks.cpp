@@ -72,5 +72,7 @@ inline bool cwebhook::Connect() {
 }
 
 void cluahook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&& msg) {
-	jitLua.luaExecute(luaScript, "OnTrigger", { str(trigger), app, channel, session, json::serialize(std::move(msg)) });
+	if (luaAllowed) {
+		jitLua.luaExecute(luaScript, "OnTrigger", { str(trigger), app, channel, session, json::serialize(std::move(msg)) });
+	}
 }

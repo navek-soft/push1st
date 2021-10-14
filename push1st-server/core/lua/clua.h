@@ -34,6 +34,8 @@ public:
 	using table_t = std::unordered_map<std::string, std::string>;
 	using vector_t = std::vector<std::string>;
 	using map_t = std::unordered_map<std::string, std::any>;
+	using lua_t = lua_State*;
+	using lua_ptr_t = std::unique_ptr<lua_State, void(*)(lua_t)>;
 
 	class class_t {
 	public:
@@ -52,7 +54,7 @@ public:
 		}
 	public:
 		virtual ~class_t() { ; }
-		static inline int __index(lua_State* l) {
+		static inline int __index(lua_t l) {
 			class_t* object = *((class_t**)lua_touserdata(l, 1));
 			if (auto&& method{ object->clsMethods.find(lua_tostring(l, 2)) }; method != object->clsMethods.end()) {
 				lua_pushcfunction(l, method->second);
@@ -60,12 +62,12 @@ public:
 			}
 			return 0;
 		}
-		static inline int __tostring(lua_State* l) {
+		static inline int __tostring(lua_t l) {
 			//class_t* object = *((class_t**)lua_touserdata(l, 1));
 			lua_pushstring(l, "class_t");
 			return 1;
 		}
-		static inline int __gc(lua_State* l) {
+		static inline int __gc(lua_t l) {
 			if (class_t* object = *((class_t**)lua_touserdata(l, 1)); object) {
 				delete object;
 			}
@@ -73,7 +75,7 @@ public:
 		}
 
 		template<typename SELF_T>
-		static inline SELF_T* self(lua_State* l) {
+		static inline SELF_T* self(lua_t l) {
 			void* object_p = lua_touserdata(l, 1);
 			if (object_p == NULL) {
 				luaL_error(l, "invalid type");
@@ -93,7 +95,7 @@ public:
 		virtual ~engine();
 		void luaAddPackagePath(const std::string& path);
 		inline void luaAddBasePackagePath(const std::string& path) { if (!path.empty()) { packageBasePath = path.back() == '/' ? path : (path + '/'); } }
-		void luaAddRelativePackagePath(const std::string& path);
+		void luaAddRelativePackagePath(lua_t L, const std::string& path);
 
 		std::vector<std::any> luaExecute(const std::string& luaScript, const std::string& luaFunction, const std::vector<std::any>& luaArgs);
 		inline std::vector<std::any> luaExecute(const std::string& luaScript) {
@@ -104,20 +106,20 @@ public:
 		}
 
 		template<typename SELF_T, typename ... METHOD_T>
-		ssize_t luaRegisterModule(SELF_T* modClassSelf, const std::string_view& modName, const std::string_view& modNamespace, METHOD_T&& ... methods) {
+		ssize_t luaRegisterModule(lua_t L, SELF_T* modClassSelf, const std::string_view& modName, const std::string_view& modNamespace, METHOD_T&& ... methods) {
 			std::initializer_list<fn_t> methods_list{ methods ... };
-			return luaRegisterModule(methods_list, modClassSelf, modName, modNamespace);
+			return luaRegisterModule(L, methods_list, modClassSelf, modName, modNamespace);
 		}
 
 	protected:
-		virtual void luaLoadModules(std::shared_ptr<lua_State>);
+		virtual inline void luaLoadModules(lua_t) { ; }
 		virtual void luaPackagePath(std::string& pathPackages);
 	private:
-		inline std::shared_ptr<lua_State> S();
-		std::shared_ptr<lua_State> jitLua;
+		inline lua_ptr_t S();
+//		std::shared_ptr<lua_State> jitLua;
 		std::unordered_set<std::string> packagePaths;
 		std::string packageBasePath;
-		ssize_t luaRegisterModule(std::initializer_list<std::pair<std::string_view, lua_CFunction>>& methods, void* modClassSelf, const std::string_view& modName, const std::string_view& modNamespace);
+		ssize_t luaRegisterModule(lua_t L, std::initializer_list<std::pair<std::string_view, lua_CFunction>>& methods, void* modClassSelf, const std::string_view& modName, const std::string_view& modNamespace);
 	public:
 		static void* getModule(lua_State* l, const std::string_view& modName, const std::string_view& modNamespace);
 		static void pushValue(lua_State* l, const std::any& val);

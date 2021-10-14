@@ -5,6 +5,7 @@
 #include "../core/ci/cspinlock.h"
 #include "ccredentials.h"
 #include "cmessage.h"
+#include "../core/lua/clua.h"
 
 class cbroker;
 
@@ -40,4 +41,9 @@ private:
 	inet::csocket clusFd{ -1,nullptr };
 	core::cspinlock clusLock;
 	std::unordered_map<uint32_t /* ip */, std::unique_ptr<cnode>> clusNodes;
+	bool clusModuleAllowed{ false };
+	std::filesystem::path clusModule;
+	clua::engine jitLua;
+
+	inline void CallModule(const std::string& method, std::vector<std::any>&& args);
 };

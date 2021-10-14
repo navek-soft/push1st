@@ -102,6 +102,7 @@ void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& op
 void cconfig::cluster_t::load(const std::filesystem::path& path, const yaml_t& options) {
 	if (options.IsDefined() and options.IsMap()) {
 		Listen = options["listen"];
+		Module = options["module"];
 		//Node = Value<ssize_t>(options["node"], -1);
 		PingInterval = (std::time_t)Value<size_t>(options["ping-interval"], PingInterval);
 		Sync = Map(options["sync"], {
@@ -259,7 +260,7 @@ bool cconfig::cdsn::assign(const std::string& dsn) {
 	std::cmatch match;
 	if (std::regex_match(src.begin(), src.end(), match, re)) {
 		Proto = std::string_view{ match[1].first, (size_t)match[1].length() };
-		if (!(strncasecmp(Proto.data(), "unix://", 7) == 0 or strncasecmp(Proto.data(), "file://", 7) == 0)) {
+		if (strncasecmp(Proto.data(), "http://", 7) == 0 or strncasecmp(Proto.data(), "https://", 7) == 0) {
 			User = std::string_view{ match[3].first,(size_t)match[3].length() };
 			Pwd = std::string_view{ match[4].first,(size_t)match[4].length() };
 			HostPort = std::string_view{ match[5].first,(size_t)match[5].length() };

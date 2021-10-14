@@ -68,14 +68,17 @@ inline void ccluster::OnClusterPing(struct sockaddr_storage& sa, const std::stri
 		clusNodes.emplace(ip, std::move(node));
 		syslog.print(1, "[ CLUSTER ] Node %s ... ADD ( PING )\n", inet::GetIp(sa).c_str());
 	}
+	CallModule("OnClusterPing", { inet::GetIp(sa), data });
 }
 
 inline void ccluster::OnClusterReg(struct sockaddr_storage& sa, const std::string_view& data) {
 	syslog.print(4, "[ CLUSTER ] Node %s ... REG\n", inet::GetIp(sa).c_str());
+	CallModule("OnClusterRegister", { inet::GetIp(sa), data });
 }
 
 inline void ccluster::OnClusterUnReg(struct sockaddr_storage& sa, const std::string_view& data) {
 	syslog.print(4, "[ CLUSTER ] Node %s ... UNREG\n", inet::GetIp(sa).c_str());
+	CallModule("OnClusterUnRegister", { inet::GetIp(sa), data });
 }
 
 inline void ccluster::OnClusterJoin(struct sockaddr_storage& sa, const std::string_view& data) {
@@ -84,6 +87,7 @@ inline void ccluster::OnClusterJoin(struct sockaddr_storage& sa, const std::stri
 		if (auto&& ch{ Broker->GetChannel(value["app"].get<std::string>(),value["channel"].get<std::string>()) }; ch) {
 			ch->OnClusterJoin(value["data"]);
 		}
+		CallModule("OnClusterJoin", { inet::GetIp(sa), data });
 	}
 	else {
 		syslog.error( "[ CLUSTER ] Node %s ... JOIN ( invalid message )\n", inet::GetIp(sa).c_str());
@@ -96,6 +100,7 @@ inline void ccluster::OnClusterLeave(struct sockaddr_storage& sa, const std::str
 		if (auto&& ch{ Broker->GetChannel(value["app"].get<std::string>(),value["channel"].get<std::string>()) }; ch) {
 			ch->OnClusterLeave(value["data"]);
 		}
+		CallModule("OnClusterLeave", { inet::GetIp(sa), data });
 	}
 	else {
 		syslog.error("[ CLUSTER ] Node %s ... LEAVE ( invalid message )\n", inet::GetIp(sa).c_str());
@@ -108,6 +113,7 @@ inline void ccluster::OnClusterPush(struct sockaddr_storage& sa, const std::stri
 		if (auto&& ch{ Broker->GetChannel(value["app"].get<std::string>(),value["channel"].get<std::string>()) }; ch) {
 			ch->OnClusterPush(message_t{ new json::value_t(value["data"]) });
 		}
+		CallModule("OnClusterPush", { inet::GetIp(sa), data });
 	}
 	else {
 		syslog.error("[ CLUSTER ] Node %s ... PUSH ( invalid message )\n", inet::GetIp(sa).c_str());
@@ -187,7 +193,7 @@ void ccluster::Push(channel_t::type type, const app_t& app, sid_t channel, messa
 
 void ccluster::Trigger(channel_t::type type, hook_t::type trigger, const app_t& app, sid_t channel, sid_t session, json::value_t&& data)
 { 
-	if (clusFd and app->IsAllowTrigger(type, trigger)) {
+	if (clusFd and (clusSync & trigger)) {
 		Send(proto::Pack(trigger, { {"app", app->Id },{"channel", channel },{"data",data} }));
 	}
 }
@@ -201,8 +207,15 @@ void ccluster::Ping() {
 	}
 }
 
+inline void ccluster::CallModule(const std::string& method, std::vector<std::any>&& args) {
+	if (clusModuleAllowed) {
+		jitLua.luaExecute(clusModule, method, std::move(args));
+	}
+}
+
 ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster_t& config) :
-	inet::cudpserver("clus:srv"), Broker{ broker }, clusPingInterval{ config.PingInterval }, clusSync{ config.Sync }
+	inet::cudpserver("clus:srv"), Broker{ broker }, clusPingInterval{ config.PingInterval }, clusSync{ config.Sync }, 
+	clusModuleAllowed{ std::filesystem::exists(config.Module.path()) }, clusModule{ config.Module.path() }
 {
 	if (config.Enable) {
 		
@@ -228,7 +241,7 @@ ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster
 
 		if (auto res = UdpListen(config.Listen.hostport(), true, true, false); res == 0) {
 			clusFd = std::move(Fd());
-			//inet::SetUdpCork(clusFd.Fd(), false);
+			inet::SetUdpCork(clusFd.Fd(), true);
 		}
 		else {
 			syslog.error("Cluster initialize server error ( %s )\n", std::strerror(-(int)res));

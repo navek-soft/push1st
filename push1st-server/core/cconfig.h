@@ -81,6 +81,7 @@ namespace core {
 			sync_t Sync{ sync_t::type::none };
 			std::time_t PingInterval{ 30 };
 			cdsn Listen;
+			cdsn Module;
 			std::unordered_set<std::string> Nodes;
 		private:
 			friend class cconfig;

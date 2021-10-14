@@ -47,10 +47,11 @@ private:
 
 class cluahook : public chook {
 public:
-	cluahook(const std::string& endpoint) { ; }
+	cluahook(const std::string& endpoint) : luaAllowed{ std::filesystem::exists(endpoint) }, luaScript{ endpoint } {; }
 	virtual ~cluahook() { ; }
 	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) override;
 private:
+	bool luaAllowed{ false };
 	std::filesystem::path luaScript;
 	clua::engine jitLua;
 };
