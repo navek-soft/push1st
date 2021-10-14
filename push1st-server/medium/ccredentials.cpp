@@ -137,8 +137,11 @@ void ccredentials::capplication::Trigger(channel_t::type type, hook_t::type trig
 ccredentials::capplication::capplication(const std::shared_ptr<cbroker>& broker, const config::credential_t& app) :
 	credential_t{ app } 
 {
-	for (auto&& ep : Endpoints) {
-		HookEndpoints.emplace_back(broker->RegisterHook(ep, app.OptionKeepAlive));
+	syslog.ob.print("App", "%s ( %s ) ... %s", app.Id.c_str(), app.Name.c_str(), app.Enable ? "enable" : "disable");
+	if (app.Enable) {
+		for (auto&& ep : Endpoints) {
+			HookEndpoints.emplace_back(broker->RegisterHook(ep, app.OptionKeepAlive));
+		}
 	}
 }
 

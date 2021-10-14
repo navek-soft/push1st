@@ -9,7 +9,7 @@ namespace inet {
 		chttpserver(const std::string& name, const std::string& HostPort, const inet::ssl_ctx_t& SslCtx, size_t httpMaxHeaderSize = 8192);
 		virtual ~chttpserver();
 	protected:
-		virtual void OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) = 0;
+		virtual void OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, const std::string& request, const std::string_view& content) = 0;
 		virtual void OnHttpError(const inet::csocket& fd, ssize_t err) = 0;
 		virtual inline std::shared_ptr<inet::ctcpserver> TcpSelf() = 0;
 	private:

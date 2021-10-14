@@ -99,6 +99,7 @@ namespace core {
 		} Api;
 
 		struct credential_t {
+			bool Enable{ true };
 			std::string Id, Name, Key, Secret;
 			channel_t Channels{ channel_t::type::none };
 			hook_t Hooks{ hook_t::type::none };

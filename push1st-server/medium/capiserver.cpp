@@ -19,7 +19,7 @@ static inline message_t dupChannelMessage(const json::value_t& msg, const std::s
 	return out;
 }
 
-void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
+void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
 	if (method == "POST") {
 		auto&& tmStart{ std::chrono::system_clock::now().time_since_epoch().count() };
 		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
@@ -40,7 +40,7 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
 						}
 					}
 					reply["time"] = std::chrono::system_clock::now().time_since_epoch().count() - tmStart;
-					ApiResponse(fd, "200", json::serialize(reply), strncasecmp(http::GetValue(headers, "Connection", "Close").data(), "Keep-Alive", 10) == 0);
+					ApiResponse(fd, "200", json::serialize(reply), http::IsConnectionKeepAlive(headers));
 				}
 				else {
 					ApiResponse(fd, "400");
@@ -59,7 +59,7 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
 	}
 }
 
-void capiserver::ApiOnChannels(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
+void capiserver::ApiOnChannels(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
 	if (method == "GET") {
 		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
 			if (vals[1].empty()) {
@@ -70,10 +70,10 @@ void capiserver::ApiOnChannels(const std::vector<std::string_view>& vals, const 
 						chList.emplace_back(chObj->ApiStats());
 					}
 				}
-				ApiResponse(fd, "200", json::serialize(chList), strncasecmp(http::GetValue(headers, "Connection", "Close").data(), "Keep-Alive", 10) == 0);
+				ApiResponse(fd, "200", json::serialize(chList), http::IsConnectionKeepAlive(headers));
 			}
 			else if (auto&& ch{ Channels->Get(app,std::string{vals[1]}) }; ch) {
-				ApiResponse(fd, "200", json::serialize(ch->ApiOverview()), strncasecmp(http::GetValue(headers, "Connection", "Close").data(), "Keep-Alive", 10) == 0);
+				ApiResponse(fd, "200", json::serialize(ch->ApiOverview()), http::IsConnectionKeepAlive(headers));
 			}
 			else {
 				ApiResponse(fd, "404");
@@ -88,7 +88,7 @@ void capiserver::ApiOnChannels(const std::vector<std::string_view>& vals, const 
 	}
 }
 
-void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
+void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
 	if (method == "POST") {
 		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
 			if (vals[1] == "session") {
@@ -119,8 +119,8 @@ void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const ine
 	}
 }
 
-void capiserver::ApiOnWebHook(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, std::string&& content) {
-	ApiResponse(fd, "200", {}, strncasecmp(http::GetValue(headers, "Connection", "Close").data(), "Keep-Alive", 10) == 0);
+void capiserver::ApiOnWebHook(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
+	ApiResponse(fd, "200", {}, http::IsConnectionKeepAlive(headers));
 }
 
 
@@ -133,12 +133,11 @@ void capiserver::ApiResponse(const inet::csocket& fd, const std::string_view& co
 		HttpWriteResponse(fd, code, response, { {"Connection","Keep-Alive"}, {"Content-Type", "application/json; charset=utf-8"}, {"Keep-Alive", "timeout=" + KeepAliveTimeout} });
 	}
 }
-
-void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, std::string&& request, std::string&& content) {
+void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, const std::string& request, const std::string_view& content) {
 
 	syslog.print(3, "[ API:%ld:%s ] %s\n", fd.Fd(), std::string{ method }.c_str(), std::string{ path.uriFull }.c_str());
 
-	if(!ApiRoutes.call(fd,method,path,headers,std::move(content))) {
+	if(!ApiRoutes.call(fd,method,path,headers, content)) {
 		HttpWriteResponse(fd, "404");
 		fd.SocketClose();
 	}
@@ -162,7 +161,7 @@ capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::sh
 	}
 
 	/* Push event endpoint */
-	ApiRoutes.add("/" + config.Path + "/?/events/", std::bind(&capiserver::ApiOnEvents, this,
+	ApiRoutes.add("/" + config.Path + "/?/events/*", std::bind(&capiserver::ApiOnEvents, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	/* Generate private\presense session token */
 	ApiRoutes.add("/" + config.Path + "/?/token/?/", std::bind(&capiserver::ApiOnToken, this,
@@ -183,7 +182,7 @@ capiserver::~capiserver() {
 }
 
 void capiserver::ctcpapiserver::OnHttpError(const inet::csocket& fd, ssize_t err) {
-	syslog.error("[ API ] tcp server request error ( %s )\n", std::strerror(-(int)err));
+	syslog.print(7,"[ API ] tcp server request error ( %s )\n", std::strerror(-(int)err));
 	fd.SocketClose();
 }
 
@@ -214,10 +213,10 @@ void capiserver::cunixapiserver::OnHttpError(const inet::csocket& fd, ssize_t er
 void capiserver::cunixapiserver::OnHttpData(fd_t fd, uint events, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
-		std::string_view method; http::uri_t path; http::headers_t headers;  std::string request, content;
+		std::string_view method, content; http::uri_t path; http::headers_t headers;  std::string request;
 		inet::csocket so(fd, sa, ssl, poll);
 		if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
-			OnHttpRequest(so, method, path, headers, std::move(request), std::move(content));
+			OnHttpRequest(so, method, path, headers, std::move(request), content);
 		}
 		else {
 			OnHttpError(so, res);

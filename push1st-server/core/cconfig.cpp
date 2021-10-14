@@ -165,6 +165,7 @@ void cconfig::credential_t::load(const std::filesystem::path& path) {
 	if (credOptions.IsDefined() and credOptions.IsMap()) {
 		for (auto&& cred : credOptions) {
 			Id = Value<std::string>(cred.first, {});
+			Enable = Value<bool>(cred.second["enable"], Enable);
 			Name = Value<std::string>(cred.second["name"], {});
 			Key = Value<std::string>(cred.second["key"], {});
 			Secret = Value<std::string>(cred.second["secret"], {});
@@ -260,7 +261,7 @@ bool cconfig::cdsn::assign(const std::string& dsn) {
 	std::cmatch match;
 	if (std::regex_match(src.begin(), src.end(), match, re)) {
 		Proto = std::string_view{ match[1].first, (size_t)match[1].length() };
-		if (strncasecmp(Proto.data(), "http://", 7) == 0 or strncasecmp(Proto.data(), "https://", 7) == 0) {
+		if (strncasecmp(Proto.data(), "http://", 7) == 0 or strncasecmp(Proto.data(), "https://", 8) == 0 or strncasecmp(Proto.data(), "tcp://", 6) == 0 or strncasecmp(Proto.data(), "udp://", 6) == 0) {
 			User = std::string_view{ match[3].first,(size_t)match[3].length() };
 			Pwd = std::string_view{ match[4].first,(size_t)match[4].length() };
 			HostPort = std::string_view{ match[5].first,(size_t)match[5].length() };

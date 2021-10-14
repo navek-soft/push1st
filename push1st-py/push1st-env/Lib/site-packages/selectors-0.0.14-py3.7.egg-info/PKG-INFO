@@ -1,0 +1,17 @@
+Metadata-Version: 1.1
+Name: selectors
+Version: 0.0.14
+Summary: API to extract content from HTML & XML documents
+Home-page: UNKNOWN
+Author: Gregory Petukhov
+Author-email: lorien@lorien.name
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Topic :: Software Development :: Libraries :: Application Frameworks
+Classifier: Topic :: Software Development :: Libraries :: Python Modules

@@ -1,0 +1,7 @@
+..\logger\__init__.py
+..\logger\__pycache__\__init__.cpython-37.pyc
+..\logger\logging.conf
+PKG-INFO
+SOURCES.txt
+dependency_links.txt
+top_level.txt

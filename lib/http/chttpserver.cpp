@@ -15,10 +15,10 @@ void chttpserver::HttpData(fd_t fd, uint events, const sockaddr_storage& sa, con
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
 		
-		std::string_view method; http::uri_t path; http::headers_t headers;  std::string request, content;
+		std::string_view method, content; http::uri_t path; http::headers_t headers;  std::string request;
 		inet::csocket so(fd, sa, ssl, poll);
 		if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
-			OnHttpRequest(so, method, path, headers, std::move(request), std::move(content));
+			OnHttpRequest(so, method, path, headers, request, content);
 		}
 		else {
 			OnHttpError(so, res);

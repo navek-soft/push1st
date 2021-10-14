@@ -1,0 +1,5 @@
+weblib
+six
+
+[:platform_system != "Windows"]
+lxml

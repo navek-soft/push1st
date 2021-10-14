@@ -2,7 +2,7 @@
 
 using namespace inet;
 
-ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_view& method, http::uri_t& path, http::headers_t& headers, std::string& request, std::string& content, size_t max_size)
+ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_view& method, http::uri_t& path, http::headers_t& headers, std::string& request, std::string_view& content, size_t max_size)
 {
 	request.resize(max_size);
 	ssize_t res{ -1 };
@@ -15,7 +15,7 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
 		* TODO:	Data can be contains multiple request, create another method with virtual callback handler
 		*/
 
-		if (res = http::ParseRequest(std::string_view{ request.data(),request.size() }, method, path, headers, data, contentLength); res > 0) {
+		if (res = http::ParseRequest(std::string_view{ request.data(), nread }, method, path, headers, data, contentLength); res > 0) {
 			content = data;
 			return 0;
 		}
@@ -23,14 +23,9 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
 			if (http::GetValue(headers, "expect") == "100-continue" and (res = HttpWriteResponse(fd, "100")) == 0) {
 				;
 			}
-			else {
-				return res;
-			}
-
-			if (((nread + contentLength) - data.length()) < max_size) {
-				content.resize(contentLength);
-				std::memcpy(content.data(), data.data(), data.length());
-				if (res = fd.SocketRecv(content.data() + data.length(), content.size() - data.length(), nread, 0); res == 0) {
+			if ((contentLength + nread) < max_size) {
+				if (res = fd.SocketRecv(request.data() + nread, contentLength - data.length(), nread, 0); res == 0) {
+					content = { data.data(), contentLength };
 					return 0;
 				}
 			}
