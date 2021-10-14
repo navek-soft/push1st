@@ -37,7 +37,7 @@ class capiserver : public inet::chttpconnection
 		virtual ssize_t OnUnixAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) override;
 		void OnHttpData(fd_t fd, uint events, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll);
 		capiserver& Api;
-		size_t HttpMaxHeaderSize{ 8192 };
+		size_t HttpMaxHeaderSize{ 65536 };
 	};
 public:
 	capiserver(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccredentials>& credentials, config::interface_t config);
