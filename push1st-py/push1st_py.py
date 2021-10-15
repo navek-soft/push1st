@@ -19,18 +19,18 @@ def  ws_func(*args, **kwargs):
     print("processing Args:", args)
     print("processing Kwargs:", kwargs)
 
-#pus = push1st.cpusher("app-key","ubuntu-dev")
-#pus.Connect()
-#pus.Subscribe("mychannel","myevent",pusher_func)
+pus = push1st.cpusher("app-key","ubuntu-dev",secret="secret111")
+pus.Connect()
+pus.Subscribe("private-mychannel","myevent",pusher_func)
 
 #raw = push1st.cwebsocket("app-key","ubuntu-dev")
 #raw.Subscribe(["mychannel","mychannel"],ws_func)
 
-api = push1st.capi("app-test","ubuntu-dev")
+#api = push1st.capi("app-test","ubuntu-dev")
 
-for x in range(1, 100):
-    res, token = res, msg = api.TriggerEvent("myevent",["mychannel"],{"test":"data","value":6790},x)
-    print(res)
+#for x in range(1, 100):
+#    res, token = res, msg = api.TriggerEvent("myevent",["mychannel"],{"test":"data","value":6790},x)
+#    print(res)
 
 
 #res, token = api.GetAccessToken()

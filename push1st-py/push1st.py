@@ -9,12 +9,15 @@ class cpusher(pysher.Pusher, object):
     IsConnected = False
     ChannelsMap = []
     SessionId = None
-    def __init__(self, appkey, host="", port="6001/pusher", secure=False, secret="", user_data=None, log_level=logging.NOTSET, reconnect_interval=10):
+    def __init__(self, appkey, host="", port="6001", secure=False, secret="", user_data=None, log_level=logging.NOTSET, reconnect_interval=10):
         super().__init__(appkey, secure = secure, custom_host=host, secret=secret, user_data = user_data, log_level = log_level, port = port, reconnect_interval=reconnect_interval)
 
     def Connect(self):
         self.connection.bind('pusher:connection_established',self.connect_handler)
         self.connect()
+    
+    def Disconnect(self):
+        self.disconnect()
 
     def connect_handler(self, data):
         self.IsConnected = True
@@ -71,7 +74,7 @@ class capi:
         r = requests.get('{}/channels/{}/'.format(self.UrlApi,channel))
         return r.status_code, r.json()
 
-    def TriggerEvent(self, event, channels, data,n, session=""):
-        r = requests.post('{}/events/{}'.format(self.UrlApi,n), json={"name": event,"channels": channels,"socket_id": session,"data": data})
+    def TriggerEvent(self, event, channels, data, session=""):
+        r = requests.post('{}/events/'.format(self.UrlApi), json={"name": event,"channels": channels,"socket_id": session,"data": data})
         return r.status_code, r.json()
 

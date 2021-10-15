@@ -92,8 +92,8 @@ static inline void Trim(std::string_view& data) {
 
 bool ccredentials::capplication::ValidateSession(std::string_view token, const std::string& session, const std::string& channel, const std::string& custom_data, const std::string& origin) {
 	
-	if (token.compare(0, 4, "key:") == 0) {
-		token.remove_prefix(4);
+	if (auto npos{ token.find_first_of(':') }; npos != std::string_view::npos) {
+		token.remove_prefix(npos + 1);
 	}
 	Trim(token);
 	if (token.length() >= (SHA256_DIGEST_LENGTH * 2)) {
