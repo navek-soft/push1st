@@ -13,7 +13,12 @@ Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher]
  - [x] Support Keep-Alive for API and WebHook
  - [x] Public, Private, Presence channels support
  - [x] Permanent or auto-closing channel 
- - [x] Cluster functionality ( presence user synchronization (todo), messages delivery )
+ - [x] Cluster functionality
+   - [x] Register\Unregister channel
+   - [x] Join\Leave subscriber
+   - [x] Cross nodes message delivery
+   - [x] Lua scripting cluster functionality
+   - [ ] Presence user synchronization
  - [x] API Pusher format support with TCP or\and UNIX socket
  - [x] API access token, Pusher key generation, channels API
  - [x] Support WebSocket push messaging
@@ -21,7 +26,9 @@ Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher]
  - [ ] IP whitelist for every enabled protocol
  - [x] Suitable for distributed one-to-many communications and distributed applications 
  - [x] TCP/IP as basic communication protocol
- - [x] ws/wss proto ( auto generate self-signed certificate if cer\key not specified )
+ - [x] WS/WSS proto ( auto generate self-signed certificate if cer\key not specified )
+ - [x] Support ws session prefix naming ( can be use for multicast message pushing )
+
 
 ## Installation guide
 
