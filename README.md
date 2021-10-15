@@ -74,6 +74,7 @@ see [Push1ST API](/readme/api.md)
 ## Author 
 
 ## License
+ [Apache-2.0 License](/LICENSE)
 
 Copyright (c) 2021 Naveksoft.
 
