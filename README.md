@@ -67,11 +67,7 @@ ws://localhost:6001/ws/app/`{{app-key}}`/`{channel-name-1}`/`{channel-name-2}`/[
 
 see [Python examples](/readme/example.md)
 
-[Push1ST API](/readme/api.md)
-
-- Key, Token generation methods
-- Channels info
-- Push events to channels
+see [Push1ST API](/readme/api.md)
 
 ## Support
 
