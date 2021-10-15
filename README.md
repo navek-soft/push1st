@@ -2,29 +2,29 @@
 Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket) 
 
 ## Key features
+ - [x] Suitable for distributed one-to-many communications and distributed applications 
  - [x] Cross type channel messaging ( auto casting message between channel protocol format )
  - [x] Broadcast, Multicast, Unicast - message delivery, 
  - [x] Muti-applications support ( credentials for every app )
- - [x] Improved hooks  ( multiple http/https webhooks, lua hook,  for every app, triggered by register, unregister, join, leave or push into channel )
- - [x] Support multiple prtocols 
+ - [x] Improved hooks  ( multiple http/https webhooks, lua hook, for every app, triggered by register, unregister, join, leave or push into channel )
+ - [x] Support multiple protocols 
    - [x] Pusher
    - [x] Raw WebSocket ( with multiple channel subscription )
    - [ ] MQTT protocols (todo)
- - [x] Support Keep-Alive for API and WebHook
+ - [x] Support HTTP Pipelining for API and WebHook
  - [x] Public, Private, Presence channels support
  - [x] Permanent or auto-closing channel 
  - [x] Cluster functionality
    - [x] Register\Unregister channel
    - [x] Join\Leave subscriber
    - [x] Cross nodes message delivery
-   - [x] Lua scripting cluster functionality
+   - [x] Extending cluster functionality via Lua script
    - [ ] Presence user synchronization
  - [x] API Pusher format support with TCP or\and UNIX socket
  - [x] API access token, Pusher key generation, channels API
- - [x] Support WebSocket push messaging
+ - [x] Support WebSocket push messaging (broadcast, multicast, unicast )
  - [x] Websocket channel authorization by Bearer access token
  - [ ] IP whitelist for every enabled protocol
- - [x] Suitable for distributed one-to-many communications and distributed applications 
  - [x] TCP/IP as basic communication protocol
  - [x] WS/WSS proto ( auto generate self-signed certificate if cer\key not specified )
  - [x] Support for websocket sessions prefix naming ( can be use for multicast message pushing )
@@ -38,19 +38,18 @@ Build from source code [build instruction](/readme/build.md).
 
 ## Run push1st server
 
-После установки или сборки необходимо сконфигурировать ( [Configure push1st](/readme/configure.md) ) сервер. Push1ST по умолчанию устанаваливается в директорию /opt/naveksoft/push1st
-В случае установки из репозитория сервер регистрируется как служба systemd ( служба не запускается автоматически, необходм ручной запуск. )
+After install or build Push1ST your can configure server ( [Configure push1st](/readme/configure.md) ). Default Push1ST installed into /opt/naveksoft/push1st and register as systemd service. ( Service not start automatically. You must run service manuall, after each install.)
 
 ```bash
   sudo service push1st start
 ```
  
- Для запуска push1st из командной строки ( не как служба )
+ Run Push1ST from command line  ( not as service )
 
 ```bash
   /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V4
   
-  # Для просмотра всех параметров коммандой строки
+  # See command line params
   /opt/naveksoft/push1st/push1st --help
   
 ```
