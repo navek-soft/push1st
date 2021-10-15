@@ -27,7 +27,7 @@ Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher]
  - [x] Suitable for distributed one-to-many communications and distributed applications 
  - [x] TCP/IP as basic communication protocol
  - [x] WS/WSS proto ( auto generate self-signed certificate if cer\key not specified )
- - [x] Support ws session prefix naming ( can be use for multicast message pushing )
+ - [x] Support for websocket sessions prefix naming ( can be use for multicast message pushing )
 
 
 ## Installation guide
