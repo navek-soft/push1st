@@ -17,16 +17,16 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "http", "lib\http\http.vcxit
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{02C7B5F7-B081-4187-8FEF-02EAE4708BB7}"
 	ProjectSection(SolutionItems) = preProject
+		testsuite\push1st.py = testsuite\push1st.py
 		test\pusher-cli.html = test\pusher-cli.html
 		test\pusher-cli.js = test\pusher-cli.js
+		testsuite\testsuite.py = testsuite\testsuite.py
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "make", "make", "{A7E7FAB1-BF0E-4110-9517-8166C517D706}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\ubuntu.yml = .github\workflows\ubuntu.yml
 	EndProjectSection
-EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "push1st-py", "push1st-py\push1st-py.pyproj", "{ACA68828-D2D2-4D43-B06B-D17F846F209C}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -110,26 +110,6 @@ Global
 		{F627D8BA-FA83-466F-ABC8-3ABB9542E5B4}.Release|x86.ActiveCfg = Release|x86
 		{F627D8BA-FA83-466F-ABC8-3ABB9542E5B4}.Release|x86.Build.0 = Release|x86
 		{F627D8BA-FA83-466F-ABC8-3ABB9542E5B4}.Release|x86.Deploy.0 = Release|x86
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Debug|ARM64.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node1|Any CPU.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node1|ARM.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node1|ARM64.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node1|x64.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node1|x86.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node2|Any CPU.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node2|ARM.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node2|ARM64.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node2|x64.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.node2|x86.ActiveCfg = Debug|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Release|ARM.ActiveCfg = Release|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Release|ARM64.ActiveCfg = Release|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Release|x64.ActiveCfg = Release|Any CPU
-		{ACA68828-D2D2-4D43-B06B-D17F846F209C}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

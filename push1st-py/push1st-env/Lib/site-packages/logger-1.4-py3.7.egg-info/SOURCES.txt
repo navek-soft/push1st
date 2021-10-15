@@ -1,8 +1,0 @@
-setup.cfg
-setup.py
-logger/__init__.py
-logger/logging.conf
-logger.egg-info/PKG-INFO
-logger.egg-info/SOURCES.txt
-logger.egg-info/dependency_links.txt
-logger.egg-info/top_level.txt

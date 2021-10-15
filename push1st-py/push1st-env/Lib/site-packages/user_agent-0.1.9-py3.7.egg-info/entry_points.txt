@@ -1,3 +1,0 @@
-[console_scripts]
-ua = user_agent.cli:script_ua
-
