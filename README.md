@@ -70,6 +70,7 @@ see [Python examples](/readme/example.md)
 see [Push1ST API](/readme/api.md)
 
 ## Support
+ Push1ST is our open source project supported by a small group of people. We do not offer formal support processes. If you require formal support arrangements please email us. [info@naveksoft.com](mailto:info@naveksoft.com?subject=Push1ST,GITHUB)
 
 ## Author 
 
