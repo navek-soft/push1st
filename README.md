@@ -57,8 +57,8 @@ After install or build Push1ST your can configure server ( [Configure push1st](/
 ## Usage and API 
 
 Для подключения клиентов к каналам необходимо воспользоваться библиотеками:
-- [Клиенты Pusher](https://pusher.com/docs/channels/channels_libraries/libraries/)
-- Либой WebSocket client для RawWebSocket
+- [Pusher client libraries](https://pusher.com/docs/channels/channels_libraries/libraries/)
+- Any WebSocket client for Raw WebSocket
 
 ws://localhost:6001/pusher/app/`{{app-key}}`/ or ws://localhost:6001/app/`{{app-key}}`/ 
 
