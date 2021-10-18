@@ -1,4 +1,4 @@
-# NavekSoft Push1ST
+# Push1ST
 Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket) 
 
 ## Key features
