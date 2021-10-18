@@ -1,17 +1,8 @@
 pipeline {
-    agent any
-
-    environment {
-        SLACK_TOKEN = credentials('41')
-    }
+    agent any    
 
     triggers {
-        GenericTrigger(
-            // genericVariables: [
-            //     [key: 'name', value: '$.pusher.name'],                
-            //     [key: 'url', value: '$.commits.[0].url'],
-            //     [key: 'branch', value: '$.repository.master_branch'],
-            // ],
+        GenericTrigger(            
 
             causeString: 'Triggered by $name',
 
@@ -37,13 +28,7 @@ pipeline {
                 echo 'Check available versions'
                 sh 'sudo apt update && apt list -a push1st'
                 echo 'Install from repository'
-                sh 'sudo apt update && sudo apt install push1st'                
-                // sh 'curl -F file=@${WORKSPACE}/plan.txt \
-                //     -F filetype=auto \
-                //     -F "initial_comment=Terraform plan output:" \
-                //     -F channels=C029JCMAG20 \
-                //     -H "Authorization: Bearer $SLACK_TOKEN" \
-                //     https://slack.com/api/files.upload'                	   
+                sh 'sudo apt update && sudo apt install push1st'                            	   
             }
         }
 
@@ -56,66 +41,7 @@ pipeline {
                 echo 'Launch tests'
                 sh './launch_functional_tests_ps.sh'                   	   
             }
-        }
-
-        // stage('slack approve plan') {            
-        //     steps {
-        //         script {
-        //             blocks = [
-        //                 [
-        //                     "type": "section",
-        //                     "text": [
-        //                         "type": "mrkdwn",
-        //                         "text": "Terraform will perform the actions described above. Only 'Yes' will be accepted to approve:"
-        //                     ]
-        //                 ],                        
-        //                 [
-        //                     "type": "divider"
-        //                 ],
-        //                 [
-        //                     "type": "actions",
-        //                     "elements": [
-        //                         [
-        //                             "type": "button",
-        //                             "text": [
-        //                                 "type": "plain_text",
-        //                                 "emoji": true,
-        //                                 "text": "Yes"
-        //                             ],
-        //                             "style": "primary",
-        //                             "url": "${BUILD_URL}/input/Confirm/proceedEmpty"
-        //                         ],
-        //                         [
-        //                             "type": "button",
-        //                             "text": [
-        //                                 "type": "plain_text",
-        //                                 "emoji": true,
-        //                                 "text": "No"
-        //                             ],
-        //                             "style": "danger",
-        //                             "url": "${BUILD_URL}/input/Confirm/abort"
-        //                         ]
-        //                     ]				
-        //                 ]
-        //             ]
-        //         }
-                
-        //         slackSend(channel: "#terraform-approve", blocks: blocks)
-
-        //         script {
-        //             input id: 'confirm', message: 'Terraform will perform the actions described above. Only "Yes" will be accepted to approve:', ok: 'Yes', submitter: 'admin'
-        //         }
-
-        //         // sh "terraform apply -auto-approve -no-color"
-        //         sh "terraform destroy -auto-approve -no-color"                
-        //     }
-
-        //     post {
-        //         aborted{
-        //             echo "Apply cancelled"
-        //         }
-        //     }            
-        // }
+        }       
     }
 
     post {
