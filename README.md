@@ -40,6 +40,7 @@ Build from source code [build instruction](/readme/build.md).
 
 After install or build Push1ST your can configure server ( [Configure push1st](/readme/configure.md) ). Default Push1ST installed into /opt/naveksoft/push1st and register as systemd service. ( Service not start automatically. You must run service manuall, after each install.)
 
+
 ```bash
   sudo service push1st start
 ```
