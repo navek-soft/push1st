@@ -114,6 +114,15 @@ ssize_t inet::SetUdpCork(fd_t fd, bool enable) {
 	return setsockopt((int)fd, IPPROTO_UDP, UDP_CORK, &cork, sizeof(cork)) == 0 ? 0 : -errno;
 }
 
+ssize_t inet::SetTcpCork(fd_t fd, bool enable) {
+	int cork = enable ? 1 : 0;
+	return setsockopt((int)fd, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork)) == 0 ? 0 : -errno;
+}
+
+ssize_t inet::SetTcpNoDelay(fd_t fd, bool enable) {
+	int nodelay = enable ? 1 : 0;
+	return setsockopt((int)fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)) == 0 ? 0 : -errno;
+}
 
 
 ssize_t inet::SetSendTimeout(fd_t fd, size_t milliseconds) {

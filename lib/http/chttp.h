@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <cstring>
 
 namespace http {
 	enum auth_t { none = 0, basic = 1, digest = 2, token = 3, disable = 4 };
@@ -11,7 +12,7 @@ namespace http {
 		using params_t = std::unordered_multimap<std::string_view, std::string_view>;
 	public:
 		curi() { ; }
-		curi(const curi& u) : uriFull{ u.uriFull }, uriPath{ u.uriPath }, uriPathList{ u.uriPathList }, uriArgs{ u.uriArgs }{; }
+		curi(const curi& u) : uriFull{ u.uriFull }, uriPath{ u.uriPath }, uriPathList{ u.uriPathList.begin(),u.uriPathList.end() }, uriArgs{ u.uriArgs.begin(),u.uriArgs.end() }{; }
 		inline std::string_view at(size_t idx) const { return uriPathList[idx]; }
 		inline std::string_view uri() const { return uriFull; }
 		inline std::string_view path() const { return uriPath; }
@@ -71,6 +72,11 @@ namespace http {
 
 	std::string RangeHeader(ssize_t from, ssize_t to, size_t ContentLength, bool withoutLength = false);
 	bool IsGetRange(const headers_t& headers, ssize_t& from, ssize_t& to);
+	
+	inline bool IsConnectionKeepAlive(const headers_t& headers) {
+		if (auto&& hIt{ headers.find("connection") }; hIt != headers.end()) return strncasecmp(hIt->second.data(),"keep-alive",10);
+		return false;
+	}
 
 	std::string_view& TrimBlank(std::string_view& str);
 	std::string Md5(const std::string& value);

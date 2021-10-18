@@ -11,6 +11,7 @@ message_t msg::make(json::value_t&& t, const std::string& producer) {
 	(*msg)["#msg-arrival"] = std::chrono::system_clock::now().time_since_epoch().count();
 	(*msg)["#msg-from"] = producer;
 	(*msg)["#msg-delivery"] = "broadcast";
+	(*msg)["#msg-expired"] = 0;
 	return msg;
 }
 
@@ -20,18 +21,26 @@ message_t msg::unserialize(const std::string_view& data, const std::string& prod
 		if (msg and json::unserialize(data, *msg.get())) {
 			(*msg)["#msg-id"] = ++MsgId;
 			(*msg)["#msg-arrival"] = std::chrono::system_clock::now().time_since_epoch().count();
-			(*msg)["#msg-expired"] = !((*msg).contains("options") and (*msg)["options"].contains("ttl")) ? 0 :
-				(std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den) + (*msg)["options"]["ttl"].get<size_t>();
 			(*msg)["#msg-from"] = producer;
+			(*msg)["#msg-expired"] = 0;
 			(*msg)["#msg-delivery"] = "broadcast";
-			if ((*msg).contains("options") and (*msg)["options"].contains("delivery")) {
-				if (auto&& val{ (*msg)["options"]["delivery"].get<std::string_view>() }; val == "multicast") {
-					(*msg)["#msg-delivery"] = "multicast";
+			if ((*msg).contains("options")) {
+				if ((*msg)["options"].contains("ttl")) {
+					(*msg)["#msg-expired"] = (std::chrono::system_clock::now().time_since_epoch().count() / std::chrono::system_clock::period::den) + (*msg)["options"]["ttl"].get<size_t>();
 				}
-				else if (val == "unicast") {
-					(*msg)["#msg-delivery"] = "unicast";
+				if ((*msg)["options"].contains("delivery")) {
+					if (auto&& val{ (*msg)["options"]["delivery"].get<std::string_view>() }; val == "multicast") {
+						(*msg)["#msg-delivery"] = "multicast";
+					}
+					else if (val == "unicast") {
+						(*msg)["#msg-delivery"] = "unicast";
+					}
+				}
+				if ((*msg)["options"].contains("session")) {
+					(*msg)["socket_id"] = (*msg)["options"]["session"].get<std::string>();
 				}
 			}
+			
 			return msg;
 		}
 	}

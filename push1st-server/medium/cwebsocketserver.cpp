@@ -5,10 +5,18 @@
 #include "ccredentials.h"
 
 ssize_t cwebsocketserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) {
-	if (auto&& proto{ ProtoRoutes.find(std::string{path.at(1)}) }; proto != ProtoRoutes.end() and path.at(2) == AppPath) {
-		if (auto&& App{ Credentials->GetAppByKey(std::string{path.at(3)}) }; App) {
-			return cwsserver::WsUpgrade(fd, path, headers);
+	if (auto&& proto{ ProtoRoutes.find(std::string{path.at(1)}) }; proto != ProtoRoutes.end()) {
+		if(path.at(1) != AppPath) {
+			if (auto&& App{ Credentials->GetAppByKey(std::string{path.at(3)}) }; App) {
+				return cwsserver::WsUpgrade(fd, path, headers);
+			}
 		}
+		else if (path.at(1) == AppPath /* Defaul protocol */) {
+			if (auto&& App{ Credentials->GetAppByKey(std::string{path.at(2)}) }; App) {
+				return cwsserver::WsUpgrade(fd, path, headers);
+			}
+		}
+		
 		HttpWriteResponse(fd, "403");
 		fd.SocketClose();
 		return -EACCES;
@@ -19,7 +27,9 @@ ssize_t cwebsocketserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& 
 }
 
 inet::socket_t cwebsocketserver::OnWsUpgrade(const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) {
-	if (auto&& conn{ ProtoRoutes[std::string{path.at(1)}](Channels, Credentials->GetAppByKey(std::string{path.at(3)}), fd, path, headers) }; conn) {
+	std::string AppId{ std::string{path.at(path.at(1) != AppPath ? 3 : 2)} };
+	auto&& App{ Credentials->GetAppByKey(AppId) };
+	if (auto&& conn{ ProtoRoutes[std::string{path.at(1)}](Channels, App, fd, path, headers) }; App and conn) {
 		return conn;
 	}
 	else {
@@ -36,7 +46,7 @@ cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, c
 	if (config.Proto & proto_t::type::websocket) {
 		syslog.ob.print("Proto", "WebSocket ... enable %s proto, listen on %s, route /%s/", config.Ssl.Enable ? "https" : "http", std::string{ config.Listen.hostport() }.c_str(), config.WebSocket.Path.c_str());
 		ProtoRoutes[config.WebSocket.Path] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
-			if (auto&& conn{ std::make_shared<cwssession>(channels, app, fd, config.WebSocket.MaxPayloadSize, config.WebSocket.PushOn,config.WebSocket.ActivityTimeout) }; conn and conn->OnWsConnect(path, headers)) {
+			if (auto&& conn{ std::make_shared<cwssession>(channels, app, fd, config.WebSocket.MaxPayloadSize, config.WebSocket.PushOn,config.WebSocket.ActivityTimeout, std::string{path.arg("session")}) }; conn and conn->OnWsConnect(path, headers)) {
 				return std::dynamic_pointer_cast<inet::csocket>(conn);
 			}
 			return {};
@@ -47,6 +57,14 @@ cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, c
 	}
 	
 	if (config.Proto & proto_t::type::pusher) {
+		/* Set Pusher as default proto /app/<app-key> */
+		syslog.ob.print("Proto", "Default ... Pusher %s proto, listen on %s, route /%s/", config.Ssl.Enable ? "https" : "http", std::string{ config.Listen.hostport() }.c_str(), "app");
+		ProtoRoutes["app"] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
+			if (auto&& conn{ std::make_shared<cpushersession>(channels, app, fd, config.Pusher.MaxPayloadSize, config.Pusher.PushOn,config.Pusher.ActivityTimeout) }; conn and conn->OnWsConnect(path, headers)) {
+				return std::dynamic_pointer_cast<inet::csocket>(conn);
+			}
+			return {};
+		};
 		syslog.ob.print("Proto", "Pusher ... enable %s proto, listen on %s, route /%s/", config.Ssl.Enable ? "https" : "http", std::string{ config.Listen.hostport() }.c_str(), config.Pusher.Path.c_str());
 		ProtoRoutes[config.Pusher.Path] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
 			if (auto&& conn{ std::make_shared<cpushersession>(channels, app, fd, config.Pusher.MaxPayloadSize, config.Pusher.PushOn,config.Pusher.ActivityTimeout) }; conn and conn->OnWsConnect(path, headers)) {

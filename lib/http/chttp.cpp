@@ -189,16 +189,7 @@ ssize_t http::ParseRequest(std::string_view request, std::string_view& method, u
 			}
 			return -EBADMSG;
 		}
-		content = { request.data(), 0 };
 
-		if (auto&& clIt{ headers.find("content-length") }; clIt != headers.end()) {
-			contentLength = parseNumber(clIt->second);
-			if (request.length() < contentLength) {
-				content = { request.data(), request.length() };
-				return -ENODATA;
-			}
-			content = { request.data(), contentLength };
-		}
 
 		/* uri split */
 
@@ -246,6 +237,16 @@ ssize_t http::ParseRequest(std::string_view request, std::string_view& method, u
 				}
 				break;
 			}
+		}
+		content = { request.data(), 0 };
+
+		if (auto&& clIt{ headers.find("content-length") }; clIt != headers.end()) {
+			contentLength = parseNumber(clIt->second);
+			if (request.length() < contentLength) {
+				content = { request.data(), request.length() };
+				return -ENODATA;
+			}
+			content = { request.data(), contentLength };
 		}
 
 		return (ssize_t)((ptrdiff_t)(content.data() + content.length()) - (ptrdiff_t)begin);

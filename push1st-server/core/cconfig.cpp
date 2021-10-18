@@ -102,9 +102,10 @@ void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& op
 void cconfig::cluster_t::load(const std::filesystem::path& path, const yaml_t& options) {
 	if (options.IsDefined() and options.IsMap()) {
 		Listen = options["listen"];
+		Module = options["module"];
 		//Node = Value<ssize_t>(options["node"], -1);
 		PingInterval = (std::time_t)Value<size_t>(options["ping-interval"], PingInterval);
-		Sync = Map(options["hook"]["trigger"], {
+		Sync = Map(options["sync"], {
 				{"register", sync_t::type::reg},{"unregister",sync_t::type::unreg},{"join",sync_t::type::join},{"leave",sync_t::type::leave},{"push",sync_t::type::push} }, sync_t::type::none);
 
 		if (options["family"].IsSequence()) {
@@ -164,6 +165,7 @@ void cconfig::credential_t::load(const std::filesystem::path& path) {
 	if (credOptions.IsDefined() and credOptions.IsMap()) {
 		for (auto&& cred : credOptions) {
 			Id = Value<std::string>(cred.first, {});
+			Enable = Value<bool>(cred.second["enable"], Enable);
 			Name = Value<std::string>(cred.second["name"], {});
 			Key = Value<std::string>(cred.second["key"], {});
 			Secret = Value<std::string>(cred.second["secret"], {});
@@ -176,6 +178,7 @@ void cconfig::credential_t::load(const std::filesystem::path& path) {
 			}
 
 			if (cred.second["hook"].IsDefined()) {
+				OptionKeepAlive = Value<bool>(cred.second["hook"]["keep-alive"], OptionKeepAlive);
 				if (cred.second["hook"]["trigger"].IsSequence()) {
 					Hooks = Map(cred.second["hook"]["trigger"], {
 						{"register", hook_t::type::reg},{"unregister",hook_t::type::unreg},{"join",hook_t::type::join},{"leave",hook_t::type::leave},{"push",hook_t::type::push} },
@@ -258,7 +261,7 @@ bool cconfig::cdsn::assign(const std::string& dsn) {
 	std::cmatch match;
 	if (std::regex_match(src.begin(), src.end(), match, re)) {
 		Proto = std::string_view{ match[1].first, (size_t)match[1].length() };
-		if (!(strncasecmp(Proto.data(), "unix://", 7) == 0 or strncasecmp(Proto.data(), "file://", 7) == 0)) {
+		if (strncasecmp(Proto.data(), "http://", 7) == 0 or strncasecmp(Proto.data(), "https://", 8) == 0 or strncasecmp(Proto.data(), "tcp://", 6) == 0 or strncasecmp(Proto.data(), "udp://", 6) == 0) {
 			User = std::string_view{ match[3].first,(size_t)match[3].length() };
 			Pwd = std::string_view{ match[4].first,(size_t)match[4].length() };
 			HostPort = std::string_view{ match[5].first,(size_t)match[5].length() };

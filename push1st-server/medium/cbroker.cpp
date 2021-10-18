@@ -13,9 +13,9 @@ std::shared_ptr<cchannel> cbroker::GetChannel(const std::string& appId, const st
     return Channels->Get(appId, chName);
 }
 
-std::unique_ptr<chook> cbroker::RegisterHook(const std::string& endpoint) {
+std::unique_ptr<chook> cbroker::RegisterHook(const std::string& endpoint, bool keepalive) {
     if (dsn_t dsn{ endpoint }; dsn.isweb()) {
-        std::string endpointId;
+        /*std::string endpointId;
         endpointId.assign(dsn.proto()).append(dsn.hostport());
         std::shared_ptr<cconnection> connection;
         if (auto&& it{ HookConnections.find(endpointId) }; it != HookConnections.end()) {
@@ -25,7 +25,8 @@ std::unique_ptr<chook> cbroker::RegisterHook(const std::string& endpoint) {
             connection = std::make_shared<cconnection>(dsn);
             HookConnections.emplace(endpointId, connection);
         }
-        return std::make_unique<cwebhook>(connection, endpoint);
+        */
+        return std::make_unique<cwebhook>(endpoint, keepalive);
     }
     return std::make_unique<cluahook>(endpoint);
 }
@@ -79,6 +80,8 @@ void cbroker::Initialize(const core::cconfig& config) {
     }
 }
 
+static volatile int nsig{ -1 };
+
 int cbroker::WaitFor(std::initializer_list<int>&& signals) {
     sigset_t sigSet, sigMask;
     struct sigaction sigAction;
@@ -90,6 +93,7 @@ int cbroker::WaitFor(std::initializer_list<int>&& signals) {
     memset(&sigAction, 0, sizeof(sigAction));
 
     sigAction.sa_sigaction = [](int sig, siginfo_t* si, void* ctx) {
+        nsig = sig;
         psiginfo(si, "SIGNAL");
     };
     sigAction.sa_flags |= SA_SIGINFO | SA_ONESHOT;
@@ -100,8 +104,9 @@ int cbroker::WaitFor(std::initializer_list<int>&& signals) {
     }
 
     sigprocmask(SIG_BLOCK, &sigSet, &sigMask);
-    int nsig{ -1 };
-    while ((nsig = sigtimedwait(&sigMask, &sigInfo, &tmout)) == -1 or errno == EAGAIN) {
+    
+    int sig{ -1 };
+    while (nsig == -1 and ((sig = sigtimedwait(&sigMask, &sigInfo, &tmout)) == -1 or errno == EAGAIN)) {
         OnIdle();
     }
 //    nsig = sigsuspend(&sigMask);

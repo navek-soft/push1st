@@ -44,7 +44,7 @@ protected:
 
 static inline channel_t ChannelType(const std::string_view& Name) {
 	if (Name.compare(0, 8, "private-") == 0) { return channel_t::type::priv; }
-	if (Name.compare(0, 9, "presense-") == 0) { return channel_t::type::pres; }
+	if (Name.compare(0, 9, "presence-") == 0) { return channel_t::type::pres; }
 	if (Name.compare(0, 10, "protected-") == 0) { return channel_t::type::prot; }
 	return channel_t::type::pub;
 }

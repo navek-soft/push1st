@@ -37,14 +37,14 @@ public:
 	~ccredentials();
 
 	inline std::shared_ptr<app_t> GetAppByKey(const std::string& appKey) {
-		if (auto&& it{ appCreds.find(appKey) }; it != appCreds.end()) {
+		if (auto&& it{ appCreds.find(appKey) }; it != appCreds.end() and it->second->Enable) {
 			return it->second;
 		}
 		return {};
 	}
 
 	inline std::shared_ptr<app_t> GetAppById(const std::string& appId) {
-		if (auto&& it{ appIds.find(appId) }; it != appIds.end()) {
+		if (auto&& it{ appIds.find(appId) }; it != appIds.end() and it->second->Enable) {
 			return it->second;
 		}
 		return {};

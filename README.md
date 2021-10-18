@@ -1,66 +1,82 @@
-# NavekSoft Push1st
-PUB/SUB multiple protocol message broker server (Pusher, MQTT, RAW websocket) 
+# NavekSoft Push1ST
+Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket) 
 
 ## Key features
- - Cross type channel messaging ( auto casting message between channel format )
- - Broadcast, Multicast, Unicast - message delivery, 
- - TTL for message
- - Multi-applications support ( credentials for every app )
- - Improved hooks  ( multiple http/https webhook with keeap-alive, lua hook,  for every app, triggered by register, unregister, join, leave or push into channel )
- - Support Pusher, Simple RawWebsocket ( with multiple channel subscription ), MQTT protocols
- - Support Keep-Alive for API and WebHook
- - Public, Private, Presence channels support
- - Permanent or auto-closing channel 
- - Cluster functionality ( presence user synchronization, messages delivery )
- - API Pusher format support with TCP or\and UNIX socket
- - Support WebSocket push messaging
- - IP whitelist for every enabled protocol
- - Neutral to message content 
- - Suitable for distributed one-to-many communications and distributed applications 
- - TCP/IP as basic communication protocol
- - ws/wss proto ( auto generate self-signed certificate if cer\key not specified )
+ - [x] Suitable for distributed one-to-many communications and distributed applications 
+ - [x] Cross type channel messaging ( auto casting message between channel protocol format )
+ - [x] Broadcast, Multicast, Unicast - message delivery, 
+ - [x] Muti-applications support ( credentials for every app )
+ - [x] Improved hooks  ( multiple http/https webhooks, lua hook, for every app, triggered by register, unregister, join, leave or push into channel )
+ - [x] Support multiple protocols 
+   - [x] Pusher
+   - [x] Raw WebSocket ( with multiple channel subscription )
+   - [ ] MQTT protocols (todo)
+ - [x] Support HTTP Pipelining for API and WebHook
+ - [x] Public, Private, Presence channels support
+ - [x] Permanent or auto-closing channel 
+ - [x] Cluster functionality
+   - [x] Register\Unregister channel
+   - [x] Join\Leave subscriber
+   - [x] Cross nodes message delivery
+   - [x] Extending cluster functionality via Lua script
+   - [ ] Presence user synchronization
+ - [x] API Pusher format support with TCP or\and UNIX socket
+ - [x] API access token, Pusher key generation, channels API
+ - [x] Support WebSocket push messaging (broadcast, multicast, unicast )
+ - [x] Websocket channel authorization by Bearer access token
+ - [ ] IP whitelist for every enabled protocol
+ - [x] TCP/IP as basic communication protocol
+ - [x] WS/WSS proto ( auto generate self-signed certificate if cer\key not specified )
+ - [x] Support for websocket sessions prefix naming ( can be use for multicast message pushing )
 
-## Installation guide from apt repository
 
-###### Import repository key
+## Installation guide
+
+Install from APT ( Ubuntu, Debian ) repository [installation guide](/readme/installation.md).
+
+Build from source code [build instruction](/readme/build.md).
+
+## Run push1st server
+
+After install or build Push1ST your can configure server ( [Configure push1st](/readme/configure.md) ). Default Push1ST installed into /opt/naveksoft/push1st and register as systemd service. ( Service not start automatically. You must run service manuall, after each install.)
+
 
 ```bash
-	wget https://reader:reader1@nexus.naveksoft.com/repository/gpg/naveksoft.gpg.key -O naveksoft.gpg.key
-	sudo apt-key add naveksoft.gpg.key
+  sudo service push1st start
 ```
-
-###### Add repository to source list and adjust auth
-```bash
-	echo "deb [arch=amd64] https://nexus.naveksoft.com/repository/ubuntu-universe/ universe main" | sudo tee /etc/apt/sources.list.d/naveksoft-universe.list
-	echo "machine nexus.naveksoft.com/repository login reader password reader1" | sudo tee /etc/apt/auth.conf.d/nexus.naveksoft.com.conf
-```
-
-
-###### Check available versions
-```bash
-	sudo apt update
-	apt list -a push1st
-```
-
-###### Install from repository
+ 
+ Run Push1ST from command line  ( not as service )
 
 ```bash
-	sudo apt update
-	sudo apt install push1st
+  /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V4
+  
+  # See command line params
+  /opt/naveksoft/push1st/push1st --help
+  
 ```
 
-## Install additional dependecies
+## Usage and API 
 
-###### Lua 5.3 dependecies ( optional )
+Для подключения клиентов к каналам необходимо воспользоваться библиотеками:
+- [Pusher client libraries](https://pusher.com/docs/channels/channels_libraries/libraries/)
+- Any WebSocket client for Raw WebSocket
 
-```bash
-	sudo luarocks install lua-cjson2
-```
+ws://localhost:6001/pusher/app/`{{app-key}}`/ or ws://localhost:6001/app/`{{app-key}}`/ 
 
+ws://localhost:6001/ws/app/`{{app-key}}`/`{channel-name-1}`/`{channel-name-2}`/[?`session=prefix`&`token=access-token`]
 
+see [Python examples](/readme/example.md)
 
-## Dependencies
-libyaml-cpp0.6 - yaml file reader
-liblua5.3-dev - lua 5.3 binding
-openssl (libssl, libcrypto)
-lua-cjson2
+see [Push1ST API](/readme/api.md)
+
+## Support
+
+## Author 
+
+## License
+ [Apache-2.0 License](/LICENSE)
+
+Copyright (c) 2021 Naveksoft.
+
+This project is provided as is without any warranties. Use at your own risk.<br/>
+By using Push1ST you agree with its [privacy](PRIVACY.md) policy and [license](LICENSE.md).

@@ -1,3 +1,11 @@
+### Конфигурирование Push1ST
+
+По умолчанию файлы конфигурации находятся в /opt/naveksoft/push1st/server.example.yaml
+Каждое приложение (application) описывается отдельным yaml файлом
+
+#### Параметры сервера (server.yaml)
+
+```yaml
 # ssl forward declaration
 ssl:
     - &default-ssl
@@ -33,7 +41,6 @@ cluster:
     listen: udp://*:8001 # strongly recommended bind to internal IP or close port with iptables
     family: [ node1.push1st.local, node2.push1st.local ]
     sync: [ register, unregister, join, leave, push ]
-    module: lua://modules/cluster.lua # cluster module
 
 api:
     keep-alive-timeout: 10          # http api keep-alive connection timeout
@@ -45,3 +52,21 @@ api:
 
 credentials: 
     - apps/*.yml
+```
+
+#### Регистрация приложения и установка разрешений ( apps/app.example.yaml)
+
+```yaml
+app-test:   # Application ID ( used in API request methods )
+  name: "Default Application for tests" # Application frendly name
+  key: "app-key"    # App key ( for Pusher, Ws channel supscription URL )
+  secret: "secret"  # App secret ( for generate and validate authorization on private, presence channels )
+  options: { client-messages: true, statistic: false }
+  channels: [ public, private, presence ] # Type of channels enabled for app
+  origins: [ ] # Origins list.
+  hook: # Application hook section
+    trigger: [ register, unregister, join, leave, push ] # Enabled triggers for hook
+    endpoint: # List of endpoint for hook
+        - http://127.0.0.1:6002/
+        - http://localhost:6002/
+```

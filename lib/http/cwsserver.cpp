@@ -43,7 +43,7 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
 		if (events == EPOLLIN) {
-			std::string_view method; http::uri_t path; http::headers_t headers;  std::string request, content;
+			std::string_view method, content; http::uri_t path; http::headers_t headers;  std::string request;
 			inet::csocket so(fd, sa, ssl, poll);
 			if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
 				if (method == "GET" and http::GetValue(headers, "connection") == "Upgrade" and

@@ -1,0 +1,9 @@
+pip==20.1.1
+setuptools==47.1.0
+logger==1.4
+pusherclient==0.3.0
+Pysher @ git+git://github.com/deepbrook/Pysher.git
+requests==2.25.1
+selectors==0.0.14
+selenium==3.141.0
+websocket-client==1.2.1
