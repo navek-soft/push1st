@@ -66,8 +66,8 @@ clean:
 	rm -rf ${BIN_DIR}/${BIN_EXEC}
 
 version:
-	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${BUILD_TS}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"
-	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${REV_NAME}\" };\nconst char* version::revision{ \"${BUILD_TS}-${BRANCH_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"  > ./version.cpp
+	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${BRANCH_NAME}\" };\nconst char* version::revision{ \"${REV_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"
+	@echo "#include \"version.h\"\nconst char* version::number{ \"${VERSION_NAME}.${BUILD_NO}\" };\nconst char* version::build{ \"${BRANCH_NAME}\" };\nconst char* version::revision{ \"${REV_NAME}\" };\nconst char* version::timestamp{ \"${TIMESTAMP}\" };"  > ./version.cpp
 
 deb: 
 	sudo chmod +x ./makedeb
