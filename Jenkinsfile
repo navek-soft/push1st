@@ -39,8 +39,7 @@ pipeline {
                 echo 'Install requirements'
                 sh 'cd functional-tests-pusher && pip3 install -r requirements.txt'
                 echo 'Launch tests'
-                sh 'pwd'
-                sh 'ls'
+                sh '~'
                 sh 'cd functional-tests-pusher && pwd && ls && ./launch_functional_tests_ps.sh'                   	   
             }
         }       
