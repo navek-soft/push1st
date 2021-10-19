@@ -3,13 +3,13 @@ Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher]
 
 ## Key features
  - [x] Suitable for distributed one-to-many communications and distributed applications 
- - [x] Cross type channel messaging ( auto casting message between channel protocol format )
+ - [x] Cross type channel messaging (auto casting message between channel protocol format)
  - [x] Broadcast, Multicast, Unicast - message delivery, 
- - [x] Muti-applications support ( credentials for every app )
- - [x] Improved hooks  ( multiple http/https webhooks, lua hook, for every app, triggered by register, unregister, join, leave or push into channel )
+ - [x] Muti-applications support (credentials for every app)
+ - [x] Improved hooks  (multiple http/https webhooks, lua hook, for every app, triggered by register, unregister, join, leave or push into channel)
  - [x] Support multiple protocols 
    - [x] Pusher
-   - [x] Raw WebSocket ( with multiple channel subscription )
+   - [x] Raw WebSocket (with multiple channel subscription)
    - [ ] MQTT protocols (todo)
  - [x] Support HTTP Pipelining for API and WebHook
  - [x] Public, Private, Presence channels support
@@ -22,30 +22,30 @@ Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher]
    - [ ] Presence user synchronization
  - [x] API Pusher format support with TCP or\and UNIX socket
  - [x] API access token, Pusher key generation, channels API
- - [x] Support WebSocket push messaging (broadcast, multicast, unicast )
+ - [x] Support WebSocket push messaging (broadcast, multicast, unicast)
  - [x] Websocket channel authorization by Bearer access token
  - [ ] IP whitelist for every enabled protocol
  - [x] TCP/IP as basic communication protocol
- - [x] WS/WSS proto ( auto generate self-signed certificate if cer\key not specified )
- - [x] Support for websocket sessions prefix naming ( can be use for multicast message pushing )
+ - [x] WS/WSS proto (auto generate self-signed certificate if cer\key not specified)
+ - [x] Support for websocket sessions prefix naming (can be use for multicast message pushing)
 
 
 ## Installation guide
 
-Install from APT ( Ubuntu, Debian ) repository [installation guide](/readme/installation.md).
+Install from APT (Ubuntu, Debian) repository [installation guide](/readme/installation.md).
 
 Build from source code [build instruction](/readme/build.md).
 
 ## Run push1st server
 
-After install or build Push1ST your can configure server ( [Configure push1st](/readme/configure.md) ). Default Push1ST installed into /opt/naveksoft/push1st and register as systemd service. ( Service not start automatically. You must run service manuall, after each install.)
+After install or build Push1ST your can configure server [Configure push1st](/readme/configure.md). Default Push1ST installed into /opt/naveksoft/push1st and register as systemd service. (Service not start automatically. You must run service manuall, after each install.)
 
 
 ```bash
   sudo service push1st start
 ```
  
- Run Push1ST from command line  ( not as service )
+ Run Push1ST from command line (not as service)
 
 ```bash
   /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V4
