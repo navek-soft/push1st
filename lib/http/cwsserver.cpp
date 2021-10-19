@@ -32,7 +32,7 @@ ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& path, c
 ssize_t cwsserver::OnTcpAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
-		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP, std::bind(&cwsserver::WsAccept, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll));
+		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP, std::bind(&cwsserver::WsAccept, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll),true);
 	}
 	return res;
 }

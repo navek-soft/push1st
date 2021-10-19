@@ -7,7 +7,7 @@
         //"wsHost": "labns.navekscreen.video",
 
         "wsPort": 6001,
-        "wsPath": "/pusher",
+        "wsPath": "/ws",
         "wssPort": 6001,
         "forceTLS": false,
         "enabledTransports": ["ws"],
