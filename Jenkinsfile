@@ -39,14 +39,18 @@ pipeline {
                 echo 'Install requirements'
                 sh 'cd functional-tests-pusher && pip3 install -r requirements.txt'
                 echo 'Launch tests'
-                sh 'cd functional-tests-pusher && bash launch_functional_tests_ps.sh'                   	   
+                sh 'cd functional-tests-pusher && bash launch_functional_tests_ps.sh'
+                echo 'test_privat.log'
+                sh 'cd functional-tests-pusher && cat test_privat.log'
+                echo 'test_public.log'
+                sh 'cd functional-tests-pusher && cat test_public.log'
             }
         }       
     }
 
-    // post {
-    //     cleanup { 
-    //         cleanWs()
-    //     }
-    // }    
+    post {
+        cleanup { 
+            cleanWs()
+        }
+    }    
 }
