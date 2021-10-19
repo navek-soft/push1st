@@ -19,6 +19,9 @@ pipeline {
     stages {        
         stage('Installation from apt repository') {
             steps {
+                echo '----------'
+                sh 'whoami'
+                echo '----------'
 		        echo 'Import repository key'
                 sh 'wget https://reader:reader1@nexus.naveksoft.com/repository/gpg/naveksoft.gpg.key -O naveksoft.gpg.key'
                 sh 'sudo apt-key add naveksoft.gpg.key'
