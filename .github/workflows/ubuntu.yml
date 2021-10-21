@@ -39,9 +39,8 @@ jobs:
       - name: Install binary
         run: cd push1st-server && sudo dpkg -i push1st-dev.deb
       - name: Run push1st
-        run: /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V3 &
-      - name: Install requirements and run tests
         run: |
+          /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V3 &
           cd testsuite && pip3 install -r requirements.txt
           python3 testsuite.py
       # - name: Upload binaries to nexus
