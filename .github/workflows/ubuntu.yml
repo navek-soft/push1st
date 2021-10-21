@@ -36,7 +36,10 @@ jobs:
           vertag=$(echo `ls -rt .git/refs/tags` | cut -d ' ' -f1)
           cd push1st-server
           make build=$GITHUB_RUN_NUMBER ver=$vertag bname=${GITHUB_REF##*/} all
-          ls 
+          echo "-------"
+          pwd
+          ls
+          echo "-------" 
       - name: Run tests
         run: |
           pwd
