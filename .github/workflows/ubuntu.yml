@@ -36,13 +36,12 @@ jobs:
           vertag=$(echo `ls -rt .git/refs/tags` | cut -d ' ' -f1)
           cd push1st-server
           make build=$GITHUB_RUN_NUMBER ver=$vertag bname=${GITHUB_REF##*/} all
-          echo "-------"
-          pwd
-          ls
-          echo "-------" 
-      - name: Run tests
+      - name: Install binary
+        run: cd push1st-server && sudo dpkg -i push1st-dev.deb
+      - name: Install requirements and run tests
         run: |
-          pwd
+          cd testsuite && pip3 install -r requirements.txt
+          python3 testsuite.py
       # - name: Upload binaries to nexus
       #   run: |          
       #     curl -s --fail -v -H "Content-Type:multipart/form-data" -vvv -u "uploader:uploader1" --data-binary "@push1st-${GITHUB_REF##*/}.deb" https://nexus.naveksoft.com/repository/ubuntu-universe/
