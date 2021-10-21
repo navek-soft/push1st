@@ -28,7 +28,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install build dependencies
-        run: sudo apt -y install libyaml-cpp-dev libssl-dev lua5.3 liblua5.3-dev md5deep fakeroot make build-essential python3-pip
+        run: sudo apt -y install libyaml-cpp-dev libssl-dev lua5.3 liblua5.3-dev md5deep fakeroot make build-essential python3-pip python3-testresources
       - name: Fetch tags
         run: git fetch -tq
       - name: Build binary
