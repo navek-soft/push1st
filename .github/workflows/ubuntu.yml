@@ -40,9 +40,10 @@ jobs:
         run: cd push1st-server && sudo dpkg -i push1st-dev.deb
       - name: Run push1st
         run: |
-          /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V3 &
+          sudo /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V3 &
           cd testsuite && pip3 install -r requirements.txt
           python3 testsuite.py
+          kill $!
       # - name: Upload binaries to nexus
       #   run: |          
       #     curl -s --fail -v -H "Content-Type:multipart/form-data" -vvv -u "uploader:uploader1" --data-binary "@push1st-${GITHUB_REF##*/}.deb" https://nexus.naveksoft.com/repository/ubuntu-universe/
