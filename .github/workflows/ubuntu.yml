@@ -18,8 +18,8 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    # runs-on: ubuntu-20.04
-    runs-on: push1st
+    runs-on: ubuntu-20.04
+    # runs-on: push1st
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
