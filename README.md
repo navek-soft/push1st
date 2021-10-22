@@ -1,5 +1,5 @@
 # Push1ST
-Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket) 
+Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket). 
 
 <p align="center">
 <img src="readme/Push1ST.svg"/>
@@ -8,7 +8,7 @@ Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher]
 ## Key features
  - [x] Suitable for distributed one-to-many communications and distributed applications 
  - [x] Cross type channel messaging (auto casting message between channel protocol format)
- - [x] Broadcast, Multicast, Unicast - message delivery, 
+ - [x] Broadcast, Multicast, Unicast - message delivery 
  - [x] Muti-applications support (credentials for every app)
  - [x] Improved hooks  (multiple http/https webhooks, lua hook, for every app, triggered by register, unregister, join, leave or push into channel)
  - [x] Support multiple protocols 
@@ -74,7 +74,7 @@ see [Python examples](/readme/example.md)
 see [Push1ST API](/readme/api.md)
 
 ## Support
- Push1ST is our open source project supported by a small group of people. We do not offer formal support processes. If you require formal support arrangements please email us. [info@naveksoft.com](mailto:info@naveksoft.com?subject=Push1ST,GITHUB)
+ Push1ST is our open source project supported by a small group of people. We do not offer formal support processes. If you require formal support arrangements please email us [info@naveksoft.com](mailto:info@naveksoft.com?subject=Push1ST,GITHUB).
 
 ## Author 
 
