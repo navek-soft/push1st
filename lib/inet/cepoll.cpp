@@ -10,7 +10,7 @@ inline void cpoll::Gc() {
 	while(!fdQueueGC.empty()) {
 		auto fd{ fdQueueGC.front() };
 		fdQueueGC.pop_front();
-		if (auto res = inet::GetErrorNo(fd); res != 0) {
+		if (auto res = inet::GetErrorNo(fd); res != 0 and res != -EINTR) {
 			std::unique_lock<decltype(fdLock)> lock(fdLock);
 			if (auto&& hFd{ fdHandlers.find(fd) }; hFd != fdHandlers.end())
 			{
@@ -18,6 +18,8 @@ inline void cpoll::Gc() {
 					hFd->second(fd, EPOLLRDHUP);
 					break;
 				}
+				fdHandlers.erase(hFd);
+				inet::Close(fd);
 			}
 		}
 		else if (auto&& hFd{ fdHandlers.find(fd) }; hFd != fdHandlers.end()) {
@@ -25,6 +27,7 @@ inline void cpoll::Gc() {
 		}
 		break;
 	}
+	printf("[ GC ] %ld entities\n", fdQueueGC.size());
 }
 
 void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTimeout) {
@@ -35,14 +38,13 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 		sigset_t sigset; sigemptyset(&sigset);
 		sigaddset(&sigset, SIGPIPE);
 		sigaddset(&sigset, SIGHUP);
-		pthread_sigmask(SIG_BLOCK, &epoll_sig_mask, NULL);
+		sigaddset(&sigset, SIGINT);
+		pthread_sigmask(SIG_SETMASK, &epoll_sig_mask, NULL);
 		ssize_t nevents{ 0 };
 		while (1) {
 			if (nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), msTimeout); nevents > 0) {
-
-				while (nevents--) {
-					if (auto&& hFd{ self->fdHandlers.find(events_list[nevents].data.fd) }; hFd != self->fdHandlers.end())
-					{
+				while (nevents-- > 0) {
+					if (auto&& hFd{ self->fdHandlers.find(events_list[nevents].data.fd) }; hFd != self->fdHandlers.end()) {
 						if (hFd->second) {
 							hFd->second(events_list[nevents].data.fd, events_list[nevents].events);
 							continue;
@@ -52,21 +54,21 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 					int fd{ events_list[nevents].data.fd };
 					inet::Close(fd);
 				}
+				self->Gc();
 				continue;
 			}
 			else if (!nevents) {
+				self->Gc();
 				continue;
 			}
-
-
-#ifdef DEBUG
-			if (errno == EINTR) { 
+			else if (errno == EINTR) { 
 				continue; 
 			}
-#endif // DEBUG
-			fprintf(stderr, "[ SERVER:%s ] epoll error (%s)\n", self->NameOf(), inet::GetErrorStr(errno));
-			raise(SIGHUP);
-			break;
+			else {
+				fprintf(stderr, "[ SERVER:%s ] epoll error (%s)\n", self->NameOf(), inet::GetErrorStr(errno));
+				raise(SIGHUP);
+				break;
+			}
 		}
 	}
 	catch (std::exception& ex) {
