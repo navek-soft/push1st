@@ -1,5 +1,5 @@
-# Push1ST
-Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket). 
+# Push1st
+Push1st is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket). 
 
 <p align="center">
 <img src="readme/Push1ST.svg"/>
@@ -42,14 +42,14 @@ Build from source code [build instruction](/readme/build.md).
 
 ## Run push1st server
 
-After install or build Push1ST your can configure server [Configure push1st](/readme/configure.md). Default Push1ST installed into /opt/naveksoft/push1st and register as systemd service. (Service not start automatically. You must run service manuall, after each install.)
+After install or build Push1st your can configure server [Configure push1st](/readme/configure.md). Default Push1st installed into /opt/naveksoft/push1st and register as systemd service. (Service not start automatically. You must run service manuall, after each install.)
 
 
 ```bash
   sudo service push1st start
 ```
  
- Run Push1ST from command line (not as service)
+ Run Push1st from command line (not as service)
 
 ```bash
   /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V4
@@ -71,10 +71,10 @@ ws://localhost:6001/ws/app/`{{app-key}}`/`{channel-name-1}`/`{channel-name-2}`/[
 
 see [Python examples](/readme/example.md)
 
-see [Push1ST API](/readme/api.md)
+see [Push1st API](/readme/api.md)
 
 ## Support
- Push1ST is our open source project supported by a small group of people. We do not offer formal support processes. If you require formal support arrangements please email us [info@naveksoft.com](mailto:info@naveksoft.com?subject=Push1ST,GITHUB).
+ Push1st is our open source project supported by a small group of people. We do not offer formal support processes. If you require formal support arrangements please email us [info@naveksoft.com](mailto:info@naveksoft.com?subject=Push1ST,GITHUB).
 
 ## Author 
 
