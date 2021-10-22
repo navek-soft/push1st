@@ -6,7 +6,7 @@ Push1ST is open source PUB/SUB multiple protocol message broker server ([Pusher]
 </p>
 
 ## Key features
- - [x] Suitable for distributed one-to-many communications and distributed applications 
+ - [x] Suitable for distributed one-to-many communications and distributed applications
  - [x] Cross type channel messaging (auto casting message between channel protocol format)
  - [x] Broadcast, Multicast, Unicast - message delivery 
  - [x] Muti-applications support (credentials for every app)
