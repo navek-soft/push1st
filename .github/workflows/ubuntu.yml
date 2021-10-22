@@ -18,8 +18,7 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    # runs-on: ubuntu-20.04
-    runs-on: push1st
+    runs-on: ubuntu-20.04
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -36,16 +35,8 @@ jobs:
           vertag=$(echo `ls -rt .git/refs/tags` | cut -d ' ' -f1)
           cd push1st-server
           make build=$GITHUB_RUN_NUMBER ver=$vertag bname=${GITHUB_REF##*/} all
-      - name: Install binary
-        run: cd push1st-server && sudo dpkg -i push1st-dev.deb
-      - name: Run push1st
-        run: |
-          sudo /opt/naveksoft/push1st/push1st -c /opt/naveksoft/push1st/server.yml -V3 &
-          cd testsuite && pip3 install -r requirements.txt
-          python3 testsuite.py
-          kill $!
-      # - name: Upload binaries to nexus
-      #   run: |          
-      #     curl -s --fail -v -H "Content-Type:multipart/form-data" -vvv -u "uploader:uploader1" --data-binary "@push1st-${GITHUB_REF##*/}.deb" https://nexus.naveksoft.com/repository/ubuntu-universe/
-      #     curl -s --fail -v -u "uploader:uploader1" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-latest.tar.bz2
-      #     curl -s --fail -v -u "uploader:uploader1" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-$GITHUB_RUN_NUMBER.tar.bz2
+      - name: Upload binaries to nexus
+        run: |          
+         curl -s --fail -v -H "Content-Type:multipart/form-data" -vvv -u "uploader:uploader1" --data-binary "@push1st-${GITHUB_REF##*/}.deb" https://nexus.naveksoft.com/repository/ubuntu-universe/
+         curl -s --fail -v -u "uploader:uploader1" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-latest.tar.bz2
+         curl -s --fail -v -u "uploader:uploader1" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-$GITHUB_RUN_NUMBER.tar.bz2
