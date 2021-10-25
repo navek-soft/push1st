@@ -54,11 +54,11 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 					int fd{ events_list[nevents].data.fd };
 					inet::Close(fd);
 				}
-				self->Gc();
+				//self->Gc();
 				continue;
 			}
 			else if (!nevents) {
-				self->Gc();
+				//self->Gc();
 				continue;
 			}
 			else if (errno == EINTR) { 
