@@ -65,12 +65,12 @@ void ctcpserver::Listen(const std::shared_ptr<cpoll>& poll) {
 	if (srvFd > 0) {
 		ssize_t res{ 0 };
 		if (srvSslContext) {
-			if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE | EPOLLET, std::bind(&ctcpserver::OnAcceptSSL, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()),false); res == 0) {
+			if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE, std::bind(&ctcpserver::OnAcceptSSL, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()),false); res == 0) {
 				return;
 			}
 		}
 		else {
-			if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE | EPOLLET, std::bind(&ctcpserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()), false); res == 0) {
+			if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE, std::bind(&ctcpserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()), false); res == 0) {
 				return;
 			}
 		}
