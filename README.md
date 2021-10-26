@@ -9,7 +9,7 @@ Push1st is open source PUB/SUB multiple protocol message broker server ([Pusher]
  - [x] Suitable for distributed one-to-many communications and distributed applications
  - [x] Cross type channel messaging (auto casting message between channel protocol format)
  - [x] Broadcast, Multicast, Unicast - message delivery 
- - [x] Muti-applications support (credentials for every app)
+ - [x] Multi-applications support (credentials for every app)
  - [x] Improved hooks  (multiple http/https webhooks, lua hook, for every app, triggered by register, unregister, join, leave or push into channel)
  - [x] Support multiple protocols 
    - [x] Pusher
@@ -84,4 +84,4 @@ see [Push1st API](/readme/api.md)
 Copyright (c) 2021 Naveksoft.
 
 This project is provided as is without any warranties. Use at your own risk.<br/>
-By using Push1ST you agree with its [privacy](PRIVACY.md) policy and [license](LICENSE.md).
+By using Push1st you agree with its [privacy](PRIVACY.md) policy and [license](LICENSE.md).
