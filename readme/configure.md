@@ -1,4 +1,4 @@
-### Конфигурирование Push1ST
+### Конфигурирование Push1st
 
 По умолчанию файлы конфигурации находятся в /opt/naveksoft/push1st/server.example.yaml
 Каждое приложение (application) описывается отдельным yaml файлом
