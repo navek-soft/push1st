@@ -46,7 +46,6 @@ void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr
 			}
 			else {
 				syslog.print(4, "[ RAW:%s ] Push ( %s ) no channel subscription\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
-				OnSocketError(-EACCES);
 			}
 		}
 		else {

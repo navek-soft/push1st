@@ -50,6 +50,7 @@ size_t cchannel::Push(message_t&& message) {
 	size_t nSubscribers{ 0 };
 	msg::delivery_t delivery{ (*message)["#msg-delivery"].get<std::string_view>() == "broadcast" ? msg::delivery_t::broadcast :
 		((*message)["#msg-delivery"].get<std::string_view>() == "multicast" ? msg::delivery_t::multicast : msg::delivery_t::unicast) };
+	
 
 	if (delivery == msg::delivery_t::broadcast) {
 		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
@@ -71,12 +72,13 @@ size_t cchannel::Push(message_t&& message) {
 			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
 
 			for (auto it{ chSubscribers.begin() }, end{ chSubscribers.end() }; it != end;) {
-				if (it->first.compare(0, SessionId.length(), SessionId) == 0) {
-					if (auto&& subsSelf{ it->second.lock() }; subsSelf and subsSelf->Push(message) == 0) {
+				if (auto&& subsSelf{ it->second.lock() }; subsSelf) {
+					if (it->first.compare(0, SessionId.length(), SessionId) == 0 and subsSelf->Push(message) == 0) {
 						++nSubscribers;
-						++it;
-						continue;
 					}
+					++it;
+				}
+				else {
 					it = chSubscribers.erase(it);
 				}
 			}

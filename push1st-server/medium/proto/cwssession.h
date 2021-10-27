@@ -21,7 +21,7 @@ public:
 	virtual inline bool IsConnected(std::time_t now) { return !IsLeaveUs(now); }
 
 	virtual inline bool IsLeaveUs(std::time_t now) override { 
-		if (ActivityCheckTime >= now and inet::GetErrorNo(Fd()) == 0) {
+		if (ActivityCheckTime >= now  and inet::GetErrorNo(Fd()) == 0 ) {
 			return false;
 		}
 		WsError(websocket_t::close_t::GoingAway, -ETIMEDOUT);
