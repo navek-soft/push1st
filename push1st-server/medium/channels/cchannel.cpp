@@ -29,12 +29,80 @@ json::value_t cchannel::ApiOverview() {
 	};
 }
 
-size_t cchannel::Push(message_t&& message) {
-	std::forward_list<std::string> sessLeave;
-	size_t nSubscribers{ 0 };
+size_t cchannel::Gc() {
+	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+	if (!chSubscribers.empty()) {
+		auto&& it{ chSubscribers.begin() };
+		if (auto&& sess{ it->second.lock() }; sess ) {
+			lock.unlock();
+			sess->IsConnected(std::time(nullptr));
+			return chSubscribers.size();
+		}
+		else {
+			chSubscribers.erase(it);
+		}
+		
+	}
+	return chSubscribers.size();
+}
 
+size_t cchannel::Push(message_t&& message) {
+	size_t nSubscribers{ 0 };
 	msg::delivery_t delivery{ (*message)["#msg-delivery"].get<std::string_view>() == "broadcast" ? msg::delivery_t::broadcast :
 		((*message)["#msg-delivery"].get<std::string_view>() == "multicast" ? msg::delivery_t::multicast : msg::delivery_t::unicast) };
+
+	if (delivery == msg::delivery_t::broadcast) {
+		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+		for (auto it{ chSubscribers.begin() }, end{ chSubscribers.end() }; it != end;) {
+			if (it->first != (*message)["#msg-from"].get<std::string_view>()) {
+				if (auto&& subsSelf{ it->second.lock() }; subsSelf and subsSelf->Push(message) == 0) {
+					++nSubscribers;
+					++it;
+					continue;
+				}
+				it = chSubscribers.erase(it);
+			}
+		}
+	}
+	else if ((*message).contains("socket_id") and !(*message)["socket_id"].empty()) {
+		std::string SessionId{ (*message)["socket_id"] };
+		if (delivery == msg::delivery_t::multicast) {
+			SessionId.push_back('.');
+			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+
+			for (auto it{ chSubscribers.begin() }, end{ chSubscribers.end() }; it != end;) {
+				if (it->first.compare(0, SessionId.length(), SessionId) == 0) {
+					if (auto&& subsSelf{ it->second.lock() }; subsSelf and subsSelf->Push(message) == 0) {
+						++nSubscribers;
+						++it;
+						continue;
+					}
+					it = chSubscribers.erase(it);
+				}
+			}
+		}
+		else {
+			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+			if (auto&& subs{ chSubscribers.find(SessionId) }; subs != chSubscribers.end()) {
+				if (auto&& subsSelf{ subs->second.lock() }; subsSelf) {
+					subsSelf->Push(message);
+					++nSubscribers;
+				}
+				else {
+					chSubscribers.erase(subs);
+				}
+			}
+		}
+	}
+
+	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+	if (chSubscribers.empty() and chMode == autoclose_t::yes) {
+		chChannels->UnRegister(chUid);
+	}
+
+	/*
+	std::forward_list<std::string> sessLeave;
+
 
 	if (delivery == msg::delivery_t::broadcast) {
 		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
@@ -97,6 +165,7 @@ size_t cchannel::Push(message_t&& message) {
 			chChannels->UnRegister(chUid);
 		}
 	}
+	*/
 	return nSubscribers;
 }
 

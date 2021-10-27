@@ -24,6 +24,7 @@ public:
 	virtual inline void GetUsers(usersids_t&, userslist_t&) = 0;
 	inline channel_t::type Type() { return chType; }
 	inline size_t CountSubscribers() { return chSubscribers.size(); }
+	size_t Gc();
 	virtual inline void OnClusterJoin(const json::value_t& val) { ; }
 	virtual inline void OnClusterLeave(const json::value_t& val) { ; }
 	virtual inline void OnClusterPush(message_t&& msg) { cchannel::Push(std::move(msg)); }

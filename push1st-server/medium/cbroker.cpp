@@ -47,6 +47,13 @@ void cbroker::OnIdle() {
         }
         syslog.print(4, "\n");
     }
+    for (auto&& [chName, chSelf] : Channels->Channels) {
+        if (chSelf->Gc()) {
+            continue;
+        }
+        Channels->UnRegister(chName);
+        break;
+    }
     Cluster->Ping();
 }
 

@@ -10,6 +10,12 @@
 namespace inet {
 	class cpoll : public std::enable_shared_from_this<cpoll> {
 	public:
+		class cgc {
+		public:
+			virtual ~cgc() = default;
+			virtual inline bool IsLeaveUs(std::time_t now) = 0;
+		};
+
 		cpoll();
 		virtual ~cpoll();
 		virtual const char* NameOf() { return "epoll"; }
@@ -18,8 +24,10 @@ namespace inet {
 	protected:
 		inline std::shared_ptr<cpoll> Self() { return shared_from_this(); }
 	public:
+		template<typename OBJ>
+		inline void EnqueueGc(const std::shared_ptr<OBJ>& obj);
 		template<typename FN>
-		inline ssize_t PollAdd(fd_t fd, uint events, FN&& callback, bool gc = true);
+		inline ssize_t PollAdd(fd_t fd, uint events, FN&& callback);
 		template<typename FN>
 		inline ssize_t PollUpdate(fd_t fd, FN&& callback);
 		template<typename FN>
@@ -27,24 +35,27 @@ namespace inet {
 		ssize_t PollUpdate(fd_t fd, uint events);
 		void PollDelete(int& fd);
 		inline fd_t Fd() { return fdPoll; }
-		inline void Gc();
 	private:
+		inline void Gc();
 		static void PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTimeout);
 		using handler_t = std::function<void(fd_t,uint)>;
 		fd_t fdPoll{ -1 };
 		std::unordered_map<fd_t, handler_t> fdHandlers;
 		std::mutex fdLock;
-		std::list<fd_t> fdQueueGC;
+		std::list<std::weak_ptr<cgc>> fdQueueGC;
 		std::thread pollThread;
 	};
+
+	template<typename OBJ>
+	inline void cpoll::EnqueueGc(const std::shared_ptr<OBJ>& obj) {
+		fdQueueGC.emplace_back(std::dynamic_pointer_cast<cgc>(obj));
+	}
+
 	template<typename FN_T>
-	inline ssize_t cpoll::PollAdd(fd_t fd, uint events, FN_T&& callback, bool gc) {
+	inline ssize_t cpoll::PollAdd(fd_t fd, uint events, FN_T&& callback) {
 		std::unique_lock<decltype(fdLock)> lock(fdLock);
 		if (struct epoll_event ev { .events = events, .data = { .fd = fd } }; epoll_ctl(fdPoll, EPOLL_CTL_ADD, fd, &ev) == 0) {
 			fdHandlers[fd] = std::move(callback);
-			if (gc) {
-				fdQueueGC.emplace_back(fd);
-			}
 			return 0;
 		}
 		return -errno;
