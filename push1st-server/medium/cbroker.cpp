@@ -65,7 +65,7 @@ void cbroker::Initialize(const core::cconfig& config) {
     Cluster = std::make_shared<ccluster>(shared_from_this(), config.Cluster);
     Channels = std::make_shared<cchannels>(Cluster);
     Credentials = std::make_shared<ccredentials>(shared_from_this(), config.Credentials);
-    ApiServer = std::make_shared<capiserver>(Channels, Credentials, config.Api);
+    ApiServer = std::make_shared<capiserver>(Channels, Credentials, Cluster, config.Api);
     if (!config.Server.Proto.empty()) { WsServer = std::make_shared<cwebsocketserver>(Channels, Credentials, config.Server); }
 
     syslog.ob.flush(1);

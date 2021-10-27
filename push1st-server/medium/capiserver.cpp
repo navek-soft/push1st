@@ -3,6 +3,7 @@
 #include "cmessage.h"
 #include "ccredentials.h"
 #include "cchannels.h"
+#include "ccluster.h"
 #include "channels/cchannel.h"
 #include <cstring>
 
@@ -40,6 +41,7 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
 						else {
 							reply["channels"][chName] = (size_t)0;
 						}
+						Cluster->Push(ChannelType(chName),app,chName,std::move(message));
 					}
 					reply["time"] = std::chrono::system_clock::now().time_since_epoch().count() - tmStart;
 					ApiResponse(fd, "200", json::serialize(reply), http::IsConnectionKeepAlive(headers));
@@ -152,8 +154,8 @@ void capiserver::Listen(const std::shared_ptr<inet::cpoll>& poll)
 }
 
 
-capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccredentials>& credentials, config::interface_t config) :
-	Channels{ channels }, Credentials{ credentials }, KeepAliveTimeout{ std::to_string(config.KeepAlive) }
+capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccredentials>& credentials, const std::shared_ptr<ccluster>& cluster, config::interface_t config) :
+	Channels{ channels }, Credentials{ credentials }, Cluster{ cluster }, KeepAliveTimeout{ std::to_string(config.KeepAlive) }
 {
 	if (!config.Tcp.empty()) {
 		ApiTcp = std::make_shared<ctcpapiserver>(*this, config);
