@@ -48,8 +48,8 @@ ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 				}
 			}
 			else {
-				WsError(websocket_t::close_t::MessageToBig, -EMSGSIZE);
-				return -EMSGSIZE;
+				WsClose(websocket_t::close_t::MessageToBig);
+				OnWsError(-EMSGSIZE); return -EMSGSIZE;
 			}
 		}
 		if (auto opcode{ (websocket_t::opcode_t)packet.opcode }; opcode == websocket_t::opcode_t::text or opcode == websocket_t::opcode_t::binary) {
@@ -96,7 +96,6 @@ void cwsconnection::WsError(websocket_t::close_t code, ssize_t err) {
 void cwsconnection::WsClose(websocket_t::close_t code) {
 	uint16_t status{ htobe16((uint16_t)code) };
 	WsWriteMessage(websocket_t::opcode_t::close, { (char*)&status,sizeof(status) });
-	OnWsError(0);
 }
 
 void cwsconnection::OnWsPing() {

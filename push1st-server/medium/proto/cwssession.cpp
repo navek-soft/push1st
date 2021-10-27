@@ -135,5 +135,4 @@ cwssession::cwssession(const std::shared_ptr<cchannels>& channels, const app_t& 
 
 cwssession::~cwssession() {
 	//syslog.trace("[ RAW:%ld:%s ] Destroy\n", Fd(), Id().c_str());
-	SocketClose();
 }

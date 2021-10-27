@@ -42,7 +42,9 @@ namespace inet {
 		std::unique_lock<decltype(fdLock)> lock(fdLock);
 		if (struct epoll_event ev { .events = events, .data = { .fd = fd } }; epoll_ctl(fdPoll, EPOLL_CTL_ADD, fd, &ev) == 0) {
 			fdHandlers[fd] = std::move(callback);
-			if (0 and gc) { fdQueueGC.emplace_back(fd); }
+			if (gc) {
+				fdQueueGC.emplace_back(fd);
+			}
 			return 0;
 		}
 		return -errno;
