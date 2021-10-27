@@ -27,6 +27,7 @@ namespace inet {
 		}
 
 		inline csocket& operator = (const csocket&& so);
+		inline csocket& operator = (fd_t so);
 		virtual ~csocket() { ; }
 		virtual inline void OnSocketConnect() { ; }
 		virtual inline void OnSocketRecv() { ; }
@@ -84,6 +85,16 @@ namespace inet {
 		so.fdSocket = -1;
 		so.fdSsl.reset();
 		bcopy(&so.fdSa, &fdSa, sizeof(sockaddr_storage));
+		if (fdSsl) { write_fn = &csocket::write_ssl; read_fn = &csocket::read_ssl; }
+		return *this;
+	}
+
+	inline csocket& csocket::operator = (fd_t so)
+	{
+		fdSocket = so;
+		fdSsl.reset();
+		fdPoll.reset();
+		bzero(&fdSa, sizeof(sockaddr_storage));
 		if (fdSsl) { write_fn = &csocket::write_ssl; read_fn = &csocket::read_ssl; }
 		return *this;
 	}

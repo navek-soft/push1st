@@ -5,6 +5,7 @@
 #include "cbroker.h"
 #include "channels/cchannel.h"
 #include "../../lib/inet/ciface.h"
+#include <unistd.h>
 
 namespace proto {
 	enum class op_t : uint8_t { noop = 0, ping = 1, reg = 2, unreg = 3, join = 4, leave = 5, push = 6 };
@@ -126,9 +127,20 @@ inline void ccluster::Send(data_t data) {
 		size_t nwrite{ 0 };
 		ssize_t res{ 0 };
 		for (auto&& [ip, node] : clusNodes) {
-			if (res = clusFd.SocketSend(node->NodeAddress, data.first.get(), data.second, nwrite, MSG_DONTWAIT); res == 0) {
+			/*
+			int cliFd{ -1 };
+			if (inet::UdpConnect(cliFd, node->NodeAddress, false) == 0) {
+				res = ::send(cliFd, data.first.get(), data.second, MSG_NOSIGNAL);
+				::close(cliFd);
+				syslog.trace("[ CLUSTER ] Send to `%s:%ld` ( %ld )\n", inet::GetIp(node->NodeAddress).c_str(), be16toh(inet::GetPort(node->NodeAddress)), nwrite, std::strerror(-(int)res));
 				continue;
 			}
+			*/
+			if (res = clusFd.SocketSend(node->NodeAddress, data.first.get(), data.second, nwrite, 0); res == 0) {
+				syslog.trace("[ CLUSTER ] Send to `%s:%ld` ( %ld )\n", inet::GetIp(node->NodeAddress).c_str(), be16toh(inet::GetPort(node->NodeAddress)),nwrite, std::strerror(-(int)res));
+				continue;
+			}
+			
 			syslog.error("[ CLUSTER ] Send to `%s` error ( %s )\n", inet::GetIp(node->NodeAddress).c_str(), std::strerror(-(int)res));
 		}
 	}
@@ -241,7 +253,12 @@ ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster
 
 		if (auto res = UdpListen(config.Listen.hostport(), true, true, false); res == 0) {
 			clusFd = std::move(Fd());
-			inet::SetUdpCork(clusFd.Fd(), true);
+			/*
+			if (int cliSo{ -1 }; inet::UdpConnect(cliSo, false) == 0) {
+				cliFd = cliSo;
+				//inet::SetUdpCork(cliFd.Fd(), true);
+			}
+			*/
 		}
 		else {
 			syslog.error("Cluster initialize server error ( %s )\n", std::strerror(-(int)res));
@@ -254,5 +271,6 @@ ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster
 }
 
 ccluster::~ccluster() {
-	
+	clusFd.SocketClose();
+	//cliFd.SocketClose();
 }

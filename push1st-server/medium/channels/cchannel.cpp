@@ -63,6 +63,9 @@ size_t cchannel::Push(message_t&& message) {
 				}
 				it = chSubscribers.erase(it);
 			}
+			else {
+				++it;
+			}
 		}
 	}
 	else if ((*message).contains("socket_id") and !(*message)["socket_id"].empty()) {
@@ -102,72 +105,6 @@ size_t cchannel::Push(message_t&& message) {
 		chChannels->UnRegister(chUid);
 	}
 
-	/*
-	std::forward_list<std::string> sessLeave;
-
-
-	if (delivery == msg::delivery_t::broadcast) {
-		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		for (auto&& [sess, subs] : chSubscribers) {
-			if (sess != (*message)["#msg-from"].get<std::string_view>()) {
-				if (auto&& subsSelf{ subs.lock() }; subsSelf) {
-					subsSelf->Push(message);
-					++nSubscribers;
-					if (delivery == msg::delivery_t::broadcast) continue;
-					break;
-				}
-				else {
-					sessLeave.emplace_front(sess);
-				}
-			}
-		}
-	}
-	else if((*message).contains("socket_id") and !(*message)["socket_id"].empty()) {
-		std::string SessionId{ (*message)["socket_id"] };
-		if (delivery == msg::delivery_t::multicast) {
-			SessionId.push_back('.');
-			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-			for (auto&& [sess, subs] : chSubscribers) {
-				if (sess.compare(0, SessionId.length(), SessionId) == 0) {
-					if (auto&& subsSelf{ subs.lock() }; subsSelf) {
-						subsSelf->Push(message);
-						++nSubscribers;
-					}
-					else {
-						sessLeave.emplace_front(sess);
-					}
-				}
-			}
-		}
-		else {
-			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-			if (auto&& subs{ chSubscribers.find(SessionId) }; subs != chSubscribers.end()) {
-				if (auto&& subsSelf{ subs->second.lock() }; subsSelf) {
-					subsSelf->Push(message);
-					++nSubscribers;
-				}
-				else {
-					sessLeave.emplace_front(subs->first);
-				}
-			}
-		}
-	}
-	if (!sessLeave.empty()) {
-		while (!sessLeave.empty()) {
-			{
-				std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-				chSubscribers.erase(sessLeave.front());
-			}
-			OnSubscriberLeave(sessLeave.front());
-			sessLeave.pop_front();
-		}
-
-		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		if (chSubscribers.empty() and chMode == autoclose_t::yes) {
-			chChannels->UnRegister(chUid);
-		}
-	}
-	*/
 	return nSubscribers;
 }
 
