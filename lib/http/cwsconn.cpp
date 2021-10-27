@@ -70,6 +70,18 @@ ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 	return res;
 }
 
+ssize_t cwsconnection::WsSendMessage(websocket_t::opcode_t opcode, std::string&& data, bool masked) {
+	if (auto&& message{ websocket_t::Make(opcode, data, masked) }; !message.empty()) {
+		size_t nwrite{ 0 };
+		if (auto res = WsSend(message.data(), message.size(), nwrite); res == 0) {
+			return 0;
+		}
+		else {
+			return res;
+		}
+	}
+	return -ENOMEM;
+}
 
 ssize_t cwsconnection::WsWriteMessage(websocket_t::opcode_t opcode, std::string&& data, bool masked) {
 	if (auto&& message{ websocket_t::Make(opcode, data, masked) }; !message.empty()) {

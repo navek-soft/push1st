@@ -37,7 +37,7 @@ StandardOutput=append:/var/log/$SOFT_PROGRAM.log
 StandardError=append:/var/log/$SOFT_PROGRAM.err
 LimitNOFILE=65535
 WorkingDirectory=$INST_DIR
-ExecStart=$INST_DIR/$SOFT_PROGRAM -c $INST_DIR/server.yml -V3
+ExecStart=$INST_DIR/$SOFT_PROGRAM -c $INST_DIR/server.yml -V3 -l /var/log
 ExecStop=/bin/kill -s QUIT \$MAINPID
 
 [Install]

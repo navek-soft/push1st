@@ -92,6 +92,8 @@ void cpushersession::OnPusherPush(const message_t& message) {
 
 void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	if (auto&& message{ UnPack(data, length) }; message) {
+		ActivityCheckTime = std::time(nullptr) + KeepAlive;
+
 		if (auto&& evName{ (*message)["event"].get<std::string>() }; !evName.empty()) {
 			if (evName == "pusher:subscribe") {
 				OnPusherSubscribe(message);
@@ -147,22 +149,33 @@ bool cpushersession::OnWsConnect(const http::uri_t& path, const http::headers_t&
 	syslog.trace("[ PUSHER:%ld:%s ] Connect\n", Fd(), Id().c_str());
 
 	SetSendTimeout(500);
+	SetKeepAlive(true, 2, 1, 1);
 
-	return WsWriteMessage(opcode_t::text, json::serialize({
+	if (WsWriteMessage(opcode_t::text, json::serialize({
 		{"event","pusher:connection_established"} ,
 		{"data", json::serialize({ {"socket_id",Id()}, {"activity_timeout", std::to_string(KeepAlive)},})}
-	}), false) == 0;
+		}), false) == 0) {
+		Poll()->EnqueueGc(shared_from_this());
+		return true;
+	}
+	return false;
 }
 
 cpushersession::cpushersession(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels, std::time_t keepAlive) :
 	inet::csocket{ std::move(fd) }, csubscriber{ GetAddress(), GetPort() },
 	MaxMessageLength{ maxMessageLength }, KeepAlive{ keepAlive }, Channels{ channels }, App{ app }, EnablePushOnChannels{ pushOnChannels }
 {
+	ActivityCheckTime = std::time(nullptr) + KeepAlive;
 	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
 }
 
 cpushersession::~cpushersession() {
 	syslog.trace("[ PUSHER:%s ] Destroy\n", Id().c_str());
+	for (auto&& it : SubscribedTo) {
+		if (auto&& ch{ it.second.lock() }; ch) {
+			ch->UnSubscribe(subsId);
+		}
+	}
 }
 
 inline message_t cpushersession::UnPack(const std::shared_ptr<uint8_t[]>& data, size_t length) {

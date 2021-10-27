@@ -1,4 +1,5 @@
 #include "cwsserver.h"
+#include <cstring>
 
 using namespace inet;
 
@@ -32,7 +33,7 @@ ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& path, c
 ssize_t cwsserver::OnTcpAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
-		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP, std::bind(&cwsserver::WsAccept, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll),true);
+		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP, std::bind(&cwsserver::WsAccept, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll));
 	}
 	return res;
 }
@@ -46,8 +47,8 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
 			std::string_view method, content; http::uri_t path; http::headers_t headers;  std::string request;
 			inet::csocket so(fd, sa, ssl, poll);
 			if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
-				if (method == "GET" and http::GetValue(headers, "connection") == "Upgrade" and
-					http::GetValue(headers, "upgrade") == "websocket" and
+				if (method == "GET" and strncasecmp(http::GetValue(headers, "connection").data(),"upgrade",7) == 0 and
+					strncasecmp(http::GetValue(headers, "upgrade").data(), "websocket", 9) == 0 and
 					http::ToNumber(http::GetValue(headers, "sec-websocket-version")) >= 12)
 				{
 					if (res = WsUpgrade(so, path, headers); res == 0) {
