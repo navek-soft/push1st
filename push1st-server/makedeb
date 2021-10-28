@@ -33,8 +33,8 @@ User=root
 Group=root
 Restart=always
 RestartSec=1
-StandardOutput=append:/var/log/$SOFT_PROGRAM.log
-StandardError=append:/var/log/$SOFT_PROGRAM.err
+#StandardOutput=append:/var/log/$SOFT_PROGRAM.log
+#StandardError=append:/var/log/$SOFT_PROGRAM.err
 LimitNOFILE=65535
 WorkingDirectory=$INST_DIR
 ExecStart=$INST_DIR/$SOFT_PROGRAM -c $INST_DIR/server.yml -V3 -l /var/log
@@ -106,6 +106,9 @@ function err_handler {
 cp -s -f $INST_DIR/$SOFT_PROGRAM.logrotate /etc/logrotate.d/$SOFT_PROGRAM
 cp -s -f $INST_DIR/$SOFT_PROGRAM.service /etc/systemd/system/$SOFT_PROGRAM.service
 cp -n $INST_DIR/server.example.yml $INST_DIR/server.yml
+chmod 0444 /etc/logrotate.d/$SOFT_PROGRAM
+chmod 0444 /etc/systemd/system/$SOFT_PROGRAM.service
+
 systemctl enable /etc/systemd/system/$SOFT_PROGRAM.service
 systemctl daemon-reload
 
