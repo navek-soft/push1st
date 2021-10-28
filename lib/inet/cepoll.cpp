@@ -7,27 +7,16 @@
 using namespace inet;
 
 inline void cpoll::Gc() {
+	std::time_t now{ std::time(nullptr) };
 	while(!fdQueueGC.empty()) {
-		auto fd{ fdQueueGC.front() };
+		auto obj{ fdQueueGC.front() };
 		fdQueueGC.pop_front();
-		if (auto res = inet::GetErrorNo(fd); res != 0 and res != -EINTR) {
-			std::unique_lock<decltype(fdLock)> lock(fdLock);
-			if (auto&& hFd{ fdHandlers.find(fd) }; hFd != fdHandlers.end())
-			{
-				if (hFd->second) {
-					hFd->second(fd, EPOLLRDHUP);
-					break;
-				}
-				fdHandlers.erase(hFd);
-				inet::Close(fd);
-			}
-		}
-		else if (auto&& hFd{ fdHandlers.find(fd) }; hFd != fdHandlers.end()) {
-			fdQueueGC.emplace_back(fd);
+		if (auto self{ obj.lock() }; self) {
+			fdQueueGC.push_back(obj);
+			self->IsLeaveUs(now);
 		}
 		break;
 	}
-	printf("[ GC ] %ld entities\n", fdQueueGC.size());
 }
 
 void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTimeout) {
@@ -42,7 +31,7 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 		pthread_sigmask(SIG_SETMASK, &epoll_sig_mask, NULL);
 		ssize_t nevents{ 0 };
 		while (1) {
-			if (nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), msTimeout); nevents > 0) {
+			if (nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), 100/*msTimeout*/); nevents > 0) {
 				while (nevents-- > 0) {
 					if (auto&& hFd{ self->fdHandlers.find(events_list[nevents].data.fd) }; hFd != self->fdHandlers.end()) {
 						if (hFd->second) {

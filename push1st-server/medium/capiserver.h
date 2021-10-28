@@ -7,6 +7,7 @@
 #include "../../lib/http/crouter.h"
 
 class cchannels;
+class ccluster;
 
 class capiserver : public inet::chttpconnection
 {
@@ -40,7 +41,7 @@ class capiserver : public inet::chttpconnection
 		size_t HttpMaxHeaderSize{ 65536 };
 	};
 public:
-	capiserver(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccredentials>& credentials, config::interface_t config);
+	capiserver(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccredentials>& credentials, const std::shared_ptr<ccluster>& cluster, config::interface_t config);
 	virtual void Listen(const std::shared_ptr<inet::cpoll>& poll) ;
 	virtual ~capiserver();
 protected:
@@ -54,6 +55,7 @@ private:
 	void ApiOnWebHook(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, const std::string_view&);
 	std::shared_ptr<cchannels> Channels;
 	std::shared_ptr<ccredentials> Credentials;
+	std::shared_ptr<ccluster> Cluster;
 	std::shared_ptr<ctcpapiserver> ApiTcp;
 	std::shared_ptr<cunixapiserver> ApiUnix;
 	http::crouter ApiRoutes;

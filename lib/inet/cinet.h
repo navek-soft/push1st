@@ -34,6 +34,8 @@ namespace inet {
 	ssize_t TcpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout = 0);
 	ssize_t TcpServer(fd_t& fd, const sockaddr_storage& sa, bool reuseaddress, bool reuseport, bool nonblock, int maxlisten);
 	ssize_t UdpServer(fd_t& fd, const sockaddr_storage& sa, bool reuseaddress, bool reuseport, bool nonblock);
+	ssize_t UdpConnect(fd_t& fd, bool nonblock, int af = AF_INET);
+	ssize_t UdpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock);
 	ssize_t UnixServer(fd_t& fd, const sockaddr_storage& sa, bool nonblock, int maxlisten);
 	ssize_t UnixAccept(fd_t fd, fd_t& cli, sockaddr_storage& sa, bool nonblock);
 	ssize_t SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout, const inet::ssl_ctx_t& ctx, inet::ssl_t& ssl);

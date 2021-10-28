@@ -140,6 +140,22 @@ ssize_t inet::TcpAccept(fd_t fd, fd_t& cli, sockaddr_storage& sa, bool nonblock)
 	return -errno;
 }
 
+ssize_t inet::UdpConnect(fd_t& fd, bool nonblock, int af) {
+	fd = -1;
+	if (fd = ::socket(af, SOCK_CLOEXEC | SOCK_DGRAM | (nonblock ? SOCK_NONBLOCK : 0), IPPROTO_UDP); fd <= 0) { return -errno; }
+
+	return 0;
+}
+
+ssize_t inet::UdpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock) {
+	ssize_t res{ 0 };
+	fd = -1;
+	if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_DGRAM | (nonblock ? SOCK_NONBLOCK : 0), IPPROTO_UDP); fd <= 0) { return -errno; }
+	if (::connect((int)fd, (sockaddr*)&sa, sizeof(sockaddr_storage)) != 0) { res = -errno; ::close((int)fd); fd = -1; return res; }
+
+	return 0;
+}
+
 ssize_t inet::TcpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout) {
 	ssize_t res{ 0 };
 	fd = -1;
@@ -211,8 +227,8 @@ ssize_t inet::UdpServer(int& fd, const sockaddr_storage& sa, bool reuseaddress, 
 	ssize_t res{ 0 };
 	fd = -1;
 	if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_DGRAM | (nonblock ? SOCK_NONBLOCK : 0), IPPROTO_UDP); fd <= 0) { return -errno; }
-	if (int nvalue = 1; reuseaddress && setsockopt((int)fd, SOL_SOCKET, SO_REUSEADDR, &nvalue, sizeof(nvalue)) != 0) { res = -errno; ::close((int)fd); fd = -1; return res; }
-	if (int nvalue = 1; reuseport && setsockopt((int)fd, SOL_SOCKET, SO_REUSEPORT, &nvalue, sizeof(nvalue)) != 0) { res = -errno; ::close((int)fd); fd = -1; return res; }
+	//if (int nvalue = 1; reuseaddress && setsockopt((int)fd, SOL_SOCKET, SO_REUSEADDR, &nvalue, sizeof(nvalue)) != 0) { res = -errno; ::close((int)fd); fd = -1; return res; }
+	//if (int nvalue = 1; reuseport && setsockopt((int)fd, SOL_SOCKET, SO_REUSEPORT, &nvalue, sizeof(nvalue)) != 0) { res = -errno; ::close((int)fd); fd = -1; return res; }
 	if (::bind((int)fd, (sockaddr*)&sa, sizeof(sockaddr_storage)) != 0) { res = -errno; ::close((int)fd); fd = -1; return res; }
 
 	return 0;
@@ -288,7 +304,7 @@ ssize_t inet::GetSockAddr(sockaddr_storage& sa, const std::string_view& strHostP
 					}
 				}
 				else /* bind to all interfaces */ {
-					((sockaddr_in*)&sa)->sin_addr.s_addr = 0;
+					((sockaddr_in*)&sa)->sin_addr.s_addr = INADDR_ANY;
 					((sockaddr_in*)&sa)->sin_family = (sa_family_t)defaultAF;
 				}
 				if (auto saPort{ match.str(4) }; !saPort.empty()) {

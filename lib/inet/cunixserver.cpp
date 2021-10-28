@@ -30,7 +30,7 @@ void cunixserver::OnAccept(fd_t fd, uint events, std::weak_ptr<cpoll> poll) {
 void cunixserver::Listen(const std::shared_ptr<cpoll>& poll) {
 	if (srvFd > 0) {
 		ssize_t res{ -1 };
-		if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE, std::bind(&cunixserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this()), false); res == 0) {
+		if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE, std::bind(&cunixserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this())); res == 0) {
 			return;
 		}
 		fprintf(stderr, "[ UNIXSERVER:%s(%ld) ] Listen error: %s\n", NameOf(), std::strerror((int)-res));

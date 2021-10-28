@@ -3,6 +3,7 @@
 #include "cmessage.h"
 #include "ccredentials.h"
 #include "cchannels.h"
+#include "ccluster.h"
 #include "channels/cchannel.h"
 #include <cstring>
 
@@ -16,6 +17,8 @@ static inline message_t dupChannelMessage(const json::value_t& msg, const std::s
 	(*out)["#msg-arrival"] = msg["#msg-arrival"];
 	(*out)["#msg-expired"] = msg["#msg-expired"];
 	(*out)["#msg-delivery"] = msg["#msg-delivery"];
+	if(msg.contains("socket_id"))
+		(*out)["socket_id"] = msg["socket_id"];
 	return out;
 }
 
@@ -38,6 +41,7 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
 						else {
 							reply["channels"][chName] = (size_t)0;
 						}
+						Cluster->Push(ChannelType(chName),app,chName,std::move(message));
 					}
 					reply["time"] = std::chrono::system_clock::now().time_since_epoch().count() - tmStart;
 					ApiResponse(fd, "200", json::serialize(reply), http::IsConnectionKeepAlive(headers));
@@ -150,8 +154,8 @@ void capiserver::Listen(const std::shared_ptr<inet::cpoll>& poll)
 }
 
 
-capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccredentials>& credentials, config::interface_t config) :
-	Channels{ channels }, Credentials{ credentials }, KeepAliveTimeout{ std::to_string(config.KeepAlive) }
+capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccredentials>& credentials, const std::shared_ptr<ccluster>& cluster, config::interface_t config) :
+	Channels{ channels }, Credentials{ credentials }, Cluster{ cluster }, KeepAliveTimeout{ std::to_string(config.KeepAlive) }
 {
 	if (!config.Tcp.empty()) {
 		ApiTcp = std::make_shared<ctcpapiserver>(*this, config);
@@ -200,7 +204,7 @@ capiserver::ctcpapiserver::~ctcpapiserver() {
 ssize_t capiserver::cunixapiserver::OnUnixAccept(fd_t fd, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
 	ssize_t res{ -1 };
 	if (auto&& self{ poll.lock() }; self) {
-		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR, std::bind(&cunixapiserver::OnHttpData, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll),false);
+		return self->PollAdd(fd, EPOLLIN | EPOLLRDHUP | EPOLLERR, std::bind(&cunixapiserver::OnHttpData, this, std::placeholders::_1, std::placeholders::_2, sa, ssl, poll));
 	}
 	return res;
 }

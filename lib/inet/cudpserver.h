@@ -10,6 +10,7 @@ namespace inet {
 		virtual void Listen(const std::shared_ptr<cpoll>& poll) override;
 	protected:
 		inline inet::csocket Fd() { return { srvFd, nullptr }; }
+		ssize_t UdpListen(const std::string_view& iface, const std::string_view& port, bool reuseaddress, bool reuseport, bool nonblock);
 		ssize_t UdpListen(const std::string_view& listenHostPort, bool reuseaddress, bool reuseport, bool nonblock);
 		void UdpClose();
 		virtual void OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) = 0;
