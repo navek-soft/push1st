@@ -62,6 +62,7 @@ void cbroker::Initialize(const core::cconfig& config) {
     if (config.Server.Proto.empty()) throw std::runtime_error("Protocols not specified");
     if (!config.Server.Threads) throw std::runtime_error("Invalid worker threads number ( zero count )");
 
+
     Cluster = std::make_shared<ccluster>(shared_from_this(), config.Cluster);
     Channels = std::make_shared<cchannels>(Cluster);
     Credentials = std::make_shared<ccredentials>(shared_from_this(), config.Credentials);
@@ -70,7 +71,13 @@ void cbroker::Initialize(const core::cconfig& config) {
 
     syslog.ob.flush(1);
 
+    std::vector<std::shared_ptr<inet::cpoll>> ServerPoll;
+   // std::shared_ptr<inet::cpoll> ClusterPoll{ std::make_shared<inet::cpoll>() };
+    //Cluster->Listen(ClusterPoll);
+
+
     ServerPoll.reserve(config.Server.Threads);
+
     for (auto n{ config.Server.Threads }; n--;) {
         ServerPoll.emplace_back(std::make_shared<inet::cpoll>());
         if (WsServer) { WsServer->Listen(ServerPoll.back()); }
@@ -79,6 +86,7 @@ void cbroker::Initialize(const core::cconfig& config) {
         ServerPoll.back()->Listen();
     }
  
+    //ClusterPoll->Listen();
 
     WaitFor({ SIGINT, SIGQUIT, SIGABRT, SIGSEGV, SIGHUP });
 

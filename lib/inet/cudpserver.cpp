@@ -19,7 +19,7 @@ void cudpserver::OnAccept(fd_t fd, uint events, std::weak_ptr<cpoll> poll) {
 void cudpserver::Listen(const std::shared_ptr<cpoll>& poll) {
 	if (srvFd > 0) {
 		ssize_t res{ 0 };
-		if (res = poll->PollAdd(srvFd, EPOLLIN | EPOLLEXCLUSIVE, std::bind(&cudpserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this())); res == 0) {
+		if (res = poll->PollAdd(srvFd, EPOLLIN, std::bind(&cudpserver::OnAccept, this, std::placeholders::_1, std::placeholders::_2, poll->weak_from_this())); res == 0) {
 			return;
 		}
 		fprintf(stderr, "[ UDPSERVER:%s(%ld) ] Listen error: %s\n", NameOf(), srvFd, std::strerror((int)-res));

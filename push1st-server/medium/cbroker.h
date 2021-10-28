@@ -31,7 +31,6 @@ private:
 	std::shared_ptr<cchannels> Channels;
 	std::shared_ptr<cwebsocketserver> WsServer;
 	std::shared_ptr<capiserver> ApiServer;
-	std::vector<std::shared_ptr<inet::cpoll>> ServerPoll;
 	std::unordered_map<std::string, std::shared_ptr<cconnection>> HookConnections;
 };
 
