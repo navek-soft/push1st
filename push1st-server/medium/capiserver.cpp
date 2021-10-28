@@ -41,7 +41,7 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
 						else {
 							reply["channels"][chName] = (size_t)0;
 						}
-						Cluster->Push(ChannelType(chName),app,chName,std::move(message));
+						Cluster->Push(ChannelType(chName),app,chName, dupChannelMessage((*message), chName));
 					}
 					reply["time"] = std::chrono::system_clock::now().time_since_epoch().count() - tmStart;
 					ApiResponse(fd, "200", json::serialize(reply), http::IsConnectionKeepAlive(headers));

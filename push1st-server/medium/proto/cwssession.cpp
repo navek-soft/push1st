@@ -24,7 +24,7 @@ message_t cwssession::UnPack(data_t&& data) {
 
 void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	try {
-		ActivityCheckTime = std::time(nullptr) + KeepAlive;
+		ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 
 		if (auto&& message{ UnPack({std::move(data),length}) }; message) {
 			if (auto&& chIt{ SubscribedTo.find((*message)["channel"].get<std::string>()) }; chIt != SubscribedTo.end()) {
@@ -134,7 +134,7 @@ cwssession::cwssession(const std::shared_ptr<cchannels>& channels, const app_t& 
 	inet::csocket{ std::move(fd) }, csubscriber{ GetAddress(), GetPort(), sessPrefix },
 	MaxMessageLength{ maxMessageLength }, KeepAlive{ keepAlive }, Channels{ channels }, App{ app }, EnablePushOnChannels{ pushOnChannels }
 {
-	ActivityCheckTime = std::time(nullptr) + KeepAlive;
+	ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
 	//syslog.trace("[ RAW:%ld:%s ] New\n", Fd(), Id().c_str());
 }

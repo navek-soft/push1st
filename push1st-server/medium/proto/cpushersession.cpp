@@ -92,7 +92,7 @@ void cpushersession::OnPusherPush(const message_t& message) {
 
 void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	if (auto&& message{ UnPack(data, length) }; message) {
-		ActivityCheckTime = std::time(nullptr) + KeepAlive;
+		ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 
 		if (auto&& evName{ (*message)["event"].get<std::string>() }; !evName.empty()) {
 			if (evName == "pusher:subscribe") {
@@ -165,7 +165,7 @@ cpushersession::cpushersession(const std::shared_ptr<cchannels>& channels, const
 	inet::csocket{ std::move(fd) }, csubscriber{ GetAddress(), GetPort() },
 	MaxMessageLength{ maxMessageLength }, KeepAlive{ keepAlive }, Channels{ channels }, App{ app }, EnablePushOnChannels{ pushOnChannels }
 {
-	ActivityCheckTime = std::time(nullptr) + KeepAlive;
+	ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
 }
 

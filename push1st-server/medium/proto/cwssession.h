@@ -42,7 +42,7 @@ public:
 	virtual void OnSocketError(ssize_t err) override;
 
 	virtual void OnWsClose() override;
-	virtual inline void OnWsPing() override { ActivityCheckTime = std::time(nullptr) + KeepAlive; }
+	virtual inline void OnWsPing() override { ActivityCheckTime = std::time(nullptr) + KeepAlive + 5; }
 
 	virtual void GetUserInfo(std::string& userId, std::string& userData) override { ; }
 	virtual inline fd_t GetFd() { return Fd(); }
