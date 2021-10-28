@@ -262,7 +262,7 @@ ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster
 
 		if (auto res = UdpListen(config.Listen.hostport(), true, true, false); res == 0) {
 			clusFd = std::move(Fd());
-			inet::SetUdpCork(clusFd.Fd(), false);
+			//inet::SetUdpCork(clusFd.Fd(), false);
 			/*
 			if (int cliSo{ -1 }; inet::UdpConnect(cliSo, false) == 0) {
 				cliFd = cliSo;

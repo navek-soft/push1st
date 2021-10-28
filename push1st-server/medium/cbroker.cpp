@@ -72,8 +72,8 @@ void cbroker::Initialize(const core::cconfig& config) {
     syslog.ob.flush(1);
 
     std::vector<std::shared_ptr<inet::cpoll>> ServerPoll;
-   // std::shared_ptr<inet::cpoll> ClusterPoll{ std::make_shared<inet::cpoll>() };
-    //Cluster->Listen(ClusterPoll);
+    std::shared_ptr<inet::cpoll> ClusterPoll{ std::make_shared<inet::cpoll>() };
+    Cluster->Listen(ClusterPoll);
 
 
     ServerPoll.reserve(config.Server.Threads);
@@ -82,11 +82,11 @@ void cbroker::Initialize(const core::cconfig& config) {
         ServerPoll.emplace_back(std::make_shared<inet::cpoll>());
         if (WsServer) { WsServer->Listen(ServerPoll.back()); }
         ApiServer->Listen(ServerPoll.back());
-        Cluster->Listen(ServerPoll.back());
+//        Cluster->Listen(ServerPoll.back());
         ServerPoll.back()->Listen();
     }
  
-    //ClusterPoll->Listen();
+    ClusterPoll->Listen();
 
     WaitFor({ SIGINT, SIGQUIT, SIGABRT, SIGSEGV, SIGHUP });
 
