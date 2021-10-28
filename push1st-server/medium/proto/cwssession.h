@@ -52,7 +52,10 @@ public:
 		OutgoingQueue.emplace(msg);
 		SocketUpdateEvents(EPOLLOUT | EPOLLET);
 #else
-		return WsSendMessage(opcode_t::text, Pack(msg));
+		auto res = WsSendMessage(opcode_t::text, Pack(msg));
+		if (res == 0) {
+			ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
+		}
 #endif
 	}
 private:
