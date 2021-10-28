@@ -112,6 +112,7 @@ inline void ccluster::OnClusterPush(struct sockaddr_storage& sa, const std::stri
 	if (json::value_t value; json::unserialize(data, value) and value.is_object() and value.contains("app") and value.contains("channel") and value.contains("data")) {
 		syslog.print(4, "[ CLUSTER ] Node %s ... PUSH\n", inet::GetIp(sa).c_str());
 		if (auto&& ch{ Broker->GetChannel(value["app"].get<std::string>(),value["channel"].get<std::string>()) }; ch) {
+			value["data"]["#from-host"] = inet::GetIp(sa);
 			ch->OnClusterPush(message_t{ new json::value_t(value["data"]) });
 		}
 		CallModule("OnClusterPush", { inet::GetIp(sa), data });
@@ -199,6 +200,7 @@ void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<in
 void ccluster::Push(channel_t::type type, const app_t& app, sid_t channel, message_t&& msg)
 { 
 	if (clusFd and app->IsAllowTrigger(type, hook_t::type::push)) {
+		(*msg)["#msg-from"] = "cluster";
 		Send(proto::Pack(hook_t::type::push, { {"app", app->Id },{"channel", channel },{"data", (*msg)} }));
 	}
 }
