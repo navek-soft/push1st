@@ -11,7 +11,7 @@ public:
 	using array_t = nlohmann::json::array_t;
 	using value_t = nlohmann::json;
 	static inline std::string serialize(value_t&& document) {
-		return document.dump(0);
+		return document.dump(-1);
 	}
 	static inline bool unserialize(const std::string_view& document, value_t& value) {
 		try {
