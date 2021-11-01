@@ -2,7 +2,7 @@
 Push1st is open source PUB/SUB multiple protocol message broker server ([Pusher](https://pusher.com/), MQTT, RAW WebSocket). 
 
 <p align="center">
-<img src="readme/Push1ST.svg"/>
+<img src="readme/push1st-service.png"/>
 </p>
 
 ## Key features

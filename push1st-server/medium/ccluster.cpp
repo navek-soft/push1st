@@ -112,6 +112,7 @@ inline void ccluster::OnClusterPush(struct sockaddr_storage& sa, const std::stri
 	if (json::value_t value; json::unserialize(data, value) and value.is_object() and value.contains("app") and value.contains("channel") and value.contains("data")) {
 		syslog.print(4, "[ CLUSTER ] Node %s ... PUSH\n", inet::GetIp(sa).c_str());
 		if (auto&& ch{ Broker->GetChannel(value["app"].get<std::string>(),value["channel"].get<std::string>()) }; ch) {
+			value["data"]["#from-host"] = inet::GetIp(sa);
 			ch->OnClusterPush(message_t{ new json::value_t(value["data"]) });
 		}
 		CallModule("OnClusterPush", { inet::GetIp(sa), data });
@@ -159,33 +160,40 @@ void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<in
 		ssize_t res{ -1 };
 
 		
-		if (res = so.SocketRecv(sa, data, proto::MaxFrameSize, (size_t&)nread, MSG_DONTWAIT); res == 0) {
-			while(nread > 0) {
-				switch (frame->op) {
-				case proto::op_t::push:
-					OnClusterPush(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
-					break;
-				case proto::op_t::ping:
-					OnClusterPing(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
-					break;
-				case proto::op_t::reg:
-					OnClusterReg(sa, { (char*)frame->data.sh.payload, frame->data.sh.len } );
-					break;
-				case proto::op_t::unreg:
-					OnClusterUnReg(sa, { (char*)frame->data.sh.payload, frame->data.sh.len } );
-					break;
-				case proto::op_t::join:
-					OnClusterJoin(sa, { (char*)frame->data.sh.payload, frame->data.sh.len } );
-					break;
-				case proto::op_t::leave:
-					OnClusterLeave(sa, { (char*)frame->data.sh.payload, frame->data.sh.len } );
-					break;
-				default:
-					break;
+		if (res = so.SocketRecv(sa, data, sizeof(proto::hdr_t), (size_t&)nread, MSG_PEEK); res == 0 and nread == sizeof(proto::hdr_t)) {
+			if (frame->data.sh.len < (proto::MaxFrameSize - sizeof(proto::hdr_t))) {
+				if (res = so.SocketRecv(sa, data, sizeof(proto::hdr_t) + frame->data.sh.len, (size_t&)nread, MSG_WAITALL); res == 0) {
+					switch (frame->op) {
+					case proto::op_t::push:
+						OnClusterPush(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
+						break;
+					case proto::op_t::ping:
+						OnClusterPing(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
+						break;
+					case proto::op_t::reg:
+						OnClusterReg(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
+						break;
+					case proto::op_t::unreg:
+						OnClusterUnReg(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
+						break;
+					case proto::op_t::join:
+						OnClusterJoin(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
+						break;
+					case proto::op_t::leave:
+						OnClusterLeave(sa, { (char*)frame->data.sh.payload, frame->data.sh.len });
+						break;
+					default:
+						syslog.error("[ CLUSTER ] Network error ( %s )\n", std::strerror(EBADMSG));
+						break;
+					}
 				}
-				nread -= frame->data.sh.len + sizeof(proto::hdr_t);
-				frame = (proto::hdr_t*)(((uint8_t*)frame) + frame->data.sh.len + sizeof(proto::hdr_t));
-			};
+				else {
+					syslog.error("[ CLUSTER ] Network error ( %s )\n", std::strerror(EMSGSIZE));
+				}
+			}
+			else {
+				syslog.error("[ CLUSTER ] Network error ( %s )\n", std::strerror(-(int)res));
+			}
 		}
 		else {
 			syslog.error("[ CLUSTER ] Network error ( %s )\n", std::strerror(-(int)res));
@@ -199,6 +207,7 @@ void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<in
 void ccluster::Push(channel_t::type type, const app_t& app, sid_t channel, message_t&& msg)
 { 
 	if (clusFd and app->IsAllowTrigger(type, hook_t::type::push)) {
+		(*msg)["#msg-from"] = "cluster";
 		Send(proto::Pack(hook_t::type::push, { {"app", app->Id },{"channel", channel },{"data", (*msg)} }));
 	}
 }
@@ -253,6 +262,7 @@ ccluster::ccluster(const std::shared_ptr<cbroker>& broker, const config::cluster
 
 		if (auto res = UdpListen(config.Listen.hostport(), true, true, false); res == 0) {
 			clusFd = std::move(Fd());
+			//inet::SetUdpCork(clusFd.Fd(), false);
 			/*
 			if (int cliSo{ -1 }; inet::UdpConnect(cliSo, false) == 0) {
 				cliFd = cliSo;

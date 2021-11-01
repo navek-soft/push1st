@@ -14,9 +14,12 @@ void cpushersession::OnPusherSubscribe(const message_t& message) {
 					if (auto&& chSelf{ Channels->Register(chType, App, std::string{chName}) }; chSelf) {
 						SubscribedTo.emplace(chName, chSelf);
 						chSelf->Subscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
-						WsWriteMessage(opcode_t::text, json::serialize({
+						if (WsWriteMessage(opcode_t::text, json::serialize({
 							{"event","pusher_internal:subscription_succeeded"}, {"channel", chName}
-						}));
+							})) == 0) 
+						{
+							ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
+						}
 						return;
 					}
 				}
@@ -33,10 +36,13 @@ void cpushersession::OnPusherSubscribe(const message_t& message) {
 
 						usersids_t ids; userslist_t users;
 						chSelf->GetUsers(ids, users);
-						WsWriteMessage(opcode_t::text, json::serialize({
+						if (WsWriteMessage(opcode_t::text, json::serialize({
 							{"event","pusher_internal:subscription_succeeded"}, {"channel", chName},
 							{"data",json::serialize({ {"presence", json::object_t{{"ids",ids},{"hash",users},{"count",users.size()}}}})}
-						}));
+							})) == 0) 
+						{
+							ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
+						}
 						return;
 					}
 				}
@@ -48,9 +54,12 @@ void cpushersession::OnPusherSubscribe(const message_t& message) {
 
 					usersids_t ids; userslist_t users;
 					chSelf->GetUsers(ids, users);
-					WsWriteMessage(opcode_t::text, json::serialize({
+					if (WsWriteMessage(opcode_t::text, json::serialize({
 						{"event","pusher_internal:subscription_succeeded"}, {"channel", chName}
-					}));
+						})) == 0) 
+					{
+						ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
+					}
 					return;
 				}
 			}
@@ -71,7 +80,9 @@ void cpushersession::OnPusherUnSubscribe(const message_t& message) {
 
 void cpushersession::OnPusherPing(const message_t& message) {
 	syslog.print(7, "[ PUSHER:%s ] Ping ( ping )\n", Id().c_str());
-	WsWriteMessage(opcode_t::text, json::serialize({ {"event","pusher:pong"} }));
+	if (WsWriteMessage(opcode_t::text, json::serialize({ {"event","pusher:pong"} })) == 0) {
+		ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
+	}
 }
 
 void cpushersession::OnPusherPush(const message_t& message) {
@@ -92,7 +103,7 @@ void cpushersession::OnPusherPush(const message_t& message) {
 
 void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& data, size_t length) {
 	if (auto&& message{ UnPack(data, length) }; message) {
-		ActivityCheckTime = std::time(nullptr) + KeepAlive;
+		ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 
 		if (auto&& evName{ (*message)["event"].get<std::string>() }; !evName.empty()) {
 			if (evName == "pusher:subscribe") {
@@ -165,7 +176,7 @@ cpushersession::cpushersession(const std::shared_ptr<cchannels>& channels, const
 	inet::csocket{ std::move(fd) }, csubscriber{ GetAddress(), GetPort() },
 	MaxMessageLength{ maxMessageLength }, KeepAlive{ keepAlive }, Channels{ channels }, App{ app }, EnablePushOnChannels{ pushOnChannels }
 {
-	ActivityCheckTime = std::time(nullptr) + KeepAlive;
+	ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
 }
 

@@ -24,8 +24,8 @@ ifeq ($(BUILD_NO),)
 	BUILD_NO := ${BUILD_TS}
 endif
 
-ifeq ($(BRANCH_NAME),)
-	BRANCH_NAME := src
+ifeq ($(BRANCH_NAME),"main")
+	BRANCH_NAME := "release"
 endif
 
 ifeq ($(VERSION_NAME),)
@@ -37,7 +37,13 @@ BIN_DIR    = build
 OBJ_DIR    = build/${BRANCH_NAME}
 PROD_FLAGS = -O3
 DBG_FLAGS  = -O0 -ggdb
-LINK_FLAGS = ${PROD_FLAGS} -fPIC -L/usr/local/lib
+
+ifeq ($(BRANCH_NAME),"dev")
+	LINK_FLAGS = ${PROD_FLAGS} -fPIC -L/usr/local/lib
+else
+	LINK_FLAGS = ${DBG_FLAGS} -fPIC -L/usr/local/lib
+endif
+
 
 all: version branch archive deb
 

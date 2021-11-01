@@ -43,7 +43,7 @@ public:
 	virtual void OnSocketError(ssize_t err) override;
 
 	virtual void OnWsClose() override;
-	virtual inline void OnWsPing() override { ActivityCheckTime = std::time(nullptr) + KeepAlive; }
+	virtual inline void OnWsPing() override { ActivityCheckTime = std::time(nullptr) + KeepAlive + 5; }
 	virtual void GetUserInfo(std::string& userId, std::string& userData) override { userId = SessionUserId; userData = SessionPresenceData; }
 	virtual inline fd_t GetFd() { return Fd(); }
 	virtual inline ssize_t Push(const message_t& msg) override {
@@ -52,7 +52,11 @@ public:
 		OutgoingQueue.emplace(msg);
 		SocketUpdateEvents(EPOLLOUT | EPOLLET);
 #else
-		return WsSendMessage(opcode_t::text, Pack(msg));
+		auto res = WsSendMessage(opcode_t::text, Pack(msg));
+		if (res == 0) {
+			ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
+		}
+		return res;
 #endif
 	}
 private:
