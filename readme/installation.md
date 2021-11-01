@@ -3,7 +3,7 @@
 ###### Import repository key
 
 ```bash
-	wget https://reader:reader1@nexus.naveksoft.com/repository/gpg/naveksoft.gpg.key -O naveksoft.gpg.key
+	wget https://public:public@nexus.naveksoft.com/repository/gpg/naveksoft.gpg.key -O naveksoft.gpg.key
 	sudo apt-key add naveksoft.gpg.key
 ```
 
