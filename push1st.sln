@@ -13,6 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "guide", "guide", "{23C6820B
 		readme\example.md = readme\example.md
 		readme\installation.md = readme\installation.md
 		LICENSE = LICENSE
+		readme\push1st-service.svg = readme\push1st-service.svg
 		README.md = README.md
 	EndProjectSection
 EndProject
