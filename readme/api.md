@@ -1,4 +1,4 @@
-### Push1ST API
+### Push1st API
 
 [Postman collection](Push1ST-API.postman_collection.json)
 
