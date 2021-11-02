@@ -82,6 +82,3 @@ see [Push1st API](/readme/api.md)
  [Apache-2.0 License](/LICENSE)
 
 Copyright (c) 2021 Naveksoft.
-
-This project is provided as is without any warranties. Use at your own risk.<br/>
-By using Push1st you agree with its [privacy](PRIVACY.md) policy and [license](LICENSE.md).
