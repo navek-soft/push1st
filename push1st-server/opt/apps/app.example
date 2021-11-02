@@ -12,7 +12,7 @@ app-test:
         - unregister # hook on unregister channel
         - join # hook on subscribe to channel
         - leave # hook on leave channel
-        - push - hook on subscriber push message to channel, may be increase message delivery latency
+        - push # hook on subscriber push message to channel, may be increase message delivery latency
     http-pipelining: false
     endpoint:
 #        - http://127.0.0.1:6002/
