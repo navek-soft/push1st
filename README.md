@@ -78,12 +78,11 @@ see [Push1st API](/readme/api.md)
 
 ## Author 
  Andrei Yakubouski. 
- With special thanks to [Igor Kostyukovsky](https://github.com/kasparrov) and [NavekSoft team](https://naveksoft.com/).
+ With special thanks to [Igor Kostyukovsky](https://github.com/kasparrov) and [Naveksoft team](https://naveksoft.com/?utm_source=github&utm_medium=social&utm_campaign=push1st).
  
 ## License
  [Apache-2.0 License](/LICENSE)
 
 Copyright (c) 2021 Naveksoft.
 
-This project is provided as is without any warranties. Use at your own risk.<br/>
-By using Push1st you agree with its [privacy](PRIVACY.md) policy and [license](LICENSE.md).
+This project is provided as is without any warranties. Use at your own risk.
