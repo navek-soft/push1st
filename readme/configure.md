@@ -1,6 +1,7 @@
 ### Push1st configuration 
 
-By default, configuration files are located in /opt/naveksoft/push1st/server.example.yaml 
+By default, configuration files are located in /opt/naveksoft/push1st/server.example.yaml
+
 Each application is described by a separate yaml file 
 
 #### Server settings (server.yaml)
