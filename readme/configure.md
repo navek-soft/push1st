@@ -1,9 +1,9 @@
-### Конфигурирование Push1st
+### Push1st configuration 
 
-По умолчанию файлы конфигурации находятся в /opt/naveksoft/push1st/server.example.yaml
-Каждое приложение (application) описывается отдельным yaml файлом
+By default, configuration files are located in /opt/naveksoft/push1st/server.example.yaml 
+Each application is described by a separate yaml file 
 
-#### Параметры сервера (server.yaml)
+#### Server settings (server.yaml)
 
 ```yaml
 # ssl forward declaration
@@ -54,13 +54,13 @@ credentials:
     - apps/*.yml
 ```
 
-#### Регистрация приложения и установка разрешений ( apps/app.example.yaml)
+#### App. registration and setting permissions (apps/app.example.yaml)
 
 ```yaml
-app-test:   # Application ID ( used in API request methods )
+app-test:   # Application ID (used in API request methods)
   name: "Default Application for tests" # Application frendly name
-  key: "app-key"    # App key ( for Pusher, Ws channel supscription URL )
-  secret: "secret"  # App secret ( for generate and validate authorization on private, presence channels )
+  key: "app-key"    # App key (for Pusher, Ws channel supscription URL)
+  secret: "secret"  # App secret (for generate and validate authorization on private, presence channels)
   options: { client-messages: true, statistic: false }
   channels: [ public, private, presence ] # Type of channels enabled for app
   origins: [ ] # Origins list.
