@@ -40,7 +40,7 @@ Install from APT (Ubuntu, Debian) repository [installation guide](/readme/instal
 
 Build from source code [build instruction](/readme/build.md).
 
-## Run push1st server
+## Run Push1st server
 
 After installing or building Push1st you can configure server [Configure Push1st](/readme/configure.md). By default Push1st is installed into /opt/naveksoft/push1st and registered as system service. (Service doesn't start automatically. You must run service manually, after each install.)
 
