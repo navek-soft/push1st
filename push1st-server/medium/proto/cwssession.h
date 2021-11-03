@@ -56,6 +56,7 @@ public:
 		if (res == 0) {
 			ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 		}
+		return res;
 #endif
 	}
 private:
