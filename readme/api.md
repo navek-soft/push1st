@@ -3,7 +3,7 @@
 [Postman collection](Push1ST-API.postman_collection.json)
 
 <table>
-  <caption><h6>Создание токена для авторизации Pusher private, presence каналах</h6></caption>
+  <caption><h6>Token generation to authorize Pusher private, presence channels</h6></caption>
  <tr>
    <td><code>POST</code></td><td>{{api-server}}/{{app-id}}/token/session/</td><td><code>200</code> OK</td>
  </tr>
@@ -38,7 +38,7 @@
 
 
 <table>
-  <caption><h6>Создание Bearer access token</h6></caption>
+  <caption><h6>Bearer access token generation</h6></caption>
  <tr>
    <td><code>POST</code></td><td>{{api-server}}/{{app-id}}/token/access/</td><td><code>200</code> OK</td>
  </tr>
@@ -74,7 +74,7 @@
 
   
 <table>
-  <caption><h6>Отправка сообщения в канал</h6></caption>
+  <caption><h6>Send a message to a channel</h6></caption>
  <tr>
    <td><code>POST</code></td><td>{{api-server}}/{{app-id}}/events</td><td><code>200</code> OK</td>
  </tr>
