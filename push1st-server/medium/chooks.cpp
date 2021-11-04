@@ -21,7 +21,7 @@ void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t ses
 					{"data", json::serialize(std::move(msg))},
 			}));
 		}
-	}, weak_from_this(), trigger, app, channel, session, msg);
+		}, weak_from_this(), trigger, app, channel, session, json::value_t{ std::move(msg) });
 }
 
 
@@ -85,6 +85,6 @@ void cluahook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t ses
 				syslog.print(7, "[ LUAHOOK:%s ] %s %s#%s\n", self->luaScript.filename().c_str(), str(trigger), app.c_str(), channel.c_str());
 				self->jitLua.luaExecute(self->luaScript, "OnTrigger", { str(trigger), app, channel, session, json::serialize(std::move(msg)) });
 			}
-		}, weak_from_this(), trigger, app, channel, session, msg);
+		}, weak_from_this(), trigger, app, channel, session, json::value_t{ std::move(msg) });
 	}
 }
