@@ -34,7 +34,7 @@ pipeline {
 
         stage('Run tests') {
             steps {
-                sh 'sudo apt-get install python3-venv'
+                sh 'sudo apt-get install -y python3-venv'
                 sh 'python3 -m venv special_env'
                 sh 'source special_env/bin/activate'
                 echo 'Clone repo with tests'
