@@ -119,14 +119,14 @@ int cbroker::WaitFor(std::initializer_list<int>&& signals) {
         sigaddset(&sigSet, s);
     }
 
-    sigprocmask(SIG_BLOCK, &sigSet, &sigMask);
+    //sigprocmask(SIG_BLOCK, &sigSet, &sigMask);
     
     int sig{ -1 };
     while (nsig == -1 and ((sig = sigtimedwait(&sigMask, &sigInfo, &tmout)) == -1 or errno == EAGAIN)) {
         OnIdle();
     }
 //    nsig = sigsuspend(&sigMask);
-    sigprocmask(SIG_UNBLOCK, &sigSet, nullptr);
+    //sigprocmask(SIG_UNBLOCK, &sigSet, nullptr);
 
     return nsig;
 }
