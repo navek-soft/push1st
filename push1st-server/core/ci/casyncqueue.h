@@ -28,7 +28,7 @@ namespace core {
 	void casyncqueue::enqueue(FN job, ARGS&& ... args) {
 		{
 			std::unique_lock<decltype(quLock)> lock(quLock);
-			std::tuple<ARGS...> jobargs(args...);
+			std::tuple<ARGS&&...> jobargs(args...);
 			quJobs.emplace([job, jobargs]() {std::apply(job, jobargs); });
 		}
 		quNotify.notify_one();
