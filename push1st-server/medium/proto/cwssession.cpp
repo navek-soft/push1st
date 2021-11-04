@@ -104,7 +104,7 @@ bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& hea
 	//syslog.trace("[ RAW:%ld:%s ] Connect\n", Fd(), Id().c_str());
 
 	SetSendTimeout(500);
-	SetKeepAlive(true, 2, 1, 1);
+	//SetKeepAlive(true, 2, 1, 1);
 
 	size_t nchannels{ 0 };
 	for (auto&& it{ path.uriPathList.begin() + 4 }; it != path.uriPathList.end(); ++it) {
