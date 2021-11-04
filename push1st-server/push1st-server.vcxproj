@@ -153,6 +153,7 @@
     <ClCompile Include="core\ci\casyncqueue.cpp" />
     <ClCompile Include="core\ci\cbase62.cpp" />
     <ClCompile Include="core\ci\ccmd.cpp" />
+    <ClCompile Include="core\csyslog.cpp" />
     <ClCompile Include="core\lua\clua.cpp" />
     <ClCompile Include="medium\capiserver.cpp" />
     <ClCompile Include="medium\channels\cpresencechannel.cpp" />

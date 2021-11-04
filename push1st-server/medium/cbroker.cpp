@@ -110,6 +110,7 @@ int cbroker::WaitFor(std::initializer_list<int>&& signals) {
     sigAction.sa_sigaction = [](int sig, siginfo_t* si, void* ctx) {
         nsig = sig;
         psiginfo(si, "SIGNAL");
+        syslog.bt(30);
     };
     sigAction.sa_flags |= SA_SIGINFO | SA_ONESHOT;
 
