@@ -150,6 +150,7 @@
     <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="core\ci\casyncqueue.cpp" />
     <ClCompile Include="core\ci\cbase62.cpp" />
     <ClCompile Include="core\ci\ccmd.cpp" />
     <ClCompile Include="core\lua\clua.cpp" />
@@ -181,6 +182,7 @@
     <None Include="opt\server.example.yml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="core\ci\casyncqueue.h" />
     <ClInclude Include="core\ci\cbase62.h" />
     <ClInclude Include="core\ci\ccmd.h" />
     <ClInclude Include="core\lua\clua.h" />
