@@ -33,8 +33,8 @@ User=root
 Group=root
 Restart=always
 RestartSec=1
-#StandardOutput=append:/var/log/$SOFT_PROGRAM.log
-#StandardError=append:/var/log/$SOFT_PROGRAM.err
+StandardOutput=append:/var/log/$SOFT_PROGRAM.log
+StandardError=append:/var/log/$SOFT_PROGRAM.err
 LimitNOFILE=65535
 WorkingDirectory=$INST_DIR
 ExecStart=$INST_DIR/$SOFT_PROGRAM -c $INST_DIR/server.yml -V3 -l /var/log
@@ -111,6 +111,8 @@ chmod 0444 /etc/systemd/system/$SOFT_PROGRAM.service
 
 systemctl enable /etc/systemd/system/$SOFT_PROGRAM.service
 systemctl daemon-reload
+
+service $SOFT_PROGRAM start
 
 exit 0" > $DEB_DIR/postinst
 
