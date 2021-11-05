@@ -4,24 +4,22 @@
 
 static core::casyncqueue HookProcessing{ 2, "hookmgm" };
 
-void cwebhook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&& msg)
+void cwebhook::Trigger(hook_t::type trigger, std::string app, std::string channel, std::string session, json::value_t&& msg)
 { 
-	HookProcessing.enqueue([](std::weak_ptr<cwebhook> obj, hook_t::type trigger, std::string app, std::string channel, std::string session, json::value_t msg) {
-		if (auto&& self{ obj.lock() }; self) {
-			syslog.print(7, "[ WEBHOOK:%s ] %s %s#%s\n", std::string{ self->webEndpoint.hostport() }.c_str(), str(trigger), app.c_str(), channel.c_str());
-			self->Write("POST", self->webEndpoint.url(), {
-				{"Content-Type","application/json"},
-				{"Connection", !self->fdKeepAlive ? "close" : "keep-alive"},
-				{"Keep-Alive","30"} },
-				json::serialize({
-					{"event",str(trigger)},
-					{"app",app},
-					{"channel",channel},
-					{"session",session},
-					{"data", json::serialize(std::move(msg))},
-			}));
-		}
-		}, weak_from_this(), trigger, std::string{ app }, std::string{ channel }, std::string{ session }, json::value_t{ std::move(msg) });
+	syslog.print(7, "[ WEBHOOK:%s ] %s %s#%s\n", std::string{ webEndpoint.hostport() }.c_str(), str(trigger), app.c_str(), channel.c_str());
+	std::string request{ std::move(json::serialize({
+			{"event",str(trigger)},
+			{"app",app},
+			{"channel",channel},
+			{"session",session},
+			{"data", json::serialize(std::move(msg))},
+		})) };
+	HookProcessing.enqueue([this, request]() {
+		Write("POST", webEndpoint.url(), {
+			{"Content-Type","application/json"},
+			{"Connection", !fdKeepAlive ? "close" : "keep-alive"},
+			{"Keep-Alive","30"} }, std::string{ request });
+	});
 }
 
 
@@ -78,13 +76,11 @@ inline bool cwebhook::Connect() {
 	return false;
 }
 
-void cluahook::Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&& msg) {
+void cluahook::Trigger(hook_t::type trigger, std::string app, std::string channel, std::string session, json::value_t&& msg) {
 	if (luaAllowed) {
-		HookProcessing.enqueue([](std::weak_ptr<cluahook> obj, hook_t::type trigger, std::string app, std::string channel, std::string session, json::value_t msg) {
-			if (auto&& self{ obj.lock() }; self) {
-				syslog.print(7, "[ LUAHOOK:%s ] %s %s#%s\n", self->luaScript.filename().c_str(), str(trigger), app.c_str(), channel.c_str());
-				self->jitLua.luaExecute(self->luaScript, "OnTrigger", { str(trigger), app, channel, session, json::serialize(std::move(msg)) });
-			}
-		}, weak_from_this(), trigger, std::string{ app }, std::string{ channel }, std::string{ session }, json::value_t{ std::move(msg) });
+		std::string data{ json::serialize(std::move(msg)) };
+		HookProcessing.enqueue([this, trigger, app, channel, session, data]() {
+			jitLua.luaExecute(luaScript, "OnTrigger", { str(trigger), app, channel, session, data });
+		});
 	}
 }
