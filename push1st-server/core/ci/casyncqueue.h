@@ -12,8 +12,7 @@ namespace core {
 	public:
 		casyncqueue(size_t poolsize, const std::string& name = {});
 		~casyncqueue();
-		template<typename FN, typename ... ARGS>
-		void enqueue(FN job, ARGS&& ... args);
+		inline void enqueue(const std::function<void()>& job);
 	private:
 		void threadRunner();
 	private:
@@ -24,12 +23,10 @@ namespace core {
 		std::vector<std::thread> quPool;
 		std::queue<std::function<void()>> quJobs;
 	};
-	template<typename FN, typename ... ARGS>
-	void casyncqueue::enqueue(FN job, ARGS&& ... args) {
+	inline void casyncqueue::enqueue(const std::function<void()>& job) {
 		{
 			std::unique_lock<decltype(quLock)> lock(quLock);
-			std::tuple<ARGS...> jobargs(args...);
-			quJobs.emplace([job, jobargs]() {std::apply(job, jobargs); });
+			quJobs.emplace(job);
 		}
 		quNotify.notify_one();
 	}

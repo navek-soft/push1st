@@ -10,14 +10,14 @@
 class chook {
 public:
 	virtual ~chook() { ; }
-	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) = 0;
+	virtual void Trigger(hook_t::type trigger, std::string app, std::string channel, std::string session, json::value_t&&) = 0;
 };
 
 class cwebhook : public chook, public inet::chttpconnection, public std::enable_shared_from_this<cwebhook> {
 public:
 	cwebhook(const std::string& endpoint, bool keepalive = false);
 	virtual ~cwebhook() { ; }
-	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) override;
+	virtual void Trigger(hook_t::type trigger, std::string app, std::string channel, std::string session, json::value_t&&) override;
 private:
 	inline void Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers = {}, std::string&& request = "");
 	inline bool Connect();
@@ -34,7 +34,7 @@ class cluahook : public chook, public std::enable_shared_from_this<cluahook> {
 public:
 	cluahook(const std::string& endpoint) : luaAllowed{ std::filesystem::exists(endpoint) }, luaScript{ endpoint } {; }
 	virtual ~cluahook() { ; }
-	virtual void Trigger(hook_t::type trigger, sid_t app, sid_t channel, sid_t session, json::value_t&&) override;
+	virtual void Trigger(hook_t::type trigger, std::string app, std::string channel, std::string session, json::value_t&&) override;
 private:
 	bool luaAllowed{ false };
 	std::filesystem::path luaScript;

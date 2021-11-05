@@ -37,20 +37,22 @@ int cbroker::Run() {
 
 void cbroker::OnIdle() {
     static size_t stat_counter{ 0 };
+    auto List{ std::move(Channels->List()) };
     if (syslog.is(4) and !((++stat_counter) % 10)) {
-        syslog.print(4, "Channels: ( %ld )", Channels->Channels.size());
-        if (!Channels->Channels.empty()) {
+        syslog.print(4, "Channels: ( %ld )\n\t", List.size());
+        if (!List.empty()) {
             syslog.print(4, " ");
-            for (auto&& ch : Channels->Channels) {
+            size_t n{ 0 };
+            for (auto&& ch : List) {
                 syslog.print(4, "%s ( %ld ) ", ch.first.c_str(), ch.second->CountSubscribers());
+                if(n and (n % 3) == 0) syslog.print(4, "\n\t");
+                ++n;
             }
         }
         syslog.print(4, "\n");
     }
-    for (auto&& [chName, chSelf] : Channels->Channels) {
-        if (chSelf->Gc()) {
-            continue;
-        }
+    for (auto&& [chName, chSelf] : List) {
+        if (chSelf->Gc()) { continue; }
         Channels->UnRegister(chName);
         break;
     }
@@ -110,6 +112,7 @@ int cbroker::WaitFor(std::initializer_list<int>&& signals) {
     sigAction.sa_sigaction = [](int sig, siginfo_t* si, void* ctx) {
         nsig = sig;
         psiginfo(si, "SIGNAL");
+        syslog.bt(30);
     };
     sigAction.sa_flags |= SA_SIGINFO | SA_ONESHOT;
 
@@ -118,14 +121,14 @@ int cbroker::WaitFor(std::initializer_list<int>&& signals) {
         sigaddset(&sigSet, s);
     }
 
-    sigprocmask(SIG_BLOCK, &sigSet, &sigMask);
+    //sigprocmask(SIG_BLOCK, &sigSet, &sigMask);
     
     int sig{ -1 };
     while (nsig == -1 and ((sig = sigtimedwait(&sigMask, &sigInfo, &tmout)) == -1 or errno == EAGAIN)) {
         OnIdle();
     }
 //    nsig = sigsuspend(&sigMask);
-    sigprocmask(SIG_UNBLOCK, &sigSet, nullptr);
+    //sigprocmask(SIG_UNBLOCK, &sigSet, nullptr);
 
     return nsig;
 }

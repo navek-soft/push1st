@@ -17,7 +17,7 @@ void casyncqueue::threadRunner() {
 				auto job{ quJobs.front() };
 				quJobs.pop();
 				lock.unlock();
-				if (job) { job(); }
+				job(); 
 				lock.lock();
 			}
 			continue;

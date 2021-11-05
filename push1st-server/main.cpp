@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
         broker->Initialize(cfg);
     }
     catch (std::exception& ex) {
-
+        syslog.bt(30);
     }
     return 0;
 #else

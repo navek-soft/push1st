@@ -28,22 +28,24 @@ pipeline {
                 echo 'Check available versions'
                 sh 'sudo apt update && apt list -a push1st'
                 echo 'Install from repository'
-                sh 'sudo apt update && sudo apt install -y push1st'                            	   
+                sh 'sudo apt install -y push1st'                            	   
             }
         }
 
         stage('Run tests') {
             steps {
-		        echo 'Clone repo with tests'
+                sh 'sudo apt-get install -y python3-venv'
+                sh 'python3 -m venv special_env'
+                sh 'source special_env/bin/activate'
+                echo 'Clone repo with tests'
                 sh 'git clone git@bitbucket.org:naveksoft/functional-tests-pusher.git'
                 echo 'Install requirements'
                 sh 'cd functional-tests-pusher && pip3 install -r requirements.txt'
                 echo 'Launch tests'
                 sh 'cd functional-tests-pusher && bash launch_functional_tests_ps.sh'
-                echo 'test_privat.log'
-                sh 'cd functional-tests-pusher && cat test_privat.log'
-                echo 'test_public.log'
-                sh 'cd functional-tests-pusher && cat test_public.log'
+                echo 'test_suite.log'
+                sh 'cd functional-tests-pusher && cat test_suite.log'
+                sh 'deactivate'
             }
         }       
     }
