@@ -27,9 +27,9 @@
 	sudo apt install push1st
 ```
 
-## Install additional dependecies
+## Install additional dependencies
 
-###### Lua 5.3 dependecies ( optional )
+###### Lua 5.3 dependencies (optional)
 
 ```bash
 	sudo luarocks install lua-cjson2
