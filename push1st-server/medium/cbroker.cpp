@@ -37,20 +37,22 @@ int cbroker::Run() {
 
 void cbroker::OnIdle() {
     static size_t stat_counter{ 0 };
+    auto List{ std::move(Channels->List()) };
     if (syslog.is(4) and !((++stat_counter) % 10)) {
-        syslog.print(4, "Channels: ( %ld )", Channels->Channels.size());
-        if (!Channels->Channels.empty()) {
+        syslog.print(4, "Channels: ( %ld )\n\t", List.size());
+        if (!List.empty()) {
             syslog.print(4, " ");
-            for (auto&& ch : Channels->Channels) {
+            size_t n{ 0 };
+            for (auto&& ch : List) {
                 syslog.print(4, "%s ( %ld ) ", ch.first.c_str(), ch.second->CountSubscribers());
+                if(n and (n % 3) == 0) syslog.print(4, "\n\t");
+                ++n;
             }
         }
         syslog.print(4, "\n");
     }
-    for (auto&& [chName, chSelf] : Channels->Channels) {
-        if (chSelf->Gc()) {
-            continue;
-        }
+    for (auto&& [chName, chSelf] : List) {
+        if (chSelf->Gc()) { continue; }
         Channels->UnRegister(chName);
         break;
     }
