@@ -63,7 +63,7 @@ void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& op
 		Path = PathValue(options["path"], "app");
 
 		if (options["pusher"].IsMap()) {
-			Pusher.ActivityTimeout = (std::time_t)Value<size_t>(options["pusher"]["activity-timeout"], 0);
+			Pusher.ActivityTimeout = (std::time_t)Value<size_t>(options["pusher"]["activity-timeout"], Pusher.ActivityTimeout);
 			Pusher.MaxPayloadSize = Value<size_t>(options["pusher"]["max-request-payload"], Pusher.MaxPayloadSize);
 			Pusher.PushOn = channel_t::type::pres;
 			Pusher.Path = PathValue(options["pusher"]["path"], "pusher");
@@ -73,7 +73,7 @@ void cconfig::server_t::load(const std::filesystem::path& path, const yaml_t& op
 		}
 
 		if (options["websocket"].IsMap()) {
-			WebSocket.ActivityTimeout = (std::time_t)Value<size_t>(options["websocket"]["activity-timeout"], 0);
+			WebSocket.ActivityTimeout = (std::time_t)Value<size_t>(options["websocket"]["activity-timeout"], WebSocket.ActivityTimeout);
 			WebSocket.MaxPayloadSize = Value<size_t>(options["websocket"]["max-request-payload"], Pusher.MaxPayloadSize);
 			WebSocket.PushOn = Map<channel_t::type>(options["websocket"]["push"], {
 				{"public",channel_t::type::pub}, {"private",channel_t::type::priv}, {"presence", channel_t::type::pres}}, channel_t::type::pub | channel_t::type::prot | channel_t::type::pres);
