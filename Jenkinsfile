@@ -35,7 +35,7 @@ pipeline {
         stage('Run tests') {
             steps {
                 sh 'sudo apt install -y python3-venv'
-                sh 'pwd && ll'
+                sh 'pwd && ls -al'
                 sh 'python3 -m venv special_env'
                 sh 'ls -al'
                 sh 'source special_env/bin/activate'
