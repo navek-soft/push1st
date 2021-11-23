@@ -97,7 +97,7 @@ static inline std::pair<std::string_view, std::string_view> ExplodePathName(std:
 
 bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& headers) {
 	
-	//syslog.trace("[ RAW:%ld:%s ] Connect\n", Fd(), Id().c_str());
+	ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 
 	SetSendTimeout(500);
 	SetKeepAlive(true, 2, 2, 2);
@@ -131,10 +131,7 @@ cwssession::cwssession(const std::shared_ptr<cchannels>& channels, const app_t& 
 	MaxMessageLength{ maxMessageLength }, KeepAlive{ keepAlive }, Channels{ channels }, App{ app }, EnablePushOnChannels{ pushOnChannels }
 {
 	ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
-	//syslog.print(1, "%s\n", __PRETTY_FUNCTION__);
-	//syslog.trace("[ RAW:%ld:%s ] New\n", Fd(), Id().c_str());
 }
 
 cwssession::~cwssession() {
-	//syslog.trace("[ RAW:%ld:%s ] Destroy\n", Fd(), Id().c_str());
 }
