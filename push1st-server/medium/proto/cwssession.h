@@ -24,7 +24,7 @@ public:
 		if (ActivityCheckTime >= now and inet::GetErrorNo(Fd()) == 0) {
 			return false;
 		}
-		WsError(websocket_t::close_t::GoingAway, -ETIMEDOUT);
+		OnSocketError(-ETIMEDOUT);
 		return true;
 	}
 

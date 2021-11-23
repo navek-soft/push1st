@@ -41,21 +41,17 @@ void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr
 				}
 				else {
 					syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, std::strerror(EBADSLT));
-					OnSocketError(-EBADSLT);
 				}
 			}
 			else {
 				syslog.print(4, "[ RAW:%s ] Push ( %s ) no channel subscription\n", Id().c_str(), (*message)["channel"].get<std::string>().c_str(), (*message)["event"].get<std::string>().c_str());
 			}
 		}
-		else {
-			OnSocketError(-EBADMSG);
-		}
 	}
 	catch (std::exception& ex) {
 		syslog.error("%s ( %s )\n", __PRETTY_FUNCTION__, ex.what());
-		OnSocketError(-EBADMSG);
 	}
+	OnSocketError(-EBADMSG);
 }
 
 #if SENDQ 
@@ -104,7 +100,7 @@ bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& hea
 	//syslog.trace("[ RAW:%ld:%s ] Connect\n", Fd(), Id().c_str());
 
 	SetSendTimeout(500);
-	//SetKeepAlive(true, 2, 1, 1);
+	SetKeepAlive(true, 2, 2, 2);
 
 	size_t nchannels{ 0 };
 	for (auto&& it{ path.uriPathList.begin() + 4 }; it != path.uriPathList.end(); ++it) {
