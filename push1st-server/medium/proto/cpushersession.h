@@ -56,6 +56,9 @@ public:
 		if (res == 0) {
 			ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 		}
+		else {
+			OnSocketError(res);
+		}
 		return res;
 #endif
 	}
