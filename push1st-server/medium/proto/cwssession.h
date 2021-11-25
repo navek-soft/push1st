@@ -24,10 +24,9 @@ public:
 		if (ActivityCheckTime >= now and inet::GetErrorNo(Fd()) == 0) {
 			return false;
 		}
-		OnSocketError(-ETIMEDOUT);
 		return true;
 	}
-
+	virtual inline void Disconnect() override { OnSocketError(-ECONNRESET); }
 	virtual bool OnWsConnect(const http::uri_t& path, const http::headers_t& headers);
 	virtual inline void OnWsError(ssize_t err) override { OnSocketError(err); }
 	virtual inline ssize_t WsRecv(void* data, size_t size, size_t& readed, uint flags = 0) override { return SocketRecv(data, size, readed, flags); }

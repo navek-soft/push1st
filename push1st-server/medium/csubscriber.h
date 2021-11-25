@@ -12,6 +12,7 @@ public:
 	virtual inline bool IsConnected(std::time_t) = 0;
 	virtual ssize_t Push(const message_t& msg) = 0;
 	virtual void GetUserInfo(std::string& userId, std::string& userData) = 0;
+	virtual void Disconnect() = 0;
 protected:
 	std::string subsId;
 };
