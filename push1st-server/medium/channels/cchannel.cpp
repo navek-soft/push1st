@@ -31,17 +31,17 @@ json::value_t cchannel::ApiOverview() {
 
 size_t cchannel::Gc() {
 	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-	if (!chSubscribers.empty()) {
-		auto&& it{ chSubscribers.begin() };
+	for (auto&& it{ chSubscribers.begin() }; it != chSubscribers.end();) {
 		if (auto&& sess{ it->second.lock() }; sess ) {
 			lock.unlock();
-			sess->IsConnected(std::time(nullptr));
-			return chSubscribers.size();
+			if (!sess->IsConnected(std::time(nullptr))) {
+				lock.lock();
+				it = chSubscribers.begin();
+			}
 		}
 		else {
 			chSubscribers.erase(it);
 		}
-		
 	}
 	return chSubscribers.size();
 }
