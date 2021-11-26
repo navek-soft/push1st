@@ -35,7 +35,7 @@ size_t cchannel::Gc() {
 	size_t nsubscribers{ 0 };
 	{
 		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock, std::defer_lock);
-		if (lock.try_lock_for(std::chrono::microseconds(100))) {
+		if (lock.try_lock()) {
 			for (auto&& it{ chSubscribers.begin() }; it != chSubscribers.end();) {
 				if (auto&& sess{ it->second.lock() }; sess) {
 					if (!sess->IsConnected(std::time(nullptr))) {
