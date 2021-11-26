@@ -34,22 +34,24 @@ size_t cchannel::Gc() {
 	//OnSocketError(-ETIMEDOUT);
 	size_t nsubscribers{ 0 };
 	{
-		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		for (auto&& it{ chSubscribers.begin() }; it != chSubscribers.end();) {
-			if (auto&& sess{ it->second.lock() }; sess) {
-				if (!sess->IsConnected(std::time(nullptr))) {
-					alive.emplace_back(sess);
+		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock, std::defer_lock);
+		if (lock.try_lock_for(std::chrono::microseconds(100))) {
+			for (auto&& it{ chSubscribers.begin() }; it != chSubscribers.end();) {
+				if (auto&& sess{ it->second.lock() }; sess) {
+					if (!sess->IsConnected(std::time(nullptr))) {
+						alive.emplace_back(sess);
+						it = chSubscribers.erase(it);
+						continue;
+					}
+				}
+				else {
 					it = chSubscribers.erase(it);
 					continue;
 				}
+				++it;
 			}
-			else {
-				it = chSubscribers.erase(it);
-				continue;
-			}
-			++it;
+			nsubscribers = chSubscribers.size();
 		}
-		nsubscribers = chSubscribers.size();
 	}
 	while (!alive.empty()) {
 		auto&& sess{ alive.front() };
