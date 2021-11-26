@@ -104,16 +104,19 @@ void cpresencechannel::OnSubscriberLeave(const std::string& subscriber) {
 
 void cpresencechannel::UnSubscribe(const std::string& subscriber) {
 	{
-		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		chSubscribers.erase(subscriber);
-
-		if (chSubscribers.empty() and chMode == autoclose_t::yes) {
-			chChannels->UnRegister(chUid);
+		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock, std::defer_lock);
+		if (lock.try_lock()) {
+			chSubscribers.erase(subscriber);
+			if (chSubscribers.empty() and chMode == autoclose_t::yes) {
+				chChannels->UnRegister(chUid);
+			}
 		}
 	}
 	{
-		std::unique_lock<decltype(UsersLock)> lock(UsersLock);
-		UsersList.erase(subscriber);
+		std::unique_lock<decltype(UsersLock)> lock(UsersLock,std::defer_lock);
+		if (lock.try_lock()) {
+			UsersList.erase(subscriber);
+		}
 	}
 	syslog.print(1, "[ PRESENCE:%s ] UnSubscribe %s ( %ld sessions)\n", chUid.c_str(), subscriber.c_str(), chSubscribers.size());
 	chApp->Trigger(chType, hook_t::type::leave, chName, subscriber, {});

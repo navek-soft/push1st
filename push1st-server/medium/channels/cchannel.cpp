@@ -51,6 +51,9 @@ size_t cchannel::Gc() {
 				++it;
 			}
 			nsubscribers = chSubscribers.size();
+			if (chSubscribers.empty() and chMode == autoclose_t::yes) {
+				chChannels->UnRegister(chUid);
+			}
 		}
 	}
 	while (!alive.empty()) {
