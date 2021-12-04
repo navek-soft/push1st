@@ -67,7 +67,6 @@ inline bool cwebhook::Connect() {
 			}
 		}
 		else if ((res = inet::SslConnect(fdEndpoint, sa, false, 800,fdSslCtx,fdSsl)) == 0) {
-			::shutdown(fdEndpoint, SHUT_RD);
 			return true;
 		}
 	}

@@ -79,7 +79,7 @@ ssize_t csocket::write_nossl(const void* data, size_t length, size_t& nwrited, u
 			length -= nwrite; nwrited += nwrite; buffer += nwrite;
 			continue;
 		}
-		else if (nwrite == -1 and errno == EAGAIN) {
+		else if (nwrite == -1 and ((flags & MSG_DONTWAIT) && errno == EAGAIN)) {
 			continue;
 		}
 		break;

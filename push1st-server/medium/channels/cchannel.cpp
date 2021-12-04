@@ -30,20 +30,37 @@ json::value_t cchannel::ApiOverview() {
 }
 
 size_t cchannel::Gc() {
-	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-	if (!chSubscribers.empty()) {
-		auto&& it{ chSubscribers.begin() };
-		if (auto&& sess{ it->second.lock() }; sess ) {
-			lock.unlock();
-			sess->IsConnected(std::time(nullptr));
-			return chSubscribers.size();
+	std::list<std::shared_ptr<csubscriber>> alive;
+	//OnSocketError(-ETIMEDOUT);
+	size_t nsubscribers{ 0 };
+	{
+		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock, std::defer_lock);
+		if (lock.try_lock()) {
+			for (auto&& it{ chSubscribers.begin() }; it != chSubscribers.end();) {
+				if (auto&& sess{ it->second.lock() }; sess) {
+					if (!sess->IsConnected(std::time(nullptr))) {
+						alive.emplace_back(sess);
+						it = chSubscribers.erase(it);
+						continue;
+					}
+				}
+				else {
+					it = chSubscribers.erase(it);
+					continue;
+				}
+				++it;
+			}
+			nsubscribers = chSubscribers.size();
+			if (chSubscribers.empty() and chMode == autoclose_t::yes) {
+				chChannels->UnRegister(chUid);
+			}
 		}
-		else {
-			chSubscribers.erase(it);
-		}
-		
 	}
-	return chSubscribers.size();
+	while (!alive.empty()) {
+		auto&& sess{ alive.front() };
+		alive.pop_front();
+		sess->Disconnect();
+	}
 }
 
 size_t cchannel::Push(message_t&& message) {

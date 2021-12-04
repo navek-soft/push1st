@@ -27,10 +27,12 @@ void cpublicchannel::OnSubscriberLeave(const std::string& subscriber) {
 
 void cpublicchannel::UnSubscribe(const std::string& sessId) {
 	{
-		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		chSubscribers.erase(sessId);
-		if (chSubscribers.empty() and chMode == autoclose_t::yes) {
-			chChannels->UnRegister(chUid);
+		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock,std::defer_lock);
+		if (lock.try_lock()) {
+			chSubscribers.erase(sessId);
+			if (chSubscribers.empty() and chMode == autoclose_t::yes) {
+				chChannels->UnRegister(chUid);
+			}
 		}
 	}
 	syslog.print(1, "[ PUBLIC:%s ] UnSubscribe %s ( %ld sessions)\n", chUid.c_str(), sessId.c_str(), chSubscribers.size());

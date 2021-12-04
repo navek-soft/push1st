@@ -29,11 +29,12 @@ void cprivatechannel::OnSubscriberLeave(const std::string& subscriber) {
 
 void cprivatechannel::UnSubscribe(const std::string& sessId) {
 	{
-		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		chSubscribers.erase(sessId);
-
-		if (chSubscribers.empty() and chMode == autoclose_t::yes) {
-			chChannels->UnRegister(chUid);
+		std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock, std::defer_lock);
+		if (lock.try_lock()) {
+			chSubscribers.erase(sessId);
+			if (chSubscribers.empty() and chMode == autoclose_t::yes) {
+				chChannels->UnRegister(chUid);
+			}
 		}
 	}
 	chApp->Trigger(chType, hook_t::type::leave, chName, sessId, {});
