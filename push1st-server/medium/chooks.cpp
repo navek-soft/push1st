@@ -18,6 +18,7 @@ void cwebhook::Trigger(hook_t::type trigger, std::string app, std::string channe
 		Write("POST", webEndpoint.url(), {
 			{"Content-Type","application/json"},
 			{"Connection", !fdKeepAlive ? "close" : "keep-alive"},
+			{"Host", std::string{ webEndpoint.host()} },
 			{"Keep-Alive","30"} }, std::string{ request });
 	});
 }
