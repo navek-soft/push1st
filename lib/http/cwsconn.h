@@ -21,7 +21,7 @@ namespace inet {
 		void WsError(websocket_t::close_t code, ssize_t err);
 		ssize_t WsReadMessage(size_t maxMessageLength);
 		ssize_t WsWriteMessage(websocket_t::opcode_t opcode, std::string&& data, bool masked = false);
-		ssize_t WsSendMessage(websocket_t::opcode_t opcode, std::string&& data, bool masked = false);
+		ssize_t WsSendMessage(websocket_t::opcode_t opcode, std::string&& data, bool masked = false, uint flags = 0);
 	};
 }
 

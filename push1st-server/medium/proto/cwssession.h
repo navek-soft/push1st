@@ -51,7 +51,7 @@ public:
 		OutgoingQueue.emplace(msg);
 		SocketUpdateEvents(EPOLLOUT | EPOLLET);
 #else
-		auto res = WsSendMessage(opcode_t::text, Pack(msg));
+		auto res = WsSendMessage(opcode_t::text, Pack(msg),false, MSG_DONTWAIT);
 		if (res == 0) {
 			ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 		}
