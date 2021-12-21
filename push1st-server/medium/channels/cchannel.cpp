@@ -68,12 +68,14 @@ size_t cchannel::Push(message_t&& message) {
 	msg::delivery_t delivery{ (*message)["#msg-delivery"].get<std::string_view>() == "broadcast" ? msg::delivery_t::broadcast :
 		((*message)["#msg-delivery"].get<std::string_view>() == "multicast" ? msg::delivery_t::multicast : msg::delivery_t::unicast) };
 	
+	std::list<std::shared_ptr<csubscriber>> to;
 
 	if (delivery == msg::delivery_t::broadcast) {
 		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
 		for (auto it{ chSubscribers.begin() }, end{ chSubscribers.end() }; it != end;) {
 			if (it->first != (*message)["#msg-from"].get<std::string_view>()) {
-				if (auto&& subsSelf{ it->second.lock() }; subsSelf and subsSelf->Push(message) == 0) {
+				if (auto&& subsSelf{ it->second.lock() }; subsSelf/* and subsSelf->Push(message) == 0*/) {
+					to.emplace_back(subsSelf);
 					++nSubscribers;
 					++it;
 					continue;
@@ -93,7 +95,8 @@ size_t cchannel::Push(message_t&& message) {
 
 			for (auto it{ chSubscribers.begin() }, end{ chSubscribers.end() }; it != end;) {
 				if (auto&& subsSelf{ it->second.lock() }; subsSelf) {
-					if (it->first.compare(0, SessionId.length(), SessionId) == 0 and subsSelf->Push(message) == 0) {
+					if (it->first.compare(0, SessionId.length(), SessionId) == 0/* and subsSelf->Push(message) == 0*/) {
+						to.emplace_back(subsSelf);
 						++nSubscribers;
 					}
 					++it;
@@ -107,7 +110,7 @@ size_t cchannel::Push(message_t&& message) {
 			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
 			if (auto&& subs{ chSubscribers.find(SessionId) }; subs != chSubscribers.end()) {
 				if (auto&& subsSelf{ subs->second.lock() }; subsSelf) {
-					subsSelf->Push(message);
+					to.emplace_back(subsSelf); //subsSelf->Push(message);
 					++nSubscribers;
 				}
 				else {
@@ -115,6 +118,10 @@ size_t cchannel::Push(message_t&& message) {
 				}
 			}
 		}
+	}
+
+	for (auto&& subs : to) {
+		subs->Push(message);
 	}
 
 	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
