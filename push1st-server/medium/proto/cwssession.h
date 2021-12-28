@@ -7,8 +7,8 @@
 #include <queue>
 #include "../cmessage.h"
 
-#ifndef SENDQ
-#define SENDQ 0
+#ifndef SENDQ1
+#define SENDQ1 0
 #endif // !SENDQ
 
 
@@ -33,7 +33,7 @@ public:
 	virtual inline ssize_t WsSend(const void* data, size_t size, size_t& writen, uint flags = 0) override { return SocketSend(data, size, writen, flags); }
 	virtual void OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& message, size_t length) override;
 	virtual inline void OnSocketRecv() override { WsReadMessage(MaxMessageLength); }
-#if SENDQ 
+#if SENDQ1 
 	virtual void OnSocketSend() override;
 #else
 	virtual inline void OnSocketSend() override { ; }
@@ -46,10 +46,13 @@ public:
 	virtual void GetUserInfo(std::string& userId, std::string& userData) override { ; }
 	virtual inline fd_t GetFd() { return Fd(); }
 	virtual inline ssize_t Push(const message_t& msg) override {
-#if SENDQ
+#if SENDQ1
 		std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);
-		OutgoingQueue.emplace(msg);
-		SocketUpdateEvents(EPOLLOUT | EPOLLET);
+		if (OutgoingQueue.size() < 10) {
+			OutgoingQueue.emplace(msg);
+			SocketUpdateEvents(EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT);
+			return 0;
+		}
 #else
 		auto res = WsSendMessage(opcode_t::text, Pack(msg),false);
 		if (res == 0) {
@@ -70,7 +73,7 @@ private:
 	std::unordered_map<std::string, std::weak_ptr<cchannel>> SubscribedTo;
 	app_t App;
 	channel_t EnablePushOnChannels{ channel_t::type::pub | channel_t::type::prot | channel_t::type::pres };
-#if SENDQ 
+#if SENDQ1 
 	spinlock_t OutgoingLock;
 	std::queue<message_t> OutgoingQueue;
 #endif

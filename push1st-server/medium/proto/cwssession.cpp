@@ -54,7 +54,7 @@ void cwssession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr
 	OnSocketError(-EBADMSG);
 }
 
-#if SENDQ 
+#if SENDQ1
 void cwssession::OnSocketSend() {
 	message_t message;
 	std::unique_lock<decltype(OutgoingLock)> lock(OutgoingLock);

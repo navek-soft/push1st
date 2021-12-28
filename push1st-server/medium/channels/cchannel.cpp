@@ -121,7 +121,9 @@ size_t cchannel::Push(message_t&& message) {
 	}
 
 	for (auto&& subs : to) {
-		subs->Push(message);
+		if (subs->Push(message) != 0) {
+			UnSubscribe(subs->Id());
+		}
 	}
 
 	std::unique_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
