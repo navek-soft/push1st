@@ -20,11 +20,10 @@ pipeline {
         stage('Install push1st from apt repository.') {
             steps {                
 		        echo 'Import repository key'
-                sh 'wget https://public:public@nexus.naveksoft.com/repository/gpg/naveksoft.gpg.key -O naveksoft.gpg.key'
+                sh 'wget https://nexus.naveksoft.com/repository/gpg/naveksoft.gpg.key -O naveksoft.gpg.key'
                 sh 'sudo apt-key add naveksoft.gpg.key'
-                echo 'Add repository to source list and adjust auth'
+                echo 'Add repository to source list'
                 sh 'echo "deb [arch=amd64] https://nexus.naveksoft.com/repository/ubuntu-universe/ universe main" | sudo tee /etc/apt/sources.list.d/naveksoft-universe.list'
-	            sh 'echo "machine nexus.naveksoft.com/repository login public password public" | sudo tee /etc/apt/auth.conf.d/nexus.naveksoft.com.conf'
                 echo 'Check available versions'
                 sh 'sudo apt update && apt list -a push1st'
                 echo 'Install push1st from repository'
