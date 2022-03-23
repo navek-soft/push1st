@@ -30,7 +30,7 @@ json::value_t cchannel::ApiOverview() {
 }
 
 size_t cchannel::Gc() {
-	std::list<std::shared_ptr<csubscriber>> alive;
+	std::list<std::weak_ptr<csubscriber>> alive;
 	//OnSocketError(-ETIMEDOUT);
 	size_t nsubscribers{ 0 };
 	{
@@ -57,9 +57,10 @@ size_t cchannel::Gc() {
 		}
 	}
 	while (!alive.empty()) {
-		auto&& sess{ alive.front() };
+		if (auto&& sess{ alive.front().lock() }; sess) {
+			sess->Disconnect();
+		}
 		alive.pop_front();
-		sess->Disconnect();
 	}
 }
 
