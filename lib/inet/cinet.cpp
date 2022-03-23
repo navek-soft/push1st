@@ -354,8 +354,7 @@ std::shared_ptr<SSL_CTX> inet::SslGetGlobalContext() {
 
 ssize_t inet::SslAcceptConnection(ssize_t cli, const std::shared_ptr<SSL_CTX>& sslCtx, std::shared_ptr<SSL>& sslSocket) {
 	if (sslSocket = std::shared_ptr<SSL>{ SSL_new(sslCtx.get()),[](SSL* ssl) { SSL_shutdown(ssl); SSL_free(ssl); } }; sslSocket) {
-		SSL_set_fd(sslSocket.get(), (int)cli);
-		if (SSL_accept(sslSocket.get()) == 1) {
+		if (SSL_set_fd(sslSocket.get(), (int)cli) == 1 and SSL_accept(sslSocket.get()) == 1) {
 			return 0;
 		}
 		ERR_print_errors_fp(stderr);

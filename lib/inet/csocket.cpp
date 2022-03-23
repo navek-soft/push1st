@@ -80,12 +80,12 @@ ssize_t csocket::write_nossl(const void* data, size_t length, size_t& nwrited, u
 			continue;
 		}
 		else if (nwrite == -1 and ((flags & MSG_DONTWAIT) && errno == EAGAIN)) {
-			continue;
+			//continue;
 		}
 		break;
 	}
 
-	return nwrite > 0 && !length ? 0 : -errno;
+	return nwrite > 0 && !length ? 0 : ((flags & MSG_DONTWAIT) && errno == EAGAIN) ? 0 : -errno;
 }
 
 ssize_t csocket::write_ssl(const void* data, size_t length, size_t& nwrited, uint flags) const {
@@ -98,7 +98,7 @@ ssize_t csocket::write_ssl(const void* data, size_t length, size_t& nwrited, uin
 			continue;
 		}
 		else if (nwrite == -1 and SSL_get_error(ssl(), (int)nwrite) == SSL_ERROR_WANT_WRITE) {
-			continue;
+			//continue;
 		}
 		break;
 	}
@@ -107,7 +107,7 @@ ssize_t csocket::write_ssl(const void* data, size_t length, size_t& nwrited, uin
 		return 0;
 	case SSL_ERROR_WANT_READ:
 	case SSL_ERROR_WANT_WRITE:
-		return -EAGAIN;
+		return (flags & MSG_DONTWAIT) ? 0 : -EAGAIN;
 		break;
 	case SSL_ERROR_ZERO_RETURN:
 		return -ECONNABORTED;

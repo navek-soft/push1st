@@ -60,14 +60,14 @@ inline bool cwebhook::Connect() {
 
 	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, webEndpoint.hostport(), fdSsl ? "443" : "80", AF_INET)) == 0 ) {
 		if (!fdSslCtx) {
-			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 800)) == 0) {
+			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 3000)) == 0) {
 				//inet::SetTcpCork(fdEndpoint, false);
 				inet::SetTcpNoDelay(fdEndpoint, true);
 				::shutdown(fdEndpoint, SHUT_RD);
 				return true;
 			}
 		}
-		else if ((res = inet::SslConnect(fdEndpoint, sa, false, 800,fdSslCtx,fdSsl)) == 0) {
+		else if ((res = inet::SslConnect(fdEndpoint, sa, false, 3000,fdSslCtx,fdSsl)) == 0) {
 			return true;
 		}
 	}
