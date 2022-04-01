@@ -88,6 +88,6 @@ inline std::string cpushersession::Pack(const message_t& message) {
 	return json::serialize({
 		{"event", (*message)["event"]}, {"channel", (*message)["channel"]},
 		{"#msg-time", std::chrono::system_clock::now().time_since_epoch().count() - (*message)["#msg-arrival"].get<size_t>()},
-		{"data", std::move((*message)["data"])}, {"#msg-id", (*message)["#msg-id"]}, {"#msg-from", (*message)["#msg-from"]}
+		{"data", (*message)["data"]}, {"#msg-id", (*message)["#msg-id"]}, {"#msg-from", (*message)["#msg-from"]}
 	});
 }
