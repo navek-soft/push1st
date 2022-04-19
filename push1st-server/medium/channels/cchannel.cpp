@@ -72,19 +72,39 @@ size_t cchannel::Push(message_t&& message) {
 	std::list<std::shared_ptr<csubscriber>> to;
 
 	if (delivery == msg::delivery_t::broadcast) {
-		std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
-		for (auto it{ chSubscribers.begin() }, end{ chSubscribers.end() }; it != end;) {
-			if (it->first != (*message)["#msg-from"].get<std::string_view>()) {
-				if (auto&& subsSelf{ it->second.lock() }; subsSelf/* and subsSelf->Push(message) == 0*/) {
-					to.emplace_back(subsSelf);
-					++nSubscribers;
-					++it;
-					continue;
+		if ((*message).contains("socket_id") and !(*message)["socket_id"].empty()) {
+			std::string SessionId{ (*message)["socket_id"] };
+			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+			for (auto it{ chSubscribers.begin() }, end{ chSubscribers.end() }; it != end;) {
+				if (it->first != (*message)["#msg-from"].get<std::string_view>() and it->first != SessionId) {
+					if (auto&& subsSelf{ it->second.lock() }; subsSelf/* and subsSelf->Push(message) == 0*/) {
+						to.emplace_back(subsSelf);
+						++nSubscribers;
+						++it;
+						continue;
+					}
+					it = chSubscribers.erase(it);
 				}
-				it = chSubscribers.erase(it);
+				else {
+					++it;
+				}
 			}
-			else {
-				++it;
+		}
+		else {
+			std::shared_lock<decltype(chSubscribersLock)> lock(chSubscribersLock);
+			for (auto it{ chSubscribers.begin() }, end{ chSubscribers.end() }; it != end;) {
+				if (it->first != (*message)["#msg-from"].get<std::string_view>()) {
+					if (auto&& subsSelf{ it->second.lock() }; subsSelf/* and subsSelf->Push(message) == 0*/) {
+						to.emplace_back(subsSelf);
+						++nSubscribers;
+						++it;
+						continue;
+					}
+					it = chSubscribers.erase(it);
+				}
+				else {
+					++it;
+				}
 			}
 		}
 	}

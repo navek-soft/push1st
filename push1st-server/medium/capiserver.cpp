@@ -19,6 +19,8 @@ static inline message_t dupChannelMessage(const json::value_t& msg, const std::s
 	(*out)["#msg-delivery"] = msg["#msg-delivery"];
 	if(msg.contains("socket_id"))
 		(*out)["socket_id"] = msg["socket_id"];
+	if (msg.contains("to_socket_id"))
+		(*out)["to_socket_id"] = msg["to_socket_id"];
 	return out;
 }
 
