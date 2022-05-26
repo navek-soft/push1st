@@ -17,7 +17,7 @@ services:
         max-size: "10m"
         max-file: "10"
     volumes:
-      - ./server.yml:/opt/naveksoft/push1st/server.yaml
+      - ./server.yml:/opt/naveksoft/push1st/server.yml
     networks:
       - default
 
