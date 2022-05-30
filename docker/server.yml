@@ -44,27 +44,4 @@ api:
     listen: [ tcp://*:6002/ ]
 
 credentials:
-    enbale: true
-    name: "Default Application"
-    key: "key"
-    secret: "secret"
-    options: { client-messages: true, statistic: false }
-    channels: [ public, private, presence ]
-    origins: [ ]
-    hook:
-      trigger:
-          - register # hook on register channel
-          - unregister # hook on unregister channel
-          - join # hook on subscribe to channel
-          - leave # hook on leave channel
-          - push # hook on subscriber push message to channel, may be increase message delivery latency
-      http-pipelining: false
-      endpoint:
-              - http://backend/api/v1/push1st/callback
-  #        - lua://modules/hook.lua
-
-
-
-
-
-
+    - apps/*.yml

@@ -3,13 +3,15 @@ services:
   push1st:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./docker/Dockerfile
     image: push1st
-    container_name: push1st  
+    container_name: push1st
+    hostname: push1st
     restart: on-failure
     ports:
       - 6001:6001/tcp
       - 6002:6002/tcp
+      - 6003:6003/tcp
       - 7001:7001/tcp
     logging:
       driver: "json-file"
@@ -17,7 +19,10 @@ services:
         max-size: "10m"
         max-file: "10"
     volumes:
-      - ./server.yml:/opt/naveksoft/push1st/server.yml
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./docker/server.yml:/opt/naveksoft/push1st/server.yml
+      - ./docker/app.yml:/opt/naveksoft/push1st/apps/app.yml
     networks:
       - default
 
@@ -25,4 +30,3 @@ networks:
   default:
     external:
       name: mediaserver
-
