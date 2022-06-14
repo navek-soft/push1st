@@ -18,11 +18,13 @@ namespace smpp {
 		class cmd_t {
 			uint32_t len{ 0 }, id{ 0 }, status{ 0 }, sequence{ 0 };
 		public:
+			cmd_t() = default;
 			cmd_t(uint32_t _id, uint32_t _status, uint32_t _seq) : len{ sizeof(cmd_t) }, id{ _id }, status{ _status }, sequence{ _seq } {; }
 			inline void operator ()(uint32_t _id, uint32_t _status, uint32_t _seq) { id = _id; status = _status; sequence = _seq; }
 			inline cpacker& pack(cpacker& package) { package.write(len).write(id).write(status).write(sequence); return package; }
-			inline void length(uint32_t len) { len = htobe32(len); }
+			inline void length(uint32_t _len) { len = htobe32(_len); }
 			inline uint32_t length() { return be32toh(len); }
+			inline void unpack(std::string_view&) { ; }
 		};
 #pragma pack(pop)
 		class service_t {
@@ -121,6 +123,7 @@ namespace smpp {
 			string_t(const std::string& val = {}) : value{ val } { ; }
 			inline void operator ()(const std::string& msg) { value = msg; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
+			inline void unpack(std::string_view&) { ; }
 		};
 
 		class interface_t {
@@ -135,7 +138,7 @@ namespace smpp {
 
 	class csms {
 	public:
-		csms(uint32_t seq, uint32_t id, uint32_t status = 0) : command{ id,status,seq } { ; }
+		csms(uint32_t seq, uint32_t id = 4, uint32_t status = 0) : command{ id,status,seq } { ; }
 		param::cmd_t command;
 		param::service_t service;
 		param::address_t src, dst;
@@ -165,11 +168,9 @@ namespace smpp {
 		}
 	};
 
-
-
-	class cauth {
+	class cbind {
 	public:
-		cauth(uint32_t seq,uint32_t id, uint32_t status = 0) : command{ id,status,seq } { ; }
+		cbind(uint32_t seq,uint32_t id = 2, uint32_t status = 0) : command{ id,status,seq } { ; }
 		param::cmd_t command;
 		param::string_t login, password, system{};
 		param::interface_t version{ 0x34 };
@@ -183,6 +184,28 @@ namespace smpp {
 			auto&& msg{ packer.str() };
 			((param::cmd_t*)msg.data())->length((uint32_t)msg.length());
 			return msg;
+		}
+	};
+
+	class cunbind {
+
+	};
+
+	template<typename ... ARGS>
+	class cresponse {
+		using response_t = std::tuple<ARGS...>;
+		template<typename T>
+		inline void unpack(std::string_view& data, T& val) { val.unpack(data);  }
+		inline void unpack(std::string_view& data) { ; }
+	public:
+		inline response_t operator()(std::string_view data) {
+			response_t response;
+			
+			std::apply([this](std::string_view& data, auto&&... xs) {
+				((std::forward<decltype(xs)>(xs).unpack(data)),...);
+				//((unpack<decltype(xs)>(data,std::forward<decltype(xs)>(xs)), ...));
+				//(unpack<decltype(xs)>(data, std::forward<decltype(xs)>(xs)),...);
+			}, std::tuple_cat(std::tuple<std::string_view&>(data), response));
 		}
 	};
 }
@@ -212,7 +235,7 @@ json::value_t csmppservice::Send(const json::value_t& message) {
 					gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
 			}
 
-			smpp::csms sms{ con->Seq(),con->Id() };
+			smpp::csms sms{ con->Seq() };
 			sms.src(message["source_ton"].get<uint8_t>(), message["source_npi"].get<uint8_t>(), message["source_addr"].get<std::string>());
 			sms.dst(message["destination_ton"].get<uint8_t>(), message["destination_npi"].get<uint8_t>(), message["destination_addr"].get<std::string>());
 			sms.encoding(3);
@@ -220,6 +243,9 @@ json::value_t csmppservice::Send(const json::value_t& message) {
 
 			std::string response;
 			if (auto res{ con->Send(con->Connect(), sms.pack(),response) }; res == 0) {
+
+				auto&& [cmd, sys] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(response);
+
 				return {};
 			}
 
@@ -274,8 +300,7 @@ std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
 
 				/* Auth on the gateway */
 
-				smpp::cauth ath{ Seq(),Id() };
-				ath.system(gwSender);
+				smpp::cbind ath{ Seq() };
 				ath.login(gwLogin);
 				ath.password(gwPassword);
 

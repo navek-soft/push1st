@@ -18,13 +18,12 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 		void Assign(const std::string& sender, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
 
 		inline auto Seq() { return seqNo++; }
-		inline auto Id() { return seqId; }
 
 	private:
 		std::string gwSender, gwLogin, gwPassword;
 		std::vector<sockaddr_storage> gwHosts;
 		std::shared_ptr<inet::csocket> gwSocket;
-		uint32_t seqNo{ 1 }, seqId{ 4 };
+		uint32_t seqNo{ 0 };
 		size_t gwHash{ 0 };
 	};
 public:
