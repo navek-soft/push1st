@@ -1,6 +1,33 @@
 #include "csmppservice.h"
 
 namespace smpp {
+
+	std::string utf8_to_utf16(const std::string& utf8)
+	{
+		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+		std::u16string utf16 = convert.from_bytes(utf8);
+		for (auto& it : utf16) {
+			//it = htobe16(it);
+		}
+		return { (char*)utf16.data(),utf16.size() * 2 };
+	}
+
+
+	template <size_t __begin, size_t...__indices, typename Tuple>
+	auto tuple_slice_impl(Tuple&& tuple, std::index_sequence<__indices...>) {
+		return std::make_tuple(std::get<__begin + __indices>(std::forward<Tuple>(tuple))...);
+	}
+
+	template <size_t __begin, size_t __count, typename Tuple>
+	auto tuple_slice(Tuple&& tuple) {
+		static_assert(__count > 0, "splicing tuple to 0-length is weird...");
+		return tuple_slice_impl<__begin>(std::forward<Tuple>(tuple), std::make_index_sequence<__count>());
+	}
+
+	template <size_t __begin, size_t __count, typename Tuple>
+	using tuple_slice_t = decltype(tuple_slice<__begin, __count>(Tuple{}));
+
+
 	class cpacker {
 	public:
 		cpacker(size_t reserved) { data.reserve(reserved); }
@@ -16,7 +43,7 @@ namespace smpp {
 	namespace param {
 #pragma pack(push,1)
 		class cmd_t {
-			uint32_t len{ 0 }, id{ 0 }, status{ 0 }, sequence{ 0 };
+			uint32_t len{ 0 }, id{ 0 };
 		public:
 			cmd_t() = default;
 			cmd_t(uint32_t _id, uint32_t _status, uint32_t _seq) : len{ sizeof(cmd_t) }, id{ _id }, status{ _status }, sequence{ _seq } {; }
@@ -24,7 +51,14 @@ namespace smpp {
 			inline cpacker& pack(cpacker& package) { package.write(len).write(id).write(status).write(sequence); return package; }
 			inline void length(uint32_t _len) { len = htobe32(_len); }
 			inline uint32_t length() { return be32toh(len); }
-			inline void unpack(std::string_view&) { ; }
+			inline void unpack(std::string_view& data) { 
+				len = be32toh(*(uint32_t*)data.data()); data.remove_prefix(4); 
+				id = be32toh(*(uint32_t*)data.data()); data.remove_prefix(4);
+				status = be32toh(*(uint32_t*)data.data()); data.remove_prefix(4);
+				sequence = be32toh(*(uint32_t*)data.data()); data.remove_prefix(4);
+			}
+		public:
+			uint32_t status{ 0 }, sequence{ 0 };
 		};
 #pragma pack(pop)
 		class service_t {
@@ -96,6 +130,7 @@ namespace smpp {
 		class encoding_t {
 			uint8_t value{ 0 };
 		public:
+			enum cp { smsc = 0, latin1 = 3, ucs2 = 8, cyrillic = 6 };
 			encoding_t() = default;
 			inline void operator ()(uint8_t val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
@@ -113,7 +148,14 @@ namespace smpp {
 			std::string value;
 		public:
 			message_t() = default;
-			inline void operator ()(const std::string& msg) { value = msg; }
+			inline void operator ()(const std::string& msg, encoding_t::cp enc = encoding_t::cp::smsc) { 
+				if (enc != encoding_t::cp::ucs2)  {
+					value = msg;
+				}
+				else {
+					value = utf8_to_utf16(msg);
+				}
+			}
 			inline cpacker& pack(cpacker& package) { package.write((uint8_t)value.length()).write(value.data(), value.length()); return package; }
 		};
 
@@ -123,7 +165,11 @@ namespace smpp {
 			string_t(const std::string& val = {}) : value{ val } { ; }
 			inline void operator ()(const std::string& msg) { value = msg; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
-			inline void unpack(std::string_view&) { ; }
+			inline void unpack(std::string_view& data) { 
+				value = std::move(std::string{ data.data() });
+				data.remove_prefix(value.size() + 1); 
+			}
+			inline auto str() const { return value; }
 		};
 
 		class interface_t {
@@ -199,13 +245,12 @@ namespace smpp {
 		inline void unpack(std::string_view& data) { ; }
 	public:
 		inline response_t operator()(std::string_view data) {
-			response_t response;
-			
-			std::apply([this](std::string_view& data, auto&&... xs) {
+			auto&& response{ std::tuple_cat(std::tuple<std::string_view&>(data), response_t{}) };
+			std::apply([this](std::string_view& data, auto&& ... xs) {
 				((std::forward<decltype(xs)>(xs).unpack(data)),...);
-				//((unpack<decltype(xs)>(data,std::forward<decltype(xs)>(xs)), ...));
-				//(unpack<decltype(xs)>(data, std::forward<decltype(xs)>(xs)),...);
-			}, std::tuple_cat(std::tuple<std::string_view&>(data), response));
+				}, response);
+			return tuple_slice<1, std::tuple_size<response_t>::value>(response);
+			//return {};
 		}
 	};
 }
@@ -238,31 +283,23 @@ json::value_t csmppservice::Send(const json::value_t& message) {
 			smpp::csms sms{ con->Seq() };
 			sms.src(message["source_ton"].get<uint8_t>(), message["source_npi"].get<uint8_t>(), message["source_addr"].get<std::string>());
 			sms.dst(message["destination_ton"].get<uint8_t>(), message["destination_npi"].get<uint8_t>(), message["destination_addr"].get<std::string>());
-			sms.encoding(3);
-			sms.message(message["message"].get<std::string>());
+			sms.encoding(smpp::param::encoding_t::ucs2);
+			sms.message(message["message"].get<std::string>(), smpp::param::encoding_t::cp::ucs2);
 
 			std::string response;
 			if (auto res{ con->Send(con->Connect(), sms.pack(),response) }; res == 0) {
-
-				auto&& [cmd, sys] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(response);
-
-				return {};
+				auto&& [cmd, uid] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(response);
+				return json::object_t{ {"uid", uid.str()},{"status",cmd.status} };
 			}
-
-			/*
-			message.contains("source_ton") ? message.get<uint8_t>() : (uint8_t)0, message.contains("source_npi") ? message.get<uint8_t>() : (uint8_t)0,
-					message.contains("destination_ton") ? message.get<uint8_t>() : (uint8_t)0, message.contains("destination_npi") ? message.get<uint8_t>() : (uint8_t)0,
-			*/
 		}
 		else {
 			throw std::runtime_error("invalid `sender` field");
 		}
 	}
 	catch (std::exception& ex) {
-		printf("%s\n", ex.what());
 		return json::object_t{ {"error",ex.what()} };
 	}
-	return {};
+	return json::object_t{ {"error","invalid message format"} };
 }
 
 ssize_t csmppservice::cgateway::Send(const inet::socket_t& so, const std::string& msg, std::string& response) {
@@ -306,8 +343,11 @@ std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
 
 				std::string response;
 				if (auto res{ Send(so, ath.pack(),response) }; res == 0) {
-					gwSocket = so;
-					return so;
+					auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(response);
+					if (cmd.status == 0) {
+						gwSocket = so;
+						return so;
+					}
 				}
 			}
 		}
