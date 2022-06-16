@@ -14,8 +14,8 @@ int main(int argc, char* argv[])
     std::srand((uint)std::time(nullptr));
 
     auto srvSmpp{ std::make_shared<csmppservice>() };
-
-    srvSmpp->Send(json::object_t{ 
+    srvSmpp->Listen();
+    auto res = srvSmpp->Send(json::object_t{ 
         {"sender","BTKTest"},
         {"source_ton",5},
         {"source_npi",0},
@@ -29,6 +29,10 @@ int main(int argc, char* argv[])
         {"password","Qq4sw7Vy"},
         {"message","Hello Wikipages"}
     });
+
+    printf("%s\n", json::serialize(std::move(res)).c_str());
+
+    std::this_thread::sleep_for(std::chrono::seconds(40));
 
     return 0;
 
