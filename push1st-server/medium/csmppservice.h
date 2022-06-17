@@ -5,27 +5,32 @@
 #include "../core/cconfig.h"
 #include "ccredentials.h"
 #include "cmessage.h"
+#include <atomic>
 
 class csmppservice : public std::enable_shared_from_this<csmppservice> {
 	class cgateway : public std::enable_shared_from_this<cgateway> {
 	public:
-		cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::string& sender, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
+		cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
 		~cgateway();
 
 		std::shared_ptr<inet::csocket> Connect();
 		ssize_t Send(const inet::socket_t& so, const std::string& msg, std::string& response);
+		ssize_t Send(const inet::socket_t& so, const std::string& msg);
+		void Assign(const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
 
-		void Assign(const std::string& sender, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
-
-		inline auto Seq() { return seqNo++; }
+		inline uint32_t Seq() { return ++seqNo; }
+		inline uint32_t MsgId() { return seqNo; }
+		inline const std::string& Channel() { return gwConId; }
 	private:
 		void OnGwReply(fd_t, uint);
+		inline void OnDeliveryStatus(const std::string& response);
 	private:
-		std::string gwSender, gwLogin, gwPassword;
+		std::string gwLogin, gwPassword;
 		std::vector<sockaddr_storage> gwHosts;
 		std::shared_ptr<inet::csocket> gwSocket;
-		uint32_t seqNo{ 0 };
+		std::atomic_uint32_t seqNo{ 0 };
 		size_t gwHash{ 0 };
+		std::string gwConId;
 		std::shared_ptr<inet::cpoll> gwPoll;
 	};
 public:

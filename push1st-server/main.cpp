@@ -16,10 +16,9 @@ int main(int argc, char* argv[])
     auto srvSmpp{ std::make_shared<csmppservice>() };
     srvSmpp->Listen();
     auto res = srvSmpp->Send(json::object_t{ 
-        {"sender","BTKTest"},
         {"source_ton",5},
         {"source_npi",0},
-        {"source_addr","555"},
+        {"source_addr","BTKTest"},
         {"destination_ton",1},
         {"destination_npi",1},
         {"destination_addr","375447476539"},
@@ -27,7 +26,7 @@ int main(int argc, char* argv[])
         {"port","2775"},
         {"login","MY.BELTEL.NAT"},
         {"password","Qq4sw7Vy"},
-        {"message","Hello Wikipages"}
+        {"message","###ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022$$$"}
     });
 
     printf("%s\n", json::serialize(std::move(res)).c_str());
