@@ -43,7 +43,7 @@ ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 		if (nlength) {
 			if (nlength < maxMessageLength) {
 				message = std::move(std::shared_ptr<uint8_t[]>{ new uint8_t[nlength] });
-				if ((res = WsRecv(message.get(), nlength, nread, 0)) == 0) {
+				if ((res = WsRecv(message.get(), nlength, nread, MSG_WAITALL)) == 0) {
 					if (packet.mask) { websocket_t::Mask((uint8_t*)message.get(), nlength, mask); }
 				}
 			}

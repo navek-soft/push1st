@@ -79,10 +79,12 @@ void cpushersession::OnPusherUnSubscribe(const message_t& message) {
 }
 
 void cpushersession::OnPusherPing(const message_t& message) {
-	syslog.print(7, "[ PUSHER:%s ] Ping ( ping )\n", Id().c_str());
-	if (WsWriteMessage(opcode_t::text, json::serialize({ {"event","pusher:pong"} })) == 0) {
+	ssize_t res;
+	if (res = WsWriteMessage(opcode_t::text, json::serialize({ {"event","pusher:pong"} })); res == 0) {
 		ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 	}
+
+	syslog.print(7, "[ PUSHER:%s ] Ping ( %s )\n", Id().c_str(),strerror(-(int)res));
 }
 
 void cpushersession::OnPusherPush(const message_t& message) {
@@ -111,6 +113,7 @@ void cpushersession::OnWsMessage(websocket_t::opcode_t opcode, const std::shared
 				return;
 			}
 			else if (evName == "pusher:ping") {
+				//printf("===\n%s\n===\n", std::string{ (char*)data.get(),length }.c_str());
 				OnPusherPing(message);
 				return;
 			}

@@ -45,8 +45,9 @@ api:
 
     module:
         smpp:
+            enable: true
             path: /smpp/
-            webhook: http://127.0.0.1:6002/
+            webhook: http://127.0.0.1/push1st
 
 credentials: 
     - apps/*.yml

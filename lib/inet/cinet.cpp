@@ -176,6 +176,8 @@ ssize_t inet::TcpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, st
 
 ssize_t inet::SslCreateClientContext(ssl_ctx_t& sslCtx) {
 	if (sslCtx = std::shared_ptr<SSL_CTX>{ SSL_CTX_new(TLS_client_method()),[](SSL_CTX* ctx) { SSL_CTX_free(ctx); } }; sslCtx) {
+		SSL_CTX_set_ecdh_auto(sslCtx.get(), 1);
+		SSL_CTX_set_verify(sslCtx.get(), SSL_VERIFY_NONE, NULL);
 		return 0;
 	}
 	return -EINVAL;
@@ -200,7 +202,8 @@ ssize_t inet::SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, st
 		SSL_set_fd(ssl.get(), (int)fd);
 
 		if (::connect((int)fd, (sockaddr*)&sa, sizeof(sockaddr_storage)) == 0) {
-			return 0;
+			if (SSL_connect(ssl.get()) > 0) { return 0; }
+			return -EPROTO;
 		}
 		if (res = -errno; errno == EINPROGRESS) {
 			return res;

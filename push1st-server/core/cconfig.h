@@ -7,6 +7,7 @@
 #include "ci/cyaml.h"
 #include "../../lib/inet/cinet.h"
 #include <ctime>
+#include <string>
 
 namespace core {
 	class cconfig {
@@ -93,10 +94,19 @@ namespace core {
 			std::string Path;
 			std::time_t KeepAlive{ 10 };
 			ssloptions_t Ssl;
+			struct smpp_t {
+				bool Enable{ false };
+				std::string Hook;
+				std::string Path;
+			private:
+				friend class cconfig;
+				void load(const std::filesystem::path& path, const yaml_t& options);
+			} Smpp;
 		private:
 			friend class cconfig;
 			void load(const std::filesystem::path& path, const yaml_t& options);
 		} Api;
+
 
 		struct credential_t {
 			bool Enable{ true };

@@ -2,7 +2,6 @@
 #include "medium/cbroker.h"
 #include "core/ci/ccmd.h"
 #include "core/csyslog.h"
-#include "medium/csmppservice.h"
 #include "version.h"
 
 #ifndef TEST
@@ -12,7 +11,7 @@
 int main(int argc, char* argv[])
 {
     std::srand((uint)std::time(nullptr));
-
+    /*
     auto srvSmpp{ std::make_shared<csmppservice>() };
     srvSmpp->Listen();
     auto res = srvSmpp->Send(json::object_t{ 
@@ -34,6 +33,7 @@ int main(int argc, char* argv[])
     std::this_thread::sleep_for(std::chrono::seconds(40));
 
     return 0;
+    */
 
     core::ccmdline cmd; cmd.
         option("config", 'c', 1, "Location of the config yaml file", nullptr, "server.yaml").

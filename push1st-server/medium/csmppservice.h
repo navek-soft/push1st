@@ -6,11 +6,13 @@
 #include "ccredentials.h"
 #include "cmessage.h"
 #include <atomic>
+#include <mutex>
+#include "chooks.h"
 
 class csmppservice : public std::enable_shared_from_this<csmppservice> {
 	class cgateway : public std::enable_shared_from_this<cgateway> {
 	public:
-		cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
+		cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::shared_ptr<cwebhook>& hook, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
 		~cgateway();
 
 		std::shared_ptr<inet::csocket> Connect();
@@ -32,13 +34,16 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 		size_t gwHash{ 0 };
 		std::string gwConId;
 		std::shared_ptr<inet::cpoll> gwPoll;
+		std::shared_ptr<cwebhook> gwHook;
 	};
 public:
-	csmppservice() { gwPoll = std::make_shared<inet::cpoll>(); }
+	csmppservice(const std::string& webhook = {});
 	virtual ~csmppservice() { gwPoll->Join(); };
 	inline void Listen() { gwPoll->Listen(); }
-	json::value_t Send(const json::value_t& message);
+	std::pair<std::string, json::value_t> Send(const json::value_t& message);
 private:
+	std::mutex gwConnectionLock;
 	std::unordered_map<std::string, std::shared_ptr<cgateway>> gwConnections;
 	std::shared_ptr<inet::cpoll> gwPoll;
+	std::shared_ptr<cwebhook> gwHook;
 };

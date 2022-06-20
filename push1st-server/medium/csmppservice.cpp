@@ -1,5 +1,7 @@
 #include "csmppservice.h"
 #include <unistd.h>
+#include <cinttypes>
+#include "../core/csyslog.h"
 
 namespace smpp {
 
@@ -71,6 +73,10 @@ namespace smpp {
 			service_t() = default;
 			inline void operator ()(const std::string& id) { type = id; }
 			inline cpacker& pack(cpacker& package) { package.write(type); return package; }
+			inline void unpack(std::string_view& data) {
+				type.assign(data.data());
+				data.remove_prefix(type.size() + 1);
+			}
 		};
 		class address_t {
 			uint8_t ton{ 0 }, npi{ 0 };
@@ -93,6 +99,9 @@ namespace smpp {
 			esm_class_t() = default;
 			inline void operator ()(uint8_t val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
+			inline void unpack(std::string_view& data) {
+				value = (uint8_t)data.front();  data.remove_prefix(1);
+			}
 		};
 		class protocol_t {
 			uint8_t value{ 0 };
@@ -100,6 +109,9 @@ namespace smpp {
 			protocol_t() = default;
 			inline void operator ()(uint8_t val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
+			inline void unpack(std::string_view& data) {
+				value = (uint8_t)data.front();  data.remove_prefix(1);
+			}
 		};
 		class priority_t {
 			uint8_t value{ 0 };
@@ -107,6 +119,9 @@ namespace smpp {
 			priority_t() = default;
 			inline void operator ()(uint8_t val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
+			inline void unpack(std::string_view& data) {
+				value = (uint8_t)data.front();  data.remove_prefix(1);
+			}
 		};
 		class schedule_delivery_time_t {
 			std::string value;
@@ -114,6 +129,10 @@ namespace smpp {
 			schedule_delivery_time_t() = default;
 			inline void operator ()(const std::string& val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
+			inline void unpack(std::string_view& data) {
+				value.assign(data.data());
+				data.remove_prefix(value.size() + 1);
+			}
 		};
 		class validity_period_t {
 			std::string value;
@@ -121,12 +140,19 @@ namespace smpp {
 			validity_period_t() = default;
 			inline void operator ()(const std::string& val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
+			inline void unpack(std::string_view& data) {
+				value.assign(data.data());
+				data.remove_prefix(value.size() + 1);
+			}
 		};
 		class registered_delivery_t {
 			uint8_t value{ 0 };
 		public:
 			registered_delivery_t() = default;
 			inline void operator ()(uint8_t val) { value = val; }
+			inline void unpack(std::string_view& data) {
+				value = (uint8_t)data.front();  data.remove_prefix(1);
+			}
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
 		};
 		class replace_if_present_flag_t {
@@ -135,6 +161,9 @@ namespace smpp {
 			replace_if_present_flag_t() = default;
 			inline void operator ()(uint8_t val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
+			inline void unpack(std::string_view& data) {
+				value = (uint8_t)data.front();  data.remove_prefix(1);
+			}
 		};
 
 		class encoding_t {
@@ -145,6 +174,9 @@ namespace smpp {
 			inline void operator ()(uint8_t val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
 			inline std::string encode(const std::string& msg) { return value != encoding_t::cp::ucs2 ? msg : utf8_to_utf16(msg); }
+			inline void unpack(std::string_view& data) {
+				value = (uint8_t)data.front();  data.remove_prefix(1);
+			}
 		};
 
 		class udh_t {
@@ -162,6 +194,9 @@ namespace smpp {
 			sm_default_msg_id_t() = default;
 			inline void operator ()(uint8_t val) { value = val; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
+			inline void unpack(std::string_view& data) {
+				value = (uint8_t)data.front();  data.remove_prefix(1);
+			}
 		};
 
 		class message_t {
@@ -285,9 +320,26 @@ namespace smpp {
 		param::priority_t priority;
 		param::schedule_delivery_time_t delivery_time;
 		param::validity_period_t valid_period;
+		param::registered_delivery_t register_delivery;
+		param::replace_if_present_flag_t replace;
 		param::encoding_t encoding;
 		param::string_t predefined;
 		param::message_t message;
+
+		inline void unpack(std::string_view& data) {
+			service.unpack(data);
+			src.unpack(data); 
+			dst.unpack(data);
+			esm.unpack(data); 
+			proto.unpack(data); 
+			priority.unpack(data);
+			delivery_time.unpack(data); 
+			valid_period.unpack(data);
+			register_delivery.unpack(data); replace.unpack(data);
+			encoding.unpack(data); 
+			predefined.unpack(data); 
+			message.unpack(data);
+		}
 	};
 
 	template<typename ... ARGS>
@@ -297,7 +349,7 @@ namespace smpp {
 		inline void unpack(std::string_view& data, T& val) { val.unpack(data);  }
 		inline void unpack(std::string_view& data) { ; }
 	public:
-		inline response_t operator()(std::string_view data) {
+		inline response_t operator()(std::string_view& data) {
 			auto&& response{ std::tuple_cat(std::tuple<std::string_view&>(data), response_t{}) };
 			std::apply([this](std::string_view& data, auto&& ... xs) {
 				((std::forward<decltype(xs)>(xs).unpack(data)),...);
@@ -308,7 +360,7 @@ namespace smpp {
 	};
 }
 
-json::value_t csmppservice::Send(const json::value_t& message) {
+std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& message) {
 	try {
 		std::shared_ptr<cgateway> con;
 		if (std::string gwLogin{ message.contains("login") ? message["login"].get<std::string>() : std::string{} }; !gwLogin.empty()) {
@@ -321,16 +373,19 @@ json::value_t csmppservice::Send(const json::value_t& message) {
 				}
 			}
 			std::string conId{ gwLogin + ":" + gwPassword };
-			if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
-				con = conIt->second;
-				con->Assign(gwLogin, gwPassword,
-					gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
+			{
+				std::unique_lock<decltype(gwConnectionLock)> lock(gwConnectionLock);
+				if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
+					con = conIt->second;
+					con->Assign(gwLogin, gwPassword,
+						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
 
-			}
-			else {
-				con = std::make_shared<cgateway>(gwPoll, gwLogin, gwPassword,
-					gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
-				gwConnections[conId] = con;
+				}
+				else {
+					con = std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
+						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
+					gwConnections[conId] = con;
+				}
 			}
 
 			if (auto&& so{ con->Connect() }; so) {
@@ -341,11 +396,14 @@ json::value_t csmppservice::Send(const json::value_t& message) {
 				sms.encoding(smpp::param::encoding_t::ucs2);
 				sms.esm(src.length() <= 132 ? 0 : 0x40);
 
-				auto MsgId{ con->MsgId() };
+//				auto MsgId{ con->MsgId() };
 				auto&& chunks{ sms.message.split(sms.encoding.encode(src)) };
+
+				std::vector<uint32_t> MsgId;
 
 				for (auto&& part : chunks) {
 					sms.command.sequence = con->Seq();
+					MsgId.emplace_back(sms.command.sequence);
 					sms.message(part);
 					if (auto res{ con->Send(so, sms.pack()) }; res == 0) {
 						continue;
@@ -358,21 +416,21 @@ json::value_t csmppservice::Send(const json::value_t& message) {
 						*/
 					}
 					else {
-						return json::object_t{ {"id", MsgId},{"error",strerror(-(int)res)},{"channel", con->Channel() }};
+						return { "400", json::object_t{{"id", MsgId},{"error",strerror(-(int)res)},{"channel", con->Channel()}} };
 					}
 				}
-				return json::object_t{ {"id", MsgId},{"multipart",MsgId + chunks.size()},{"status","PENDING"},{"channel", con->Channel()} };
+				return { "201", json::object_t{ {"id", MsgId},{"status","pending"},{"channel", con->Channel()} } };
 			}
-			return json::object_t{ {"error","invalid gateway"},{"channel", con->Channel() } };
+			return { "400", json::object_t{ {"error","invalid gateway"},{"channel", con->Channel() } } };
 		}
 		else {
 			throw std::runtime_error("invalid `sender` field");
 		}
 	}
 	catch (std::exception& ex) {
-		return json::object_t{ {"error",ex.what()} };
+		return { "500", json::object_t{ {"error",ex.what()} } };
 	}
-	return json::object_t{ {"error","invalid message format"} };
+	return { "400", json::object_t{ {"error","invalid message format"} } };
 }
 
 ssize_t csmppservice::cgateway::Send(const inet::socket_t& so, const std::string& msg, std::string& response) {
@@ -410,16 +468,37 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 	json::value_t status;
 	if (auto&& [cmd] = smpp::cresponse<smpp::param::cmd_t>{}(response); cmd.status == 0) {
 		if (cmd.id == smpp::cdelivery::id) {
-			auto&& [msg] = smpp::cresponse<smpp::param::message_t>{}(response);
+			auto&& [report] = smpp::cresponse<smpp::cdelivery>{}(response);
 
-			json::object_t{ {"delivery", msg.str()} };
-			printf("Delivery: status: %ld, id: %ld, seq: %ld ( %s )\n", cmd.status, cmd.id, cmd.sequence, msg.str().c_str());
+			printf("Delivery SMS: status: %ld, id: %ld, seq: %ld ( %s )\n", cmd.status, cmd.id, cmd.sequence, report.message.str().c_str());
+
+			if (cmd.status == 0) {
+				status = json::object_t{ {"id", cmd.sequence},{"status", "delivered"},{"channel", Channel()},{"data",report.message.str()} };
+			}
+			else {
+				status = json::object_t{ {"id", cmd.sequence},{"status", "not_delivered"},{"channel", Channel()} };
+			}
 		}
 		else if(smpp::csms::resp_id == cmd.id)  {
-			printf("Confirm: status: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
+			auto&& [msg] = smpp::cresponse<smpp::param::string_t>{}(response);
+			printf("Accept SMS: status: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
+
+			if (cmd.status == 0) {
+				status = json::object_t{ {"id", cmd.sequence},{"status", "accepted"},{"channel", Channel()},{"uid",msg.str()} };
+			}
+			else {
+				status = json::object_t{ {"id", cmd.sequence},{"status", "not_accepted"},{"channel", Channel()} };
+			}
 		}
 		else {
-			printf("Unknown: status: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
+			printf("Status SMS: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
+			status = json::object_t{ {"id", cmd.sequence},{"status", "event"},{"code", cmd.status},{"channel", Channel()} };
+		}
+
+		if (gwHook) {
+			gwHook->Send("POST", std::move(status), {
+				{"Content-Type","application/json"},
+				{"Connection", "close" }});
 		}
 	}
 	else {
@@ -469,7 +548,8 @@ std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
 
 				std::string response;
 				if (auto res{ Send(so, ath.pack(),response) }; res == 0) {
-					auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(response);
+					std::string_view resp_data{ response };
+					auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(resp_data);
 					if (cmd.status == 0) {
 						gwSocket = so;
 						gwSocket->Poll()->PollAdd(so->Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
@@ -499,8 +579,7 @@ void csmppservice::cgateway::Assign(const std::string& login, const std::string&
 
 	if (gwConId.empty()) {
 		gwConId.clear(); gwConId.resize(64);
-
-		auto n= snprintf(gwConId.data(), 40, "%08X%08X%016X", (uint32_t)(nhash % std::time(nullptr)), (uint32_t)std::time(nullptr), (uint64_t)nhash);
+		auto n= snprintf(gwConId.data(), 40, "%08X%08X%016llX", (uint32_t)(nhash % std::time(nullptr)), (uint32_t)std::time(nullptr), (uint64_t)nhash);
 		gwConId.resize(n);
 	}
 
@@ -519,12 +598,18 @@ void csmppservice::cgateway::Assign(const std::string& login, const std::string&
 	gwSocket.reset();
 }
 
-csmppservice::cgateway::cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port) :
-	gwPoll{ poll }
+csmppservice::cgateway::cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::shared_ptr<cwebhook>& hook, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port) :
+	gwPoll{ poll }, gwHook{ hook }
 {
 	Assign(login, pwd, hosts, port);
 }
 
 csmppservice::cgateway::~cgateway() {
 	gwSocket.reset();
+}
+
+csmppservice::csmppservice(const std::string& webhook) { 
+	if (!webhook.empty()) { gwHook = std::make_shared<cwebhook>(webhook); }; 
+	gwPoll = std::make_shared<inet::cpoll>(); 
+	syslog.ob.print("Api", "SMPP ... enabled ( Delivery report is %s )", webhook.empty() ? "Disable" : "Enable");
 }
