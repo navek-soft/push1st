@@ -133,18 +133,18 @@ void capiserver::ApiOnModuleSmpp(const std::vector<std::string_view>& vals, cons
 		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
 			if (json::value_t request; cjson::unserialize(content, request) and request.is_object()) {
 				auto&& [code, response] = ApiSmpp->Send(request);
-				ApiResponse(fd, code, cjson::serialize(std::move(response)));
+				ApiResponse(fd, code, cjson::serialize(std::move(response)),true);
 			}
 			else {
-				ApiResponse(fd, "400");
+				ApiResponse(fd, "400", {}, true);
 			}
 		}
 		else {
-			ApiResponse(fd, "403");
+			ApiResponse(fd, "403", {}, true);
 		}
 	}
 	else {
-		ApiResponse(fd, "400");
+		ApiResponse(fd, "400", {}, true);
 	}
 }
 

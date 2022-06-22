@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <cinttypes>
 #include "../core/csyslog.h"
+#include <netinet/in.h>
 
 namespace smpp {
 
@@ -380,11 +381,13 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 					con->Assign(gwLogin, gwPassword,
 						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
 
+					syslog.print(7,"Reuse connection: %s\n", gwLogin.c_str());
+
 				}
 				else {
-					con = std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
-						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
-					gwConnections[conId] = con;
+					con = gwConnections.emplace(conId, std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
+						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{})).first->second;
+					syslog.print(7, "New connection: %s\n", conId.c_str());
 				}
 			}
 
@@ -406,6 +409,9 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 					MsgId.emplace_back(sms.command.sequence);
 					sms.message(part);
 					if (auto res{ con->Send(so, sms.pack()) }; res == 0) {
+						syslog.print(7, "Push SMS: %ld, id: %ld, seq: %ld/%ld ( src: %s, dst: %s ) ... success\n", 
+							sms.command.status, sms.command.id, sms.command.sequence, MsgId.size(), message["source_addr"].get<std::string>().c_str(),
+							message["destination_addr"].get<std::string>().c_str());
 						continue;
 						/*
 						std::tie(cmd, uid) = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(response);
@@ -416,10 +422,16 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 						*/
 					}
 					else {
+						syslog.print(7, "Push SMS: %ld, id: %ld, seq: %ld/%ld ( src: %s, dst: %s ) ... error ( %s )\n", 
+							sms.command.status, sms.command.id, sms.command.sequence, MsgId.size(), 
+							message["destination_addr"].get<std::string>().c_str(), std::strerror(-(int)res));
 						return { "400", json::object_t{{"id", MsgId},{"error",strerror(-(int)res)},{"channel", con->Channel()}} };
 					}
 				}
 				return { "201", json::object_t{ {"id", MsgId},{"status","pending"},{"channel", con->Channel()} } };
+			}
+			else {
+				syslog.print(7, "Connection was lost ( %s )\n", con->Channel().c_str());
 			}
 			return { "400", json::object_t{ {"error","invalid gateway"},{"channel", con->Channel() } } };
 		}
@@ -470,7 +482,7 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 		if (cmd.id == smpp::cdelivery::id) {
 			auto&& [report] = smpp::cresponse<smpp::cdelivery>{}(response);
 
-			printf("Delivery SMS: status: %ld, id: %ld, seq: %ld ( %s )\n", cmd.status, cmd.id, cmd.sequence, report.message.str().c_str());
+			syslog.print(7, "Delivery SMS: status: %ld, id: %ld, seq: %ld ( %s ), channel: %s\n", cmd.status, cmd.id, cmd.sequence, report.message.str().c_str(), Channel().c_str());
 
 			if (cmd.status == 0) {
 				status = json::object_t{ {"id", cmd.sequence},{"status", "delivered"},{"channel", Channel()},{"data",report.message.str()} };
@@ -481,17 +493,18 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 		}
 		else if(smpp::csms::resp_id == cmd.id)  {
 			auto&& [msg] = smpp::cresponse<smpp::param::string_t>{}(response);
-			printf("Accept SMS: status: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
 
 			if (cmd.status == 0) {
 				status = json::object_t{ {"id", cmd.sequence},{"status", "accepted"},{"channel", Channel()},{"uid",msg.str()} };
+				syslog.print(7, "Accept SMS: status: %ld, id: %ld, seq: %ld, uid: %s, channel: %s\n", cmd.status, cmd.id, cmd.sequence, msg.str().c_str(), Channel().c_str());
 			}
 			else {
 				status = json::object_t{ {"id", cmd.sequence},{"status", "not_accepted"},{"channel", Channel()} };
+				syslog.print(7, "Accept SMS: status: %ld, id: %ld, seq: %ld, channel: %s\n", cmd.status, cmd.id, cmd.sequence, Channel().c_str());
 			}
 		}
 		else {
-			printf("Status SMS: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
+			syslog.print(7, "Status SMS: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
 			status = json::object_t{ {"id", cmd.sequence},{"status", "event"},{"code", cmd.status},{"channel", Channel()} };
 		}
 
@@ -502,6 +515,7 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 		}
 	}
 	else {
+		syslog.print(7, "Invalid reply SMS: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
 		//status = json::object_t{ {"error","invalid message format"} };
 	}
 }
@@ -520,6 +534,7 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 				OnDeliveryStatus(response);
 				return ;
 			}
+			syslog.print(7, "Reply error: %s\n", std::strerror(-(int)err));
 		}
 	}
 
@@ -534,11 +549,13 @@ std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
 	else {
 		//gwSocket.reset();
 		for (auto&& sa : gwHosts) {
-			if (fd_t fd; inet::TcpConnect(fd, sa, false, 10000) == 0) {
+			ssize_t res{ 0 };
+			if (fd_t fd; (res = inet::TcpConnect(fd, sa, false, 2000)) == 0) {
+
 				auto so = std::make_shared<inet::csocket>(fd, sa, inet::ssl_t{}, gwPoll);
 				so->SetKeepAlive(true, 3, 10, 3);
-				so->SetRecvTimeout(10000);
-				so->SetSendTimeout(10000);
+				so->SetRecvTimeout(2000);
+				so->SetSendTimeout(2000);
 
 				/* Auth on the gateway */
 
@@ -547,15 +564,27 @@ std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
 				ath.password(gwPassword);
 
 				std::string response;
-				if (auto res{ Send(so, ath.pack(),response) }; res == 0) {
+				if (res = Send(so, ath.pack(),response); res == 0) {
 					std::string_view resp_data{ response };
 					auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(resp_data);
 					if (cmd.status == 0) {
-						gwSocket = so;
+						gwSocket = std::move(so);
 						gwSocket->Poll()->PollAdd(gwSocket->Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
+
+						syslog.print(7, "Connect to %x  ... success\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
+						
 						return gwSocket;
 					}
+					else {
+						syslog.print(7, "Connect to %x Reply bind   ... error ( response status error )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
+					}
 				}
+				else {
+					syslog.print(7, "Connect to %x Send bind  ... error ( %s )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
+				}
+			}
+			else {
+				syslog.print(7, "Connect to %x  ... error ( %s )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
 			}
 		}
 	}

@@ -61,7 +61,6 @@ void cbroker::OnIdle() {
 
 void cbroker::Initialize(const core::cconfig& config) {
 
-    if (config.Server.Proto.empty()) throw std::runtime_error("Protocols not specified");
     if (!config.Server.Threads) throw std::runtime_error("Invalid worker threads number ( zero count )");
 
 
