@@ -527,15 +527,15 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 }
 
 std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
-	std::shared_ptr<inet::csocket> so{ gwSocket };
-	if (so and so->GetErrorNo() == 0) {
-		return so;
+	std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
+	if (gwSocket and gwSocket->GetErrorNo() == 0) {
+		return gwSocket;
 	}
 	else {
 		//gwSocket.reset();
 		for (auto&& sa : gwHosts) {
 			if (fd_t fd; inet::TcpConnect(fd, sa, false, 10000) == 0) {
-				so = std::make_shared<inet::csocket>(fd, sa, inet::ssl_t{}, gwPoll);
+				auto so = std::make_shared<inet::csocket>(fd, sa, inet::ssl_t{}, gwPoll);
 				so->SetKeepAlive(true, 3, 10, 3);
 				so->SetRecvTimeout(10000);
 				so->SetSendTimeout(10000);
@@ -552,8 +552,8 @@ std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
 					auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(resp_data);
 					if (cmd.status == 0) {
 						gwSocket = so;
-						gwSocket->Poll()->PollAdd(so->Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
-						return so;
+						gwSocket->Poll()->PollAdd(gwSocket->Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
+						return gwSocket;
 					}
 				}
 			}
