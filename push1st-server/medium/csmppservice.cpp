@@ -568,11 +568,9 @@ std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
 					std::string_view resp_data{ response };
 					auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(resp_data);
 					if (cmd.status == 0) {
-						gwSocket = std::move(so);
-						gwSocket->Poll()->PollAdd(gwSocket->Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
-
+						so->Poll()->PollAdd(so->Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
 						syslog.print(7, "Connect to %x  ... success\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
-						
+						gwSocket.swap(so);
 						return gwSocket;
 					}
 					else {
