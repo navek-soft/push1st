@@ -129,7 +129,7 @@ bool ccredentials::capplication::ValidateToken(std::string_view token, const std
 
 void ccredentials::capplication::Trigger(channel_t::type type, hook_t::type trigger, sid_t channel, sid_t session, json::value_t&& data) {
 	if (Hooks & trigger and !HookEndpoints.empty()) {
-		syslog.trace("[ HOOK:%s ] %s ( %s, %s ) \n", Id.c_str(), str(trigger), channel.c_str(), session.c_str());
+		syslog.print(7,"[ HOOK:%s ] %s ( %s, %s ) \n", Id.c_str(), str(trigger), channel.c_str(), session.c_str());
 		for (auto&& ep : HookEndpoints) { ep->Trigger(trigger, Id, channel, session, std::move(data)); }
 	}
 }

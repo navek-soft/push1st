@@ -17,6 +17,7 @@ namespace inet {
 		virtual void OnWsClose();
 		virtual inline ssize_t WsRecv(void* data, size_t size, size_t& readed, uint flags = 0) = 0;
 		virtual inline ssize_t WsSend(const void* data, size_t size, size_t& writen, uint flags = 0) = 0;
+		virtual inline std::string WsSessionId() = 0;
 		void WsClose(websocket_t::close_t code);
 		void WsError(websocket_t::close_t code, ssize_t err);
 		ssize_t WsReadMessage(size_t maxMessageLength);

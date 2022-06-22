@@ -21,20 +21,26 @@ public:
 	virtual inline bool IsConnected(std::time_t now) { return !IsLeaveUs(now); }
 
 	virtual inline bool IsLeaveUs(std::time_t now) override {
-		if (ActivityCheckTime >= now and inet::GetErrorNo(Fd()) == 0) {
+		ssize_t res{ 0 };
+		if ((ActivityCheckTime + KeepAlive) >= now and (res = inet::GetErrorNo(Fd())) == 0) {
 			return false;
 		}
-		WsError(websocket_t::close_t::GoingAway, -ETIMEDOUT);
+		WsError(websocket_t::close_t::GoingAway, res);
 		return true;
 	}
 
 	virtual inline void Disconnect() override { OnSocketError(-ECONNRESET); }
 
 	virtual bool OnWsConnect(const http::uri_t& path, const http::headers_t& headers);
-	virtual inline void OnWsError(ssize_t err) override { OnSocketError(err); }
+	virtual inline void OnWsError(ssize_t err) override { 
+		//printf("\t### %ld | %s ... CLOSE\n", std::time(nullptr), WsSessionId().c_str());
+		OnSocketError(err); 
+	}
 	virtual inline ssize_t WsRecv(void* data, size_t size, size_t& readed, uint flags = 0) override { return SocketRecv(data, size, readed, flags); }
 	virtual inline ssize_t WsSend(const void* data, size_t size, size_t& writen, uint flags = 0) override { return SocketSend(data, size, writen, flags); }
 	virtual void OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& message, size_t length) override;
+
+	virtual inline std::string WsSessionId() { return Id(); }
 
 	virtual inline void OnSocketRecv() override { WsReadMessage(MaxMessageLength); }
 #if SENDQ 
@@ -45,7 +51,7 @@ public:
 	virtual void OnSocketError(ssize_t err) override;
 
 	virtual void OnWsClose() override;
-	virtual inline void OnWsPing() override { ActivityCheckTime = std::time(nullptr) + KeepAlive + 5; }
+	virtual inline void OnWsPing() override { ActivityCheckTime = std::time(nullptr) + KeepAlive; }
 	virtual void GetUserInfo(std::string& userId, std::string& userData) override { userId = SessionUserId; userData = SessionPresenceData; }
 	virtual inline fd_t GetFd() { return Fd(); }
 	virtual inline ssize_t Push(const message_t& msg) override {
@@ -56,7 +62,7 @@ public:
 #else
 		auto res = WsSendMessage(opcode_t::text, Pack(msg));
 		if (res == 0) {
-			ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
+			ActivityCheckTime = std::time(nullptr) + KeepAlive;
 		}
 		else {
 			OnSocketError(res);

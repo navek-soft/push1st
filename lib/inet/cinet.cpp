@@ -75,7 +75,7 @@ uint16_t inet::GetPort(const sockaddr_storage& sa) {
 ssize_t inet::GetErrorNo(fd_t fd) {
 	int soerror{ 0 };
 	if (socklen_t so_len{ sizeof(soerror) }; getsockopt((int)fd, SOL_SOCKET, SO_ERROR, &soerror, &so_len) == 0) {
-		soerror == 0 and getsockopt((int)fd, SOL_SOCKET, SO_LINGER, &soerror, &so_len);
+		//soerror == 0 and getsockopt((int)fd, SOL_SOCKET, SO_LINGER, &soerror, &so_len);
 		return soerror == 0 ? 0 : -soerror;
 	}
 	return errno == EAGAIN ? 0 : -errno;
