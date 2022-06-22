@@ -9,6 +9,10 @@
 #include <mutex>
 #include "chooks.h"
 
+/*
+* https://github.com/onlinecity/cpp-smpp/
+*/
+
 class csmppservice : public std::enable_shared_from_this<csmppservice> {
 	class cgateway : public std::enable_shared_from_this<cgateway> {
 	public:
