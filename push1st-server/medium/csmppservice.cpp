@@ -255,11 +255,27 @@ namespace smpp {
 
 	}
 
+	class cenquire {
+	public:
+		static inline const uint32_t req_id{ 0x00000015 };
+		static inline const uint32_t resp_id{ 0x80000015 };
+		param::cmd_t command;
+		cenquire(uint32_t seq, uint32_t id = resp_id, uint32_t status = 0) : command{ id,status,seq } { ; }
+
+		std::string pack() {
+			cpacker packer{ 512 };
+			command.pack(packer); 
+			auto&& msg{ packer.str() };
+			((param::cmd_t*)msg.data())->length((uint32_t)msg.length());
+			return msg;
+		}
+	};
+
 	class csms {
 	public:
 		static inline const uint32_t req_id{ 4 };
 		static inline const uint32_t resp_id{ 0x80000004 };
-		csms(uint32_t seq, uint32_t id = 4, uint32_t status = 0) : command{ id,status,seq } { ; }
+		csms(uint32_t seq, uint32_t id = req_id, uint32_t status = 0) : command{ id,status,seq } { ; }
 		param::cmd_t command;
 		param::service_t service;
 		param::address_t src, dst;
@@ -416,13 +432,6 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 							sms.command.status, sms.command.id, sms.command.sequence, MsgId.size(), message["source_addr"].get<std::string>().c_str(),
 							message["destination_addr"].get<std::string>().c_str());
 						continue;
-						/*
-						std::tie(cmd, uid) = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(response);
-						if (cmd.status == 0 and cmd.id == smpp::csms::resp_id) {
-							continue;
-						}
-						break;
-						*/
 					}
 					else {
 						syslog.print(7, "Push SMS: %ld, id: %ld, seq: %ld/%ld ( src: %s, dst: %s ) ... error ( %s )\n", 
@@ -509,20 +518,26 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 				syslog.print(7, "Accept SMS: status: %ld, id: %ld, seq: %ld, channel: %s\n", cmd.status, cmd.id, cmd.sequence, Channel().c_str());
 			}
 		}
+		else if (smpp::cenquire::req_id == cmd.id) {
+			syslog.print(7, "Enquire Link: status: %ld, id: %ld, seq: %ld, channel: %s\n", cmd.status, cmd.id, cmd.sequence, Channel().c_str());
+			smpp::cenquire resp{ cmd.sequence };
+			Send(resp.pack());
+			return;
+		}
 		else {
 			syslog.print(7, "Status SMS: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
 			status = json::object_t{ {"id", cmd.sequence},{"status", "event"},{"code", cmd.status},{"channel", Channel()} };
 		}
-
-		if (gwHook) {
-			gwHook->Send("POST", std::move(status), {
-				{"Content-Type","application/json"},
-				{"Connection", "close" }});
-		}
 	}
 	else {
 		syslog.print(7, "Invalid reply SMS: %ld, id: %ld, seq: %ld\n", cmd.status, cmd.id, cmd.sequence);
-		//status = json::object_t{ {"error","invalid message format"} };
+		status = json::object_t{ {"id", cmd.sequence},{"status", "error"},{"code", cmd.status},{"channel", Channel()} };
+	}
+
+	if (gwHook) {
+		gwHook->Send("POST", std::move(status), {
+			{"Content-Type","application/json"},
+			{"Connection", "close" } });
 	}
 }
 
@@ -538,6 +553,7 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 				response.resize(cmd->length());
 				size_t nread{ response.length() - sizeof(smpp::param::cmd_t) };
 				if (err = gwSocket.SocketRecv(response.data() + sizeof(smpp::param::cmd_t), nread, nbytes, MSG_WAITALL); err == 0 and nbytes == nread) {
+					lock.unlock();
 					OnDeliveryStatus(response);
 					return;
 				}
