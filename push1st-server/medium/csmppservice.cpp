@@ -373,10 +373,10 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 					gwHosts.emplace_back(host.get<std::string>());
 				}
 			}
-			std::unique_lock<decltype(gwConnectionLock)> lock(gwConnectionLock);
 
 			std::string conId{ gwLogin + ":" + gwPassword };
 			{
+				std::unique_lock<decltype(gwConnectionLock)> lock(gwConnectionLock);
 
 				if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
 					con = conIt->second;
