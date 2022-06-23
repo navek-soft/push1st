@@ -381,14 +381,29 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 					con->Assign(gwLogin, gwPassword,
 						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
 
-					syslog.print(7,"Reuse connection: %s\n", gwLogin.c_str());
+					syslog.print(7,"Reuse connection: %s ( channel: %s )\n", gwLogin.c_str(), con->Channel().c_str());
 
 				}
 				else {
 					con = gwConnections.emplace(conId, std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
 						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{})).first->second;
-					syslog.print(7, "New connection: %s\n", conId.c_str());
+					syslog.print(7, "New connection: %s ( channel: %s )\n", conId.c_str(), con->Channel().c_str());
 				}
+
+				if (syslog.is(7)) {
+					std::string logConnects{ "Connections:\n\t" };
+					size_t npad{ 0 };
+					for (auto&& it : gwConnections) {
+						if ((++npad % 4) == 0) {
+							logConnects.append("\n\t");
+						}
+						auto itCon{ it.second->Connect() };
+						logConnects.append(it.second->Channel()).append(" (").append(it.first).append(") #").append(itCon ? std::to_string(itCon->Fd()) : " lost");
+					}
+					if (logConnects.back() == '\t') { logConnects.pop_back(); logConnects.pop_back(); }
+					syslog.print(7, "%s\n", logConnects.c_str());
+				}
+
 			}
 
 			if (auto&& so{ con->Connect() }; so) {
@@ -521,24 +536,25 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 }
 
 void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
-	std::shared_ptr<inet::csocket> so{ gwSocket };
-	if (events == EPOLLIN and so) {
-		ssize_t err{ 0 };
-		std::string response; response.resize(512);
-		size_t nbytes{ 0 };
-		if (err = so->SocketRecv(response.data(), sizeof(smpp::param::cmd_t), nbytes, MSG_WAITALL); err == 0 and nbytes == sizeof(smpp::param::cmd_t)) {
-			auto cmd{ (smpp::param::cmd_t*)response.data() };
-			response.resize(cmd->length());
-			size_t nread{ response.length() - sizeof(smpp::param::cmd_t) };
-			if (err = so->SocketRecv(response.data() + sizeof(smpp::param::cmd_t), nread, nbytes, MSG_WAITALL); err == 0 and nbytes == nread) {
-				OnDeliveryStatus(response);
-				return ;
+	if (std::shared_ptr<inet::csocket> so{ gwSocket }; so) {
+		if (events == EPOLLIN) {
+			ssize_t err{ 0 };
+			std::string response; response.resize(512);
+			size_t nbytes{ 0 };
+			if (err = so->SocketRecv(response.data(), sizeof(smpp::param::cmd_t), nbytes, MSG_WAITALL); err == 0 and nbytes == sizeof(smpp::param::cmd_t)) {
+				auto cmd{ (smpp::param::cmd_t*)response.data() };
+				response.resize(cmd->length());
+				size_t nread{ response.length() - sizeof(smpp::param::cmd_t) };
+				if (err = so->SocketRecv(response.data() + sizeof(smpp::param::cmd_t), nread, nbytes, MSG_WAITALL); err == 0 and nbytes == nread) {
+					OnDeliveryStatus(response);
+					return;
+				}
+				syslog.print(7, "Reply error: %s\n", std::strerror(-(int)err));
 			}
-			syslog.print(7, "Reply error: %s\n", std::strerror(-(int)err));
 		}
+		gwSocket->SocketClose();
+		gwSocket.reset();
 	}
-
-	gwSocket.reset();
 }
 
 std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
@@ -605,8 +621,8 @@ void csmppservice::cgateway::Assign(const std::string& login, const std::string&
 	}
 
 	if (gwConId.empty()) {
-		gwConId.clear(); gwConId.resize(64);
-		auto n= snprintf(gwConId.data(), 40, "%08X%08X%016llX", (uint32_t)(nhash % std::time(nullptr)), (uint32_t)std::time(nullptr), (uint64_t)nhash);
+		gwConId.clear(); gwConId.resize(512);
+		auto n = snprintf(gwConId.data(), 512, "%08X%08X%016lX", (uint32_t)(nhash % std::time(nullptr)), (uint32_t)std::time(nullptr), (uint64_t)nhash);
 		gwConId.resize(n);
 	}
 
