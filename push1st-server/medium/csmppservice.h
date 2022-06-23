@@ -33,7 +33,6 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 	private:
 		std::string gwLogin, gwPassword;
 		std::vector<sockaddr_storage> gwHosts;
-		std::mutex gwSocketLock;
 		std::shared_ptr<inet::csocket> gwSocket;
 		std::atomic_uint32_t seqNo{ 0 };
 		size_t gwHash{ 0 };

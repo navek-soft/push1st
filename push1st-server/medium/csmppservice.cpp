@@ -374,7 +374,7 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 				}
 			}
 			std::string conId{ gwLogin + ":" + gwPassword };
-
+			
 			std::unique_lock<decltype(gwConnectionLock)> lock(gwConnectionLock);
 
 			if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
@@ -557,52 +557,51 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 }
 
 std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
-	std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
-	if (gwSocket and gwSocket->GetErrorNo() == 0) {
-		return gwSocket;
+	if (gwSocket and gwSocket->Fd() > 0) {
+		if(gwSocket->GetErrorNo() == 0) return gwSocket;
+		gwSocket->SocketClose();
 	}
-	else {
-		//gwSocket.reset();
-		for (auto&& sa : gwHosts) {
-			ssize_t res{ 0 };
-			if (fd_t fd; (res = inet::TcpConnect(fd, sa, false, 2000)) == 0) {
+	gwSocket.reset();
+	for (auto&& sa : gwHosts) {
+		ssize_t res{ 0 };
+		if (fd_t fd; (res = inet::TcpConnect(fd, sa, false, 2000)) == 0) {
 
-				auto so = std::make_shared<inet::csocket>(fd, sa, inet::ssl_t{}, gwPoll);
-				so->SetKeepAlive(true, 3, 10, 3);
-				so->SetRecvTimeout(2000);
-				so->SetSendTimeout(2000);
+			gwSocket = std::make_shared<inet::csocket>(fd, sa, inet::ssl_t{}, gwPoll);
+			gwSocket->SetKeepAlive(true, 3, 10, 3);
+			gwSocket->SetRecvTimeout(2000);
+			gwSocket->SetSendTimeout(2000);
 
-				/* Auth on the gateway */
+			/* Auth on the gateway */
 
-				smpp::cbind ath{ Seq() };
-				ath.login(gwLogin);
-				ath.password(gwPassword);
+			smpp::cbind ath{ Seq() };
+			ath.login(gwLogin);
+			ath.password(gwPassword);
 
-				std::string response;
-				if (res = Send(so, ath.pack(),response); res == 0) {
-					std::string_view resp_data{ response };
-					auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(resp_data);
-					if (cmd.status == 0) {
-						so->Poll()->PollAdd(so->Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
-						syslog.print(7, "Connect to %x  ... success\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
-						gwSocket.swap(so);
-						return gwSocket;
-					}
-					else {
-						syslog.print(7, "Connect to %x Reply bind   ... error ( response status error )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
-					}
+			std::string response;
+			if (res = Send(gwSocket, ath.pack(),response); res == 0) {
+				std::string_view resp_data{ response };
+				auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(resp_data);
+				if (cmd.status == 0) {
+					gwSocket->Poll()->PollAdd(gwSocket->Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
+					syslog.print(7, "Connect to %x  ... success\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
+					break;
 				}
 				else {
-					syslog.print(7, "Connect to %x Send bind  ... error ( %s )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
+					syslog.print(7, "Connect to %x Reply bind   ... error ( response status error )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
 				}
 			}
 			else {
-				syslog.print(7, "Connect to %x  ... error ( %s )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
+				syslog.print(7, "Connect to %x Send bind  ... error ( %s )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
 			}
 		}
+		else {
+			syslog.print(7, "Connect to %x  ... error ( %s )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
+		}
+		gwSocket->SocketClose();
+		gwSocket.reset();
 	}
 
-	return {};
+	return gwSocket;
 
 }
 
