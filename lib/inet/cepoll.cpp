@@ -97,7 +97,6 @@ ssize_t cpoll::PollUpdate(fd_t fd, uint events) {
 void cpoll::PollDelete(fd_t& fd) {
 	if (fd > 0) {
 		epoll_ctl(fdPoll, EPOLL_CTL_DEL, fd, nullptr);
-		::shutdown(fd, SHUT_RDWR);
 		::close(fd);
 		std::unique_lock<decltype(fdLock)> lock(fdLock);
 		fdHandlers.erase(fd);
