@@ -374,36 +374,35 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 				}
 			}
 			std::string conId{ gwLogin + ":" + gwPassword };
-			{
-				std::unique_lock<decltype(gwConnectionLock)> lock(gwConnectionLock);
-				if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
-					con = conIt->second;
-					con->Assign(gwLogin, gwPassword,
-						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
 
-					syslog.print(7,"Reuse connection: %s ( channel: %s )\n", gwLogin.c_str(), con->Channel().c_str());
+			std::unique_lock<decltype(gwConnectionLock)> lock(gwConnectionLock);
 
-				}
-				else {
-					con = gwConnections.emplace(conId, std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
-						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{})).first->second;
-					syslog.print(7, "New connection: %s ( channel: %s )\n", conId.c_str(), con->Channel().c_str());
-				}
+			if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
+				con = conIt->second;
+				con->Assign(gwLogin, gwPassword,
+					gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
 
-				if (syslog.is(7)) {
-					std::string logConnects{ "Connections:\n\t" };
-					size_t npad{ 0 };
-					for (auto&& it : gwConnections) {
-						if ((++npad % 4) == 0) {
-							logConnects.append("\n\t");
-						}
-						auto itCon{ it.second->Connect() };
-						logConnects.append(it.second->Channel()).append(" (").append(it.first).append(") #").append(itCon ? std::to_string(itCon->Fd()) : " lost");
+				syslog.print(7, "Reuse connection: %s ( channel: %s )\n", gwLogin.c_str(), con->Channel().c_str());
+
+			}
+			else {
+				con = gwConnections.emplace(conId, std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
+					gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{})).first->second;
+				syslog.print(7, "New connection: %s ( channel: %s )\n", conId.c_str(), con->Channel().c_str());
+			}
+
+			if (syslog.is(7)) {
+				std::string logConnects{ "Connections:\n\t" };
+				size_t npad{ 0 };
+				for (auto&& it : gwConnections) {
+					if ((++npad % 4) == 0) {
+						logConnects.append("\n\t");
 					}
-					if (logConnects.back() == '\t') { logConnects.pop_back(); logConnects.pop_back(); }
-					syslog.print(7, "%s\n", logConnects.c_str());
+					auto itCon{ it.second->Connect() };
+					logConnects.append(it.second->Channel()).append(" (").append(it.first).append(") #").append(itCon ? std::to_string(itCon->Fd()) : " lost");
 				}
-
+				if (logConnects.back() == '\t') { logConnects.pop_back(); logConnects.pop_back(); }
+				syslog.print(7, "%s\n", logConnects.c_str());
 			}
 
 			if (auto&& so{ con->Connect() }; so) {
