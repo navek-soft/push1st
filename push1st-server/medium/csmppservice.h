@@ -20,8 +20,8 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 		~cgateway();
 
 		std::shared_ptr<inet::csocket> Connect();
-		ssize_t Send(const inet::socket_t& so, const std::string& msg, std::string& response);
-		ssize_t Send(const inet::socket_t& so, const std::string& msg);
+		ssize_t Send(inet::socket_t& so, const std::string& msg, std::string& response);
+		ssize_t Send(inet::socket_t& so, const std::string& msg);
 		void Assign(const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
 
 		inline uint32_t Seq() { return ++seqNo; }
@@ -33,6 +33,7 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 	private:
 		std::string gwLogin, gwPassword;
 		std::vector<sockaddr_storage> gwHosts;
+		std::mutex gwSocketLock;
 		std::shared_ptr<inet::csocket> gwSocket;
 		std::atomic_uint32_t seqNo{ 0 };
 		size_t gwHash{ 0 };

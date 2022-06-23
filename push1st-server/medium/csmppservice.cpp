@@ -374,21 +374,22 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 				}
 			}
 			std::string conId{ gwLogin + ":" + gwPassword };
-			
-			std::unique_lock<decltype(gwConnectionLock)> lock(gwConnectionLock);
+			{
+				std::unique_lock<decltype(gwConnectionLock)> lock(gwConnectionLock);
 
-			if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
-				con = conIt->second;
-				con->Assign(gwLogin, gwPassword,
-					gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
+				if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
+					con = conIt->second;
+					con->Assign(gwLogin, gwPassword,
+						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
 
-				syslog.print(7, "Reuse connection: %s ( channel: %s )\n", gwLogin.c_str(), con->Channel().c_str());
+					syslog.print(7, "Reuse connection: %s ( channel: %s )\n", gwLogin.c_str(), con->Channel().c_str());
 
-			}
-			else {
-				con = gwConnections.emplace(conId, std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
-					gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{})).first->second;
-				syslog.print(7, "New connection: %s ( channel: %s )\n", conId.c_str(), con->Channel().c_str());
+				}
+				else {
+					con = gwConnections.emplace(conId, std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
+						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{})).first->second;
+					syslog.print(7, "New connection: %s ( channel: %s )\n", conId.c_str(), con->Channel().c_str());
+				}
 			}
 
 			if (syslog.is(7)) {
@@ -459,7 +460,7 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 	return { "400", json::object_t{ {"error","invalid message format"} } };
 }
 
-ssize_t csmppservice::cgateway::Send(const inet::socket_t& so, const std::string& msg, std::string& response) {
+ssize_t csmppservice::cgateway::Send(inet::socket_t& so, const std::string& msg, std::string& response) {
 	if (so) {
 		ssize_t err{ 0 };
 		if (size_t nbytes{ 0 }; (err = so->SocketSend(msg.data(), msg.length(), nbytes, 0)) == 0 and nbytes == msg.length()) {
@@ -473,17 +474,21 @@ ssize_t csmppservice::cgateway::Send(const inet::socket_t& so, const std::string
 				}
 			}
 		}
+		so->SocketClose();
+		so.reset();
 		return err;
 	}
 	return -EBADFD;
 }
 
-ssize_t csmppservice::cgateway::Send(const inet::socket_t& so, const std::string& msg) {
+ssize_t csmppservice::cgateway::Send(inet::socket_t& so, const std::string& msg) {
 	if (so) {
 		ssize_t err{ 0 };
 		if (size_t nbytes{ 0 }; (err = so->SocketSend(msg.data(), msg.length(), nbytes, 0)) == 0 and nbytes == msg.length()) {
 			return 0;
 		}
+		so->SocketClose();
+		so.reset();
 		return err;
 	}
 	return -EBADFD;
@@ -557,6 +562,7 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 }
 
 std::shared_ptr<inet::csocket> csmppservice::cgateway::Connect() {
+	std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
 	if (gwSocket and gwSocket->Fd() > 0) {
 		if(gwSocket->GetErrorNo() == 0) return gwSocket;
 		gwSocket->SocketClose();
