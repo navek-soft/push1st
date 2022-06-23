@@ -380,9 +380,10 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 
 				if (auto&& conIt{ gwConnections.find(conId) }; conIt != gwConnections.end()) {
 					con = conIt->second;
+					/*
 					con->Assign(gwLogin, gwPassword,
 						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
-
+						*/
 					syslog.print(7, "Reuse connection: %s ( channel: %s ), %lx\n", gwLogin.c_str(), con->Channel().c_str(),this);
 
 				}
@@ -468,6 +469,7 @@ ssize_t csmppservice::cgateway::Send(const std::string& msg, std::string& respon
 }
 
 ssize_t csmppservice::cgateway::Send(const std::string& msg) {
+	std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
 	if (gwSocket) {
 		ssize_t err{ 0 };
 		if (size_t nbytes{ 0 }; (err = gwSocket.SocketSend(msg.data(), msg.length(), nbytes, 0)) == 0 and nbytes == msg.length()) {
@@ -577,7 +579,7 @@ inline bool csmppservice::cgateway::Connect() {
 				std::string_view resp_data{ response };
 				auto&& [cmd, alpha] = smpp::cresponse<smpp::param::cmd_t, smpp::param::string_t>{}(resp_data);
 				if (cmd.status == 0) {
-					gwSocket.Poll()->PollAdd(gwSocket.Fd(), EPOLLIN | EPOLLEXCLUSIVE, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
+					gwSocket.Poll()->PollAdd(gwSocket.Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
 					syslog.print(7, "Connect to %x  ... success\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
 					return true;
 				}
