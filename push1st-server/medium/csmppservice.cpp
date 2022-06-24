@@ -552,7 +552,7 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 			ssize_t err{ 0 };
 			std::string response; response.resize(512);
 			size_t nbytes{ 0 };
-			if (err = gwSocket.SocketRecv(response.data(), sizeof(smpp::param::cmd_t), nbytes, MSG_WAITALL); err == 0 and nbytes == sizeof(smpp::param::cmd_t)) {
+			if (err = gwSocket.SocketRecv(response.data(), sizeof(smpp::param::cmd_t), nbytes, 0); err == 0 and nbytes == sizeof(smpp::param::cmd_t)) {
 				auto cmd{ (smpp::param::cmd_t*)response.data() };
 				response.resize(cmd->length());
 				size_t nread{ response.length() - sizeof(smpp::param::cmd_t) };
