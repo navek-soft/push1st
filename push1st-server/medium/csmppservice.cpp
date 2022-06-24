@@ -521,7 +521,9 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 		else if (smpp::cenquire::req_id == cmd.id) {
 			syslog.print(7, "Enquire Link: status: %ld, id: %ld, seq: %ld, channel: %s\n", cmd.status, cmd.id, cmd.sequence, Channel().c_str());
 			smpp::cenquire resp{ cmd.sequence };
-			Send(resp.pack());
+			if (Send(resp.pack()) != 0) {
+				gwSocket.SocketClose();
+			}
 			return;
 		}
 		else {
@@ -560,11 +562,7 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 			}
 			syslog.print(7, "Reply error: %s\n", std::strerror(-(int)err));
 		}
-		else {
-			gwSocket.SocketClose();
-		}
-//		so->SocketClose();
-//		so.reset();
+		gwSocket.SocketClose();
 	}
 }
 
