@@ -520,10 +520,12 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 		}
 		else if (smpp::cenquire::req_id == cmd.id) {
 			syslog.print(7, "Enquire Link: status: %ld, id: %ld, seq: %ld, channel: %s\n", cmd.status, cmd.id, cmd.sequence, Channel().c_str());
+			/*
 			smpp::cenquire resp{ cmd.sequence };
 			if (Send(resp.pack()) != 0) {
 				gwSocket.SocketClose();
 			}
+			*/
 			return;
 		}
 		else {
@@ -579,8 +581,8 @@ inline bool csmppservice::cgateway::Connect() {
 			gwSocket = inet::csocket{ fd, sa, inet::ssl_t{}, gwPoll };
 
 			gwSocket.SetKeepAlive(true, 3, 10, 3);
-			gwSocket.SetRecvTimeout(10000);
-			gwSocket.SetSendTimeout(10000);
+			gwSocket.SetRecvTimeout(3000);
+			gwSocket.SetSendTimeout(3000);
 
 			/* Auth on the gateway */
 
