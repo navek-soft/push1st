@@ -546,7 +546,6 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 }
 
 void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
-	std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
 	if (gwSocket) {
 		if (events == EPOLLIN) {
 			ssize_t err{ 0 };
@@ -557,7 +556,6 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 				response.resize(cmd->length());
 				size_t nread{ response.length() - sizeof(smpp::param::cmd_t) };
 				if (err = gwSocket.SocketRecv(response.data() + sizeof(smpp::param::cmd_t), nread, nbytes, MSG_WAITALL); err == 0 and nbytes == nread) {
-					lock.unlock();
 					OnDeliveryStatus(response);
 					return;
 				}
