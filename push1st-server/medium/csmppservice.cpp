@@ -427,10 +427,11 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 					sms.command.sequence = con->Seq();
 					MsgId.emplace_back(sms.command.sequence);
 					sms.message(part);
+					auto&& tm_start{ std::chrono::system_clock::now() };
 					if (auto res{ con->Send(sms.pack()) }; res == 0) {
-						syslog.print(7, "Push SMS: %ld, id: %ld, seq: %ld/%ld ( src: %s, dst: %s ) ... success\n", 
+						syslog.print(7, "Push SMS: %ld, id: %ld, seq: %ld/%ld ( src: %s, dst: %s ) ... success (%ld msec) \n",
 							sms.command.status, sms.command.id, sms.command.sequence, MsgId.size(), message["source_addr"].get<std::string>().c_str(),
-							message["destination_addr"].get<std::string>().c_str());
+							message["destination_addr"].get<std::string>().c_str(), std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - tm_start).count());
 						continue;
 					}
 					else {
