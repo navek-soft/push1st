@@ -462,11 +462,11 @@ ssize_t csmppservice::cgateway::Send(const std::string& msg, std::string& respon
 		ssize_t err{ 0 };
 		if (size_t nbytes{ 0 }; (err = gwSocket.SocketSend(msg.data(), msg.length(), nbytes, 0)) == 0 and nbytes == msg.length()) {
 			response.resize(512);
-			if (err = gwSocket.SocketRecv(response.data(), sizeof(smpp::param::cmd_t), nbytes, MSG_WAITALL); err == 0 and nbytes == sizeof(smpp::param::cmd_t)) {
+			if (err = gwSocket.SocketRecv(response.data(), sizeof(smpp::param::cmd_t), nbytes, 0); err == 0 and nbytes == sizeof(smpp::param::cmd_t)) {
 				auto cmd{ (smpp::param::cmd_t*)response.data() };
 				response.resize(cmd->length());
 				size_t nread{ response.length() - sizeof(smpp::param::cmd_t) };
-				if (err = gwSocket.SocketRecv(response.data() + sizeof(smpp::param::cmd_t), nread, nbytes, MSG_WAITALL); err == 0 and nbytes == nread) {
+				if (err = gwSocket.SocketRecv(response.data() + sizeof(smpp::param::cmd_t), nread, nbytes, 0); err == 0 and nbytes == nread) {
 					return 0;
 				}
 			}
@@ -481,7 +481,7 @@ ssize_t csmppservice::cgateway::Send(const std::string& msg) {
 	std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
 	if (gwSocket) {
 		ssize_t err{ 0 };
-		if (size_t nbytes{ 0 }; (err = gwSocket.SocketSend(msg.data(), msg.length(), nbytes, 0)) == 0 and nbytes == msg.length()) {
+		if (size_t nbytes{ 0 }; (err = gwSocket.SocketSend(msg.data(), msg.length(), nbytes, MSG_DONTWAIT)) == 0) {
 			return 0;
 		}
 		gwSocket.SocketClose();
