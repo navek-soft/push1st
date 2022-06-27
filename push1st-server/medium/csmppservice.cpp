@@ -479,7 +479,7 @@ ssize_t csmppservice::cgateway::Send(const std::string& msg, std::string& respon
 }
 
 ssize_t csmppservice::cgateway::Send(const std::string& msg) {
-	std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
+	//std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
 	if (gwSocket) {
 		ssize_t err{ 0 };
 		if (size_t nbytes{ 0 }; (err = gwSocket.SocketSend(msg.data(), msg.length(), nbytes, MSG_DONTWAIT)) == 0) {
