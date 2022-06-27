@@ -581,7 +581,7 @@ inline bool csmppservice::cgateway::Connect() {
 
 			gwSocket.SetKeepAlive(true, 3, 10, 3);
 			gwSocket.SetRecvTimeout(3000);
-			gwSocket.SetSendTimeout(3000);
+			gwSocket.SetSendTimeout(250);
 
 			/* Auth on the gateway */
 
