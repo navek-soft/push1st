@@ -7,7 +7,7 @@ services:
     image: push1st
     container_name: push1st
     hostname: push1st
-    restart: on-failure
+    restart: unless-stopped
     ports:
       - 6001:6001/tcp
       - 6002:6002/tcp
