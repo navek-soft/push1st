@@ -129,6 +129,13 @@ inet::ssl_ctx_t cconfig::ssloptions_t::Context() const {
 	return ctx;
 }
 
+void cconfig::interface_t::smpp_t::load(const std::filesystem::path& path, const yaml_t& options) {
+	if (Enable = Value<bool>(options["enable"], false); Enable) {
+		Path = PathValue(options["path"], "smpp");
+		Hook = Value<std::string>(options["webhook"], {});
+	}
+}
+
 void cconfig::interface_t::load(const std::filesystem::path& path, const yaml_t& options) {
 	KeepAlive = Value<std::time_t>(options["keep-alive-timeout"], 0);
 	Interface = Map(options["interface"], { {"pusher",api_t::type::pusher},{"push1st",api_t::type::push1st} }, api_t::type::disable);
@@ -149,6 +156,10 @@ void cconfig::interface_t::load(const std::filesystem::path& path, const yaml_t&
 	}
 	else {
 		Interface = api_t::type::disable;
+	}
+
+	if (options["module"].IsDefined() and options["module"]["smpp"].IsMap()) {
+		Smpp.load(path, options["module"]["smpp"]);
 	}
 }
 

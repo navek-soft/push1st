@@ -11,6 +11,8 @@ ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 		websocket_t::mask_t mask;
 		std::shared_ptr<uint8_t[]> message;
 
+//		printf("### %ld | %s  Op: %ld %s%s",std::time(nullptr), WsSessionId().c_str(), packet.opcode, packet.mask ? "mask " : "", packet.fin ? "fin " : "");
+
 		if (auto length = packet.len; length < 126) {
 			nlength = length;
 		}
@@ -34,16 +36,19 @@ ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 			OnWsError(-EBADMSG); return -EBADMSG;
 		}
 
+	//	printf("Length: %ld ", nlength);
+
 		if (packet.mask) {
 			if ((res = WsRecv(&mask, sizeof(websocket_t::mask_t), nread, MSG_WAITALL)) != 0) {
 				OnWsError(res); return res;
 			}
+			//printf("mask: %x%x%x%x ", mask[0], mask[1], mask[2], mask[3]);
 		}
 
 		if (nlength) {
 			if (nlength < maxMessageLength) {
 				message = std::move(std::shared_ptr<uint8_t[]>{ new uint8_t[nlength] });
-				if ((res = WsRecv(message.get(), nlength, nread, 0)) == 0) {
+				if ((res = WsRecv(message.get(), nlength, nread, MSG_WAITALL)) == 0) {
 					if (packet.mask) { websocket_t::Mask((uint8_t*)message.get(), nlength, mask); }
 				}
 			}
@@ -52,6 +57,9 @@ ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 				OnWsError(-EMSGSIZE); return -EMSGSIZE;
 			}
 		}
+
+		//printf("payload: %s\n", std::string{ (char*)message.get(),nlength }.c_str());
+
 		if (auto opcode{ (websocket_t::opcode_t)packet.opcode }; opcode == websocket_t::opcode_t::text or opcode == websocket_t::opcode_t::binary) {
 			OnWsMessage((websocket_t::opcode_t)packet.opcode, std::move(message), nlength); return 0;
 		}

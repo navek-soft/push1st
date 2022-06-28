@@ -11,6 +11,7 @@ class cwebsocketserver;
 class capiserver;
 class cchannels;
 class cchannel;
+class csmppservice;
 
 class cbroker : public std::enable_shared_from_this<cbroker>
 {

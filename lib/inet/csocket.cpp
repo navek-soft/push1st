@@ -11,16 +11,13 @@ extern "C" {
 using namespace inet;
 
 int csocket::SocketClose() const {
+	fdSsl.reset();
+	if (auto&& poll{ Poll() }; poll) {
+		poll->PollDelete(fdSocket);
+	}
 	if (int fd{ fdSocket }; fd > 0) {
-		if (auto&& poll{ fdPoll.lock() }; poll) {
-			poll->PollDelete(fdSocket);
-		}
-		else {
-			::shutdown(fdSocket, SHUT_RDWR);
-			::close(fdSocket);
-			fdSocket = -1;
-		}
-		fdSsl.reset();
+		::close(fdSocket);
+		fdSocket = -1;
 		return fd;
 	}
 	return -1;

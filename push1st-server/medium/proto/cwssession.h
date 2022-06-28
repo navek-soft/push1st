@@ -33,6 +33,9 @@ public:
 	virtual inline ssize_t WsSend(const void* data, size_t size, size_t& writen, uint flags = 0) override { return SocketSend(data, size, writen, flags); }
 	virtual void OnWsMessage(websocket_t::opcode_t opcode, const std::shared_ptr<uint8_t[]>& message, size_t length) override;
 	virtual inline void OnSocketRecv() override { WsReadMessage(MaxMessageLength); }
+
+	virtual inline std::string WsSessionId() { return Id(); }
+
 #if SENDQ1 
 	virtual void OnSocketSend() override;
 #else
