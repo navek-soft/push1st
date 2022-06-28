@@ -43,5 +43,11 @@ api:
     whitelist: []
     listen: [ tcp://*:6002/, unix://opt/push1st.api ]
 
+    module:
+        smpp:
+            enable: true
+            path: /smpp/
+            webhook: http://127.0.0.1/push1st
+
 credentials: 
     - apps/*.yml

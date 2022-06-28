@@ -1,9 +1,11 @@
 #pragma once
 #include <memory>
+#include <string>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <any>
+#include <stdexcept>
 
 extern "C" {
 #include <lua5.3/lua.h>

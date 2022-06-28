@@ -8,6 +8,7 @@
 
 class cchannels;
 class ccluster;
+class csmppservice;
 
 class capiserver : public inet::chttpconnection
 {
@@ -53,11 +54,13 @@ private:
 	void ApiOnToken(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, const std::string_view&);
 	void ApiOnChannels(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, const std::string_view&);
 	void ApiOnWebHook(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, const std::string_view&);
+	void ApiOnModuleSmpp(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, const std::string_view&);
 	std::shared_ptr<cchannels> Channels;
 	std::shared_ptr<ccredentials> Credentials;
 	std::shared_ptr<ccluster> Cluster;
 	std::shared_ptr<ctcpapiserver> ApiTcp;
 	std::shared_ptr<cunixapiserver> ApiUnix;
+	std::shared_ptr<csmppservice> ApiSmpp;
 	http::crouter ApiRoutes;
 	std::string KeepAliveTimeout;
 };

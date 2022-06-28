@@ -11,6 +11,29 @@
 int main(int argc, char* argv[])
 {
     std::srand((uint)std::time(nullptr));
+    /*
+    auto srvSmpp{ std::make_shared<csmppservice>() };
+    srvSmpp->Listen();
+    auto res = srvSmpp->Send(json::object_t{ 
+        {"source_ton",5},
+        {"source_npi",0},
+        {"source_addr","BTKTest"},
+        {"destination_ton",1},
+        {"destination_npi",1},
+        {"destination_addr","375447476539"},
+        {"hosts",json::array_t{"82.209.225.100","82.209.225.102"}},
+        {"port","2775"},
+        {"login","MY.BELTEL.NAT"},
+        {"password","Qq4sw7Vy"},
+        {"message","###ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022ssh root@testmyapi.beltelecom.by -p 20022$$$"}
+    });
+
+    printf("%s\n", json::serialize(std::move(res)).c_str());
+
+    std::this_thread::sleep_for(std::chrono::seconds(40));
+
+    return 0;
+    */
 
     core::ccmdline cmd; cmd.
         option("config", 'c', 1, "Location of the config yaml file", nullptr, "server.yaml").

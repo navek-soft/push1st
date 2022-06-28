@@ -6,6 +6,8 @@
 #include "ccluster.h"
 #include "channels/cchannel.h"
 #include <cstring>
+#include "csmppservice.h"
+
 
 static inline message_t dupChannelMessage(const json::value_t& msg, const std::string& channel) {
 	message_t&& out{ std::make_shared<json::value_t>(json::object_t{}) };
@@ -125,6 +127,27 @@ void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const ine
 	}
 }
 
+
+void capiserver::ApiOnModuleSmpp(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
+	if (method == "POST") {
+		if (auto&& app{ Credentials->GetAppById(std::string{vals[0]}) }; app) {
+			if (json::value_t request; cjson::unserialize(content, request) and request.is_object()) {
+				auto&& [code, response] = ApiSmpp->Send(request);
+				ApiResponse(fd, code, cjson::serialize(std::move(response)),true);
+			}
+			else {
+				ApiResponse(fd, "400", {}, true);
+			}
+		}
+		else {
+			ApiResponse(fd, "403", {}, true);
+		}
+	}
+	else {
+		ApiResponse(fd, "400", {}, true);
+	}
+}
+
 void capiserver::ApiOnWebHook(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
 	ApiResponse(fd, "200", {}, http::IsConnectionKeepAlive(headers));
 }
@@ -141,7 +164,7 @@ void capiserver::ApiResponse(const inet::csocket& fd, const std::string_view& co
 }
 void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, const std::string& request, const std::string_view& content) {
 
-	syslog.print(4, "[ API:%ld:%s ] %s\n", fd.Fd(), std::string{ method }.c_str(), std::string{ path.uriFull }.c_str());
+	syslog.print(7, "[ API:%ld:%s ] %s\n", fd.Fd(), std::string{ method }.c_str(), std::string{ path.uriFull }.c_str());
 
 	if(!ApiRoutes.call(fd,method,path,headers, content)) {
 		HttpWriteResponse(fd, "404");
@@ -153,6 +176,7 @@ void capiserver::Listen(const std::shared_ptr<inet::cpoll>& poll)
 {
 	if (ApiTcp) { ApiTcp->Listen(poll); }
 	if (ApiUnix) { ApiUnix->Listen(poll); }
+
 }
 
 
@@ -166,6 +190,8 @@ capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::sh
 		ApiUnix = std::make_shared<cunixapiserver>(*this, config);
 	}
 
+	
+
 	/* Push event endpoint */
 	ApiRoutes.add("/" + config.Path + "/?/events/*", std::bind(&capiserver::ApiOnEvents, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
@@ -176,7 +202,15 @@ capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::sh
 	ApiRoutes.add("/" + config.Path + "/?/channels/?/", std::bind(&capiserver::ApiOnChannels, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 
-#ifdef DEBUG
+	if (config.Smpp.Enable and !config.Smpp.Path.empty()) {
+		ApiSmpp = std::make_shared<csmppservice>(config.Smpp.Hook);
+		ApiRoutes.add("/" + config.Smpp.Path + "/*", std::bind(&capiserver::ApiOnModuleSmpp, this,
+			std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
+
+		ApiSmpp->Listen();
+	}
+
+#ifdef DEBUG1
 	ApiRoutes.add("/webhook/*", std::bind(&capiserver::ApiOnWebHook, this,
 		std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 #endif // DEBUG

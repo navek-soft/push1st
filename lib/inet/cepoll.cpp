@@ -29,14 +29,21 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 		sigaddset(&sigset, SIGINT);
 		pthread_sigmask(SIG_SETMASK, &epoll_sig_mask, NULL);
 		ssize_t nevents{ 0 };
+		std::unique_lock<decltype(fdLock)> lock(fdLock, std::defer_lock_t{});
 		while (1) {
 			if (nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), 100/*msTimeout*/); nevents > 0) {
 				while (nevents-- > 0) {
+					lock.lock();
 					if (auto&& hFd{ self->fdHandlers.find(events_list[nevents].data.fd) }; hFd != self->fdHandlers.end()) {
-						if (hFd->second) {
-							hFd->second(events_list[nevents].data.fd, events_list[nevents].events);
+						auto handler{ hFd->second };
+						lock.unlock();
+						if (handler) {
+							handler(events_list[nevents].data.fd, events_list[nevents].events);
 							continue;
 						}
+					}
+					else {
+						lock.unlock();
 					}
 					fprintf(stderr, "[ SERVER:%s ] Unhandled socket ( %ld )\n", self->NameOf(), events_list[nevents].data.fd);
 					int fd{ events_list[nevents].data.fd };
@@ -53,8 +60,7 @@ void cpoll::PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTime
 				continue; 
 			}
 			else {
-				fprintf(stderr, "[ SERVER:%s ] epoll error (%s)\n", self->NameOf(), inet::GetErrorStr(errno));
-				raise(SIGHUP);
+				fprintf(stderr, "[ SERVER:%s ] epoll error (%s)\n", self->NameOf(), inet::GetErrorStr(-errno));
 				break;
 			}
 		}
@@ -90,11 +96,9 @@ ssize_t cpoll::PollUpdate(fd_t fd, uint events) {
 
 void cpoll::PollDelete(fd_t& fd) {
 	if (fd > 0) {
-		epoll_ctl(fdPoll, EPOLL_CTL_DEL, fd, nullptr);
-		::shutdown(fd, SHUT_RDWR);
 		::close(fd);
-		std::unique_lock<decltype(fdLock)> lock(fdLock);
-		fdHandlers.erase(fd);
+		//std::unique_lock<decltype(fdLock)> lock(fdLock);
+		//fdHandlers.erase(fd);
 		fd = -1;
 	}
 /*

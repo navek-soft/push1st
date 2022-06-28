@@ -38,7 +38,7 @@ int cbroker::Run() {
 void cbroker::OnIdle() {
     static size_t stat_counter{ 0 };
     auto List{ std::move(Channels->List()) };
-    if (syslog.is(4) and !((++stat_counter) % 10)) {
+    if (0 and syslog.is(4) and !((++stat_counter) % 10)) {
         syslog.print(4, "Channels: ( %ld )\n\t", List.size());
         if (!List.empty()) {
             syslog.print(4, " ");
@@ -61,7 +61,6 @@ void cbroker::OnIdle() {
 
 void cbroker::Initialize(const core::cconfig& config) {
 
-    if (config.Server.Proto.empty()) throw std::runtime_error("Protocols not specified");
     if (!config.Server.Threads) throw std::runtime_error("Invalid worker threads number ( zero count )");
 
 
