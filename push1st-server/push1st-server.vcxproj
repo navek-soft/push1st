@@ -179,6 +179,7 @@
   <ItemGroup>
     <None Include="makefile" />
     <None Include="opt\apps\app.example" />
+    <None Include="opt\apps\smpp.example" />
     <None Include="opt\modules\cluster.lua" />
     <None Include="opt\modules\hook.lua" />
     <None Include="opt\server.example.yml" />
