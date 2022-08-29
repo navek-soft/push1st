@@ -1,0 +1,18 @@
+smpp-test:
+  enbale: true  
+  name: "Default Application for tests"
+  channels: [ smpp ]
+  credentials:
+    ip: ["ip1:port", "ip2:port"]
+    auth: {login:, password: }
+    source: {ton:, npi:}
+    destination: {ton:, npi:}
+  hook:
+    trigger:
+        - accepted # hook on register channel
+        - delivered # hook on unregister channel
+        - error # hook on leave channel
+    http-pipelining: false
+    endpoint:
+#        - http://127.0.0.1:6002/
+#        - lua://modules/hook.lua
