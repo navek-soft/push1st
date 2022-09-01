@@ -165,9 +165,15 @@ void capiserver::ApiResponse(const inet::csocket& fd, const std::string_view& co
 void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, const std::string& request, const std::string_view& content) {
 
 	syslog.print(7, "[ API:%ld:%s ] %s\n", fd.Fd(), std::string{ method }.c_str(), std::string{ path.uriFull }.c_str());
-
-	if(!ApiRoutes.call(fd,method,path,headers, content)) {
-		HttpWriteResponse(fd, "404");
+	try {
+		if (!ApiRoutes.call(fd, method, path, headers, content)) {
+			HttpWriteResponse(fd, "404");
+			fd.SocketClose();
+		}
+	}
+	catch (std::exception& ex) {
+		syslog.error("[ API:%ld:%s ] %s ( %s )\n", fd.Fd(), std::string{ method }.c_str(), std::string{ path.uriFull }.c_str(),ex.what());
+		HttpWriteResponse(fd, "400");
 		fd.SocketClose();
 	}
 }
