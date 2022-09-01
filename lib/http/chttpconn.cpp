@@ -23,7 +23,7 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
 			if (http::GetValue(headers, "expect") == "100-continue" and (res = HttpWriteResponse(fd, "100")) == 0) {
 				;
 			}
-			if ((contentLength + nread) < max_size) {
+			if((request.size() + (contentLength - data.size())) <= max_size) {
 				if (res = fd.SocketRecv(request.data() + nread, contentLength - data.length(), nread, 0); res == 0) {
 					content = { data.data(), contentLength };
 					return 0;
