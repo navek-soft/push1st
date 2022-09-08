@@ -31,22 +31,33 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      # - name: Install build dependencies
-      #   run: sudo apt -y install build-essential libyaml-cpp-dev libssl-dev lua5.3 liblua5.3-dev md5deep fakeroot
-      # - name: Fetch tags
-      #   run: git fetch -tq
-      # - name: Build binaries and upload to nexus
-      #   run: |
-      #     vertag=$(echo `ls -rt .git/refs/tags` | cut -d ' ' -f1)
-      #     cd push1st-server
-      #     echo ${GITHUB_REF_NAME}
-      #     make build=$GITHUB_RUN_NUMBER ver=$vertag bname=${GITHUB_REF##*/} all
-      #     curl -s --fail -v -H "Content-Type:multipart/form-data" -vvv -u "${NEXUS_USER}:${NEXUS_PASSWORD}" --data-binary "@push1st-${GITHUB_REF##*/}.deb" https://nexus.naveksoft.com/repository/ubuntu-universe/
-      #     curl -s --fail -v -u "${NEXUS_USER}:${NEXUS_PASSWORD}" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-latest.tar.bz2
-      #     curl -s --fail -v -u "${NEXUS_USER}:${NEXUS_PASSWORD}" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-$GITHUB_RUN_NUMBER.tar.bz2
-      - name: Build image and upload to nexus
+      - name: Install build dependencies
+        run: sudo apt -y install build-essential libyaml-cpp-dev libssl-dev lua5.3 liblua5.3-dev md5deep fakeroot
+      - name: Fetch tags
+        run: git fetch -tq
+      - name: Build binaries and upload to nexus
         run: |
-          docker build --build-arg NEXUS_USER=${NEXUS_USER} --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} -t nexus.naveksoft.com:8443/aivp/push1st/release:latest -f ./docker/Dockerfile .
+          vertag=$(echo `ls -rt .git/refs/tags` | cut -d ' ' -f1)
+          cd push1st-server
+          echo ${GITHUB_REF_NAME}
+          make build=$GITHUB_RUN_NUMBER ver=$vertag bname=${GITHUB_REF##*/} all
+          curl -s --fail -v -H "Content-Type:multipart/form-data" \
+                  -u "${NEXUS_USER}:${NEXUS_PASSWORD}" \
+                  --data-binary "@push1st-${GITHUB_REF##*/}.deb" \
+                  https://nexus.naveksoft.com/repository/ubuntu-universe/
+          curl -s --fail -v -u "${NEXUS_USER}:${NEXUS_PASSWORD}" \
+                  --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 \
+                  https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-latest.tar.bz2
+          curl -s --fail -v -u "${NEXUS_USER}:${NEXUS_PASSWORD}" \
+                  --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 \
+                  https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-$GITHUB_RUN_NUMBER.tar.bz2
+      - name: Build images and upload to nexus
+        run: |
+          docker build --build-arg NEXUS_USER=${NEXUS_USER} \
+                       --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} \
+                       -t nexus.naveksoft.com:8443/aivp/push1st/release:latest \
+                       -t nexus.naveksoft.com:8443/aivp/push1st/release:${GITHUB_RUN_NUMBER} \
+                       -f ./docker/Dockerfile .
           echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_USER} --password-stdin https://nexus.naveksoft.com:8443
           docker push nexus.naveksoft.com:8443/aivp/push1st/release:latest       
           docker push nexus.naveksoft.com:8443/aivp/push1st/release:${GITHUB_RUN_NUMBER}       
