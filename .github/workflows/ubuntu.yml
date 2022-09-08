@@ -44,3 +44,12 @@ jobs:
           curl -s --fail -v -H "Content-Type:multipart/form-data" -vvv -u "${NEXUS_USER}:${NEXUS_PASSWORD}" --data-binary "@push1st-${GITHUB_REF##*/}.deb" https://nexus.naveksoft.com/repository/ubuntu-universe/
           curl -s --fail -v -u "${NEXUS_USER}:${NEXUS_PASSWORD}" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-latest.tar.bz2
           curl -s --fail -v -u "${NEXUS_USER}:${NEXUS_PASSWORD}" --upload-file push1st-${GITHUB_REF##*/}.tar.bz2 https://nexus.naveksoft.com/repository/ubuntu-universe-bin/push1st-${GITHUB_REF##*/}-$GITHUB_RUN_NUMBER.tar.bz2
+      - name: Build image and upload to nexus
+        run: |
+          docker build -t nexus.naveksoft.com:8443/aivp/push1st/release:latest -f ./docker/Dockerfile .
+          echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_USER} --password-stdin https://nexus.naveksoft.com:8443
+          docker push nexus.naveksoft.com:8443//aivp/push1st/release:latest       
+          docker push nexus.naveksoft.com:8443//aivp/push1st/release:${GITHUB_RUN_NUMBER}       
+
+
+ 
