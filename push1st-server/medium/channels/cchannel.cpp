@@ -62,6 +62,7 @@ size_t cchannel::Gc() {
 		}
 		alive.pop_front();
 	}
+	return nsubscribers;
 }
 
 size_t cchannel::Push(message_t&& message) {

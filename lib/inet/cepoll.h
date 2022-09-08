@@ -40,8 +40,8 @@ namespace inet {
 		static void PollThread(std::shared_ptr<cpoll> self, int numEventsMax, int msTimeout);
 		using handler_t = std::function<void(fd_t,uint)>;
 		fd_t fdPoll{ -1 };
-		std::unordered_map<fd_t, handler_t> fdHandlers;
-		std::mutex fdLock;
+		static inline std::unordered_map<fd_t, handler_t> fdHandlers;
+		static inline std::mutex fdLock;
 		std::list<std::weak_ptr<cgc>> fdQueueGC;
 		std::thread pollThread;
 	};

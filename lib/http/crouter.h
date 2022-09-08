@@ -11,10 +11,13 @@ namespace http {
 	{
 		struct key_t {
 			std::string route;
-			std::vector<std::string_view> path;
+			std::vector<std::string> path;
 			routefn_t callback;
 			key_t() { ; }
-			explicit key_t(const std::string& r, routefn_t&& fn) : route{ r }, path{ std::move(explode(route)) }, callback{ fn }{; }
+			key_t(key_t&& k) : route{ std::move(k.route) }, path{ std::move(k.path) }, callback{ std::move(k.callback) } {; }
+			explicit key_t(const std::string& r, routefn_t&& fn) : route{ r }, callback{ fn }{
+				path = std::move(explode(route));
+			}
 			explicit key_t(const std::string_view& r) : path{ std::move(explode(r)) } { ; }
 
 			inline bool compare(const std::vector<std::string_view>& r, std::vector<std::string_view>& args) const {
@@ -26,8 +29,8 @@ namespace http {
 				return true;
 			}
 
-			static inline std::vector<std::string_view> explode(std::string_view route) {
-				std::vector<std::string_view> path;
+			static inline std::vector<std::string> explode(std::string_view route) {
+				std::vector<std::string> path;
 				if (!route.empty()) {
 					if (route.front() == '/') { path.emplace_back(route.data(), 1);  route.remove_prefix(1); }
 					if (route.back() == '/') { route.remove_suffix(1); }

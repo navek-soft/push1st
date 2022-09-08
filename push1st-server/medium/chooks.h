@@ -18,6 +18,7 @@ public:
 	cwebhook(const std::string& endpoint, bool keepalive = false);
 	virtual ~cwebhook() { ; }
 	virtual void Trigger(hook_t::type trigger, std::string app, std::string channel, std::string session, json::value_t&&) override;
+	void Send(const std::string_view& method, json::value_t&& data, std::unordered_map<std::string_view, std::string>&& headers = {});
 private:
 	inline void Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers = {}, std::string&& request = "");
 	inline bool Connect();

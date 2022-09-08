@@ -8,7 +8,7 @@ using data_t = const array_t&;
 using sid_t = const std::string&;
 
 static constexpr size_t MaxChannelNameLength{ 255 };
-static constexpr size_t MaxHttpHeaderSize{ 8192 };
+static constexpr size_t MaxHttpHeaderSize{ 64000 };
 
 static constexpr std::string_view AccessKeyIV{ "x[wFD(u}+f-oajsj>1gb~0SQ3oa^q`!`BhN,Gx8&-a1@uk@H^B=WI14:*W1<Qh}%" };
 

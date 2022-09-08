@@ -164,6 +164,7 @@
     <ClCompile Include="medium\channels\cchannel.cpp" />
     <ClCompile Include="medium\csubscriber.cpp" />
     <ClCompile Include="medium\cchannels.cpp" />
+    <ClCompile Include="medium\csmppservice.cpp" />
     <ClCompile Include="medium\proto\cwssession.cpp" />
     <ClCompile Include="medium\cwebsocketserver.cpp" />
     <ClCompile Include="medium\ccluster.cpp" />
@@ -178,6 +179,7 @@
   <ItemGroup>
     <None Include="makefile" />
     <None Include="opt\apps\app.example" />
+    <None Include="opt\apps\smpp.example" />
     <None Include="opt\modules\cluster.lua" />
     <None Include="opt\modules\hook.lua" />
     <None Include="opt\server.example.yml" />
@@ -198,6 +200,7 @@
     <ClInclude Include="medium\csubscriber.h" />
     <ClInclude Include="medium\cchannels.h" />
     <ClInclude Include="medium\channels\cchannel.h" />
+    <ClInclude Include="medium\csmppservice.h" />
     <ClInclude Include="medium\proto\cwssession.h" />
     <ClInclude Include="medium\cwebsocketserver.h" />
     <ClInclude Include="medium\ccluster.h" />

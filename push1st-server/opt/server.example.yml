@@ -27,6 +27,11 @@ server:
         push: { public, private, presence } # enable\disable push functionality on channels
         whitelist: []
 
+    smpp:
+        path: /smpp/
+        enable: true
+        ttl: # connection activity timeout
+
 cluster:
 #    listen: disable # udp://<host>:<port>, multicast://<multicast-group-address>:<port>/<bind-iface-ip-address>
     ping-interval: 30 # 0 - to disable ping
@@ -42,6 +47,12 @@ api:
     path: /apps/
     whitelist: []
     listen: [ tcp://*:6002/, unix://opt/push1st.api ]
+
+    module:
+        smpp:
+            enable: true
+            path: /smpp/
+            webhook: http://127.0.0.1/push1st
 
 credentials: 
     - apps/*.yml

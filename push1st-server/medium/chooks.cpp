@@ -32,6 +32,25 @@ cwebhook::cwebhook(const std::string& endpoint, bool keepalive) :
 	}
 }
 
+void cwebhook::Send(const std::string_view& method, json::value_t&& data, std::unordered_map<std::string_view, std::string>&& headers) {
+	ssize_t res{ -ECONNRESET };
+	headers["Host"] = std::string{ webEndpoint.host() };
+	std::unique_lock<decltype(fdLock)> lock(fdLock);
+	if (Connect()) {
+		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, webEndpoint.url(), std::move(headers), json::serialize(std::move(data))); res == 0) {
+			if (!fdKeepAlive) { inet::Close(fdEndpoint); }
+			return;
+		}
+		if (inet::Close(fdEndpoint); Connect()) {
+			if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, webEndpoint.url(), std::move(headers), json::serialize(std::move(data))); res == 0) {
+				if (!fdKeepAlive) { inet::Close(fdEndpoint); }
+				return;
+			}
+		}
+	}
+	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
+}
+
 inline void cwebhook::Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers, std::string&& request) {
 	ssize_t res{ -ECONNRESET };
 	std::unique_lock<decltype(fdLock)> lock(fdLock);

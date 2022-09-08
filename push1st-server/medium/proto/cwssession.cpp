@@ -99,8 +99,8 @@ bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& hea
 	
 	ActivityCheckTime = std::time(nullptr) + KeepAlive + 5;
 
-	SetSendTimeout(100);
-	SetKeepAlive(true, 2, 2, 2);
+	SetSendTimeout(500);
+	SetKeepAlive(true, 2, 2, 2); 
 
 	size_t nchannels{ 0 };
 	for (auto&& it{ path.uriPathList.begin() + 4 }; it != path.uriPathList.end(); ++it) {
