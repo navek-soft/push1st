@@ -3,7 +3,7 @@ ARG DEBIAN_FRONTEND=noninteractive \
     NEXUS_USER \
     NEXUS_PASSWORD
 RUN apt update && apt install -y wget gnupg2 curl nano
-RUN env && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9A4D3B9B041D12EF0D23694D8222A313EDE992FD && \    
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9A4D3B9B041D12EF0D23694D8222A313EDE992FD && \    
     echo "deb [arch=amd64] https://nexus.naveksoft.com/repository/ubuntu-universe/ universe main" | tee /etc/apt/sources.list.d/aivp-push1st.list && \
     echo "machine nexus.naveksoft.com/repository login ${NEXUS_USER} password ${NEXUS_PASSWORD}" | tee /etc/apt/auth.conf.d/nexus.naveksoft.com.conf
 RUN apt update && apt install -y -f push1st || :

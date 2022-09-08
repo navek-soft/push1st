@@ -48,8 +48,8 @@ jobs:
         run: |
           docker build --build-arg NEXUS_USER=${NEXUS_USER} --build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} -t nexus.naveksoft.com:8443/aivp/push1st/release:latest -f ./docker/Dockerfile .
           echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_USER} --password-stdin https://nexus.naveksoft.com:8443
-          docker push nexus.naveksoft.com:8443//aivp/push1st/release:latest       
-          docker push nexus.naveksoft.com:8443//aivp/push1st/release:${GITHUB_RUN_NUMBER}       
+          docker push nexus.naveksoft.com:8443/aivp/push1st/release:latest       
+          docker push nexus.naveksoft.com:8443/aivp/push1st/release:${GITHUB_RUN_NUMBER}       
 
 
  
