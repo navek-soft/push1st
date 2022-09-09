@@ -8,4 +8,4 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9A4D3B9B041D12EF0D2
     echo "machine nexus.naveksoft.com/repository login ${NEXUS_USER} password ${NEXUS_PASSWORD}" | tee /etc/apt/auth.conf.d/nexus.naveksoft.com.conf
 RUN apt update && apt install -y -f push1st || :
 RUN unlink /etc/systemd/system/push1st.service 
-CMD [ "/opt/naveksoft/push1st/push1st", "-c", "/opt/naveksoft/push1st/server.yml", "-V4", "-l", "/var/log" ]
+CMD [ "/opt/naveksoft/push1st/push1st", "-c", "/opt/naveksoft/push1st/server.yml", "-V7", "-l", "/var/log" ]
