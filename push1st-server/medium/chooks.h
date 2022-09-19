@@ -22,6 +22,7 @@ public:
 private:
 	inline void Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers = {}, std::string&& request = "");
 	inline bool Connect();
+	inline void ReadResponse();
 private:
 	fd_t fdEndpoint{ -1 };
 	inet::ssl_ctx_t fdSslCtx;
