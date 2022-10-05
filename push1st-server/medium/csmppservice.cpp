@@ -6,6 +6,10 @@
 
 namespace smpp {
 
+	enum class receipt_t : uint8_t {
+		none = 0, always = 1, failure = 2, success = 3
+	};
+
 	std::string utf8_to_utf16(const std::string& utf8)
 	{
 		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
@@ -99,6 +103,7 @@ namespace smpp {
 		public:
 			esm_class_t() = default;
 			inline void operator ()(uint8_t val) { value = val; }
+			inline void receipt(receipt_t type) { value = (value & 0xfc) | (uint8_t)type; }
 			inline cpacker& pack(cpacker& package) { package.write(value); return package; }
 			inline void unpack(std::string_view& data) {
 				value = (uint8_t)data.front();  data.remove_prefix(1);
@@ -417,6 +422,19 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 				sms.dst(message["destination_ton"].get<uint8_t>(), message["destination_npi"].get<uint8_t>(), message["destination_addr"].get<std::string>());
 				sms.encoding(smpp::param::encoding_t::ucs2);
 				sms.esm(src.length() <= 132 ? 0 : 0x40);
+				sms.esm.receipt(smpp::receipt_t::always);
+
+				if (message.contains("receipt")) {
+					if (std::string&& receipt{ message["receipt"].get<std::string>() }; receipt == "none") {
+						sms.esm.receipt(smpp::receipt_t::none);
+					}
+					else if (receipt == "failure") {
+						sms.esm.receipt(smpp::receipt_t::failure);
+					}
+					else if (receipt == "success") {
+						sms.esm.receipt(smpp::receipt_t::success);
+					}
+				}
 
 //				auto MsgId{ con->MsgId() };
 				auto&& chunks{ sms.message.split(sms.encoding.encode(src)) };
