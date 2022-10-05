@@ -10,6 +10,10 @@ namespace smpp {
 		none = 0, always = 1, failure = 2, success = 3
 	};
 
+	enum class bind_t : uint32_t {
+		none = 0, transmitter = 2, receiver = 1, transceiver = 0x009
+	};
+
 	std::string utf8_to_utf16(const std::string& utf8)
 	{
 		std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
@@ -312,7 +316,7 @@ namespace smpp {
 
 	class cbind {
 	public:
-		cbind(uint32_t seq,uint32_t id = 2, uint32_t status = 0) : command{ id,status,seq } { ; }
+		cbind(uint32_t seq, bind_t id = bind_t::receiver, uint32_t status = 0) : command{ (uint32_t)id,status,seq } { ; }
 		param::cmd_t command;
 		param::string_t login, password, system{};
 		param::interface_t version{ 0x34 };
