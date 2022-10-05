@@ -43,7 +43,7 @@ ExecStop=/bin/kill -s QUIT \$MAINPID
 [Install]
 WantedBy=multi-user.target" > $DEB_SOFT_DIR/$SOFT_PROGRAM.service
 
-chmod 0440 $DEB_SOFT_DIR/$SOFT_PROGRAM.service
+chmod 0644 $DEB_SOFT_DIR/$SOFT_PROGRAM.service
 
 ##############################
 # create logrotate file
@@ -65,7 +65,7 @@ echo "/var/log/$SOFT_PROGRAM.log {
   copytruncate
 }" > $DEB_SOFT_DIR/$SOFT_PROGRAM.logrotate
 
-chmod 0440 $DEB_SOFT_DIR/$SOFT_PROGRAM.logrotate
+chmod 0644 $DEB_SOFT_DIR/$SOFT_PROGRAM.logrotate
 
 ##############################
 # DEBIAN/control
