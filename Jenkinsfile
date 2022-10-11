@@ -4,7 +4,7 @@ pipeline {
     triggers {
         GenericTrigger(
             genericVariables: [
-                [key: 'NAME', value: '$.ref'],
+                [key: 'NAME', value: '$.commits[0].author.name'],
                 [key: 'BRANCH', value: '$.push.changes[0].new.name']
             ],
 
