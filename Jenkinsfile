@@ -5,7 +5,7 @@ pipeline {
         GenericTrigger(
             genericVariables: [
                 [key: 'NAME', value: '$.commits[0].author.name'],
-                [key: 'BRANCH', value: '$.push.changes[0].new.name']
+                [key: 'BRANCH', value: '$.ref']
             ],
 
             causeString: 'Triggered by $NAME, branch to build $BRANCH.',
@@ -18,8 +18,8 @@ pipeline {
 
             silentResponse: false,
 
-            // regexpFilterText: '$BRANCH',
-            // regexpFilterExpression: 'refactor-pipeline'
+            regexpFilterText: '$BRANCH_NAME',
+            regexpFilterExpression: 'refactor-pipeline'
         )
     }
 
@@ -30,9 +30,9 @@ pipeline {
 
     stages {
         stage('Build push1st image & push to nexus') {
-            // when {
-            //     expression { BRANCH ==~ /refactor-pipeline/ }
-            // }
+            when {
+                expression { BRANCH ==~ /refs\/heads\/refactor-pipeline/ }
+            }
             steps {
                 // checkout([$class: 'GitSCM', 
                 //           branches: [[name: '$BRANCH']], 
