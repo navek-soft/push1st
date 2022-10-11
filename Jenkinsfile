@@ -30,9 +30,9 @@ pipeline {
 
     stages {
         stage('Build push1st image & push to nexus') {
-            when {
-                expression { BRANCH ==~ /refactor-pipeline/ }
-            }
+            // when {
+            //     expression { BRANCH ==~ /refactor-pipeline/ }
+            // }
             steps {
                 // checkout([$class: 'GitSCM', 
                 //           branches: [[name: '$BRANCH']], 
