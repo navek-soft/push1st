@@ -13,8 +13,8 @@ pipeline {
             token: 'jenkins-build-push1st',
             tokenCredentialId: '',
 
-            printContributedVariables: true,
-            printPostContent: true,
+            printContributedVariables: false,
+            printPostContent: false,
 
             silentResponse: false,
 
