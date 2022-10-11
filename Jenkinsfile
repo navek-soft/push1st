@@ -18,7 +18,7 @@ pipeline {
 
             silentResponse: false,
 
-            regexpFilterText: '$BRANCH_NAME',
+            regexpFilterText: '$BRANCH',
             regexpFilterExpression: 'refactor-pipeline'
         )
     }
