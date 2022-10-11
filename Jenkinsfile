@@ -25,8 +25,6 @@ pipeline {
 
     environment {
         NEXUS = credentials('nexus-credentials')
-        NEXUS_AIVP = 'https://download.aivp.io
-        NEXUS_AIPIX = 'https://download.aipix.ai
         SLACK_TOKEN = credentials('slack-oauth-token')
     }
 
