@@ -1,0 +1,47 @@
+# ssl forward declaration
+ssl:
+    - &default-ssl
+      key: # path to SSL private key file
+      cert: # path to SSL cert file
+
+# channels configuration section
+server:
+    proto: [ pusher, websocket ]       # enabled proto
+    threads: 5                  # number of worker threads
+    max-request-payload: 65400  # global max request payload length less or equal 65400
+    listen: tcp://*:6003   # false, tcp://<host>:<port>
+    ssl: { enable: false, *default-ssl }
+    app-path: app/  # <proto>/<app-path>/<app-key> url
+    pusher:
+        path: /pusher/
+        activity-timeout: 40    # pusher activity timeout (pusher ping\pong) N seconds
+        whitelist: []
+    websocket:
+        path: /ws/
+        activity-timeout: 3600    # ws activity timeout (pusher ping\pong) N seconds
+        push: { public, private, presence } # enable\disable push functionality on channels
+        whitelist: []
+    mqtt:
+        path: /mqtt/
+        activity-timeout: 3600    # ws activity timeout (pusher ping\pong) N seconds
+        push: { public, private, presence } # enable\disable push functionality on channels
+        whitelist: []
+
+#cluster:
+#    listen: disable # udp://<host>:<port>, multicast://<multicast-group-address>:<port>/<bind-iface-ip-address>
+#    ping-interval: 30 # 0 - to disable ping
+#    listen: udp://*:8001 # strongly recommended bind to internal IP or close port with iptables
+#    family: [ node1.push1st.local, node2.push1st.local ]
+#    sync: [ register, unregister, join, leave, push ]
+#    module: lua://modules/cluster.lua # cluster module
+
+api:
+    keep-alive-timeout: 10          # http api keep-alive connection timeout
+    interface: pusher
+    ssl: { enable: false, *default-ssl }
+    path: /apps/
+    whitelist: []
+    listen: [ tcp://*:6002/ ]
+
+credentials:
+    - apps/*.yml
