@@ -30,17 +30,28 @@ pipeline {
 
     stages {
         stage('Build push1st image & push to nexus') {
-            // when {
-            //     expression { BRANCH ==~ /refs\/heads\/main/ }
-            // }
             steps {
-                // checkout([$class: 'GitSCM', 
-                //           branches: [[name: '$BRANCH']], 
-                //           extensions: [], 
-                //           userRemoteConfigs: [[credentialsId: 'navek_jenkins-credentials', url: 'https://navek_jenkins@bitbucket.org/naveksoft/aipix-media-server.git']]
-                //         ])
                 sh """
-                    ls -al                  
+                    git clone https://github.com/navek-soft/push1st.git
+                    export VERSION=${PRODUCT_MAJOR_VERSION}.${PRODUCT_MINOR_VERSION}
+                    docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
+                                 --build-arg VERSION=${VERSION} \
+                                 --build-arg BRAND=aivp \
+                                 -t download.aivp.io:8443/push1st/release:latest \
+                                 -t download.aivp.io:8443/push1st/release:${VERSION} \
+                                 -f ./docker/Dockerfile .
+                    docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
+                                 --build-arg VERSION=${VERSION} \
+                                 --build-arg BRAND=aipix \
+                                 -t download.aipix.ai:8443/push1st/release:latest \
+                                 -t download.aipix.ai:8443/push1st/release:${VERSION} \
+                                 -f ./docker/Dockerfile .
+                    echo ${NEXUS_PSW} | docker login -u ${NEXUS_USR} --password-stdin https://download.aivp.io:8443
+                    docker push download.aivp.io:8443/push1st/release:latest       
+                    docker push download.aivp.io:8443/push1st/release:${GITHUB_RUN_NUMBER}       
+                    echo ${NEXUS_PSW} | docker login -u ${NEXUS_USR} --password-stdin https://download.aipix.ai:8443
+                    docker push download.aipix.ai:8443/push1st/release:latest       
+                    docker push download.aipix.ai:8443/push1st/release:${GITHUB_RUN_NUMBER}       
                 """
             }
         }        
