@@ -31,7 +31,7 @@ pipeline {
     stages {
         stage('Build push1st image & push to nexus') {
             when {
-                expression { BRANCH ==~ /refs\/heads\/refactor-pipeline/ }
+                expression { BRANCH ==~ /refs\/heads\/main/ }
             }
             steps {
                 // checkout([$class: 'GitSCM', 
