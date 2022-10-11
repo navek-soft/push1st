@@ -18,8 +18,8 @@ pipeline {
 
             silentResponse: false,
 
-            regexpFilterText: '$BRANCH',
-            regexpFilterExpression: 'main'
+            regexpFilterText: '$BRANCH_NAME',
+            regexpFilterExpression: 'refactor-pipeline'
         )
     }
 
