@@ -33,7 +33,7 @@ pipeline {
             steps {
                 sh """
                     git clone https://github.com/navek-soft/push1st.git
-                    export VERSION=\${AIPIX_MAJOR_VERSION}.\${AIPIX_MINOR_VERSION}
+                    VERSION=${AIPIX_MAJOR_VERSION}.${AIPIX_MINOR_VERSION}
                     docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                  --build-arg VERSION=${VERSION} \
                                  --build-arg BRAND=aivp \
