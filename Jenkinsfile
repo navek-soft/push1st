@@ -1,3 +1,6 @@
+// Api call to trigger BB-pipeline
+// curl -X POST -is -u navek_jenkins:d8HD3xMVeRffqUR2UNn4 -H 'Content-Type: application/json' https://api.bitbucket.org/2.0/repositories/naveksoft/jenkins-push1st/pipelines/ -d '{"target": {"ref_type": "branch", "type": "pipeline_ref_target", "ref_name": "master", "selector": {"type": "custom", "pattern": "Push1st build image && push"}}}'
+
 pipeline {
     agent { label 'runner1' }   
 
@@ -19,7 +22,7 @@ pipeline {
             silentResponse: false,
 
             regexpFilterText: '$BRANCH_NAME',
-            regexpFilterExpression: 'refactor-pipeline'
+            regexpFilterExpression: 'main'
         )
     }
 

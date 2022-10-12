@@ -1,8 +1,8 @@
-# image: ubuntu:20.04
+image: ubuntu:20.04
 
-# options:
-#   docker: true
-#   size: 2x
+options:
+  docker: true
+  size: 2x
 
 pipelines:  
   custom:    
@@ -35,7 +35,7 @@ pipelines:
             - docker push download.aipix.ai:8443/push1st/release:${VERSION}
             - echo 'Successfully encode, build docker image and push to nexus'    
     
-# definitions:
-#   services:
-#     docker:
-#       memory: 4096
+definitions:
+  services:
+    docker:
+      memory: 4096
