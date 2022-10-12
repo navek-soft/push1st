@@ -106,8 +106,8 @@ function err_handler {
 cp -s -f $INST_DIR/$SOFT_PROGRAM.logrotate /etc/logrotate.d/$SOFT_PROGRAM
 cp -s -f $INST_DIR/$SOFT_PROGRAM.service /etc/systemd/system/$SOFT_PROGRAM.service
 cp -n $INST_DIR/server.example.yml $INST_DIR/server.yml
-chmod 0444 /etc/logrotate.d/$SOFT_PROGRAM
-chmod 0444 /etc/systemd/system/$SOFT_PROGRAM.service
+chmod 0644 /etc/logrotate.d/$SOFT_PROGRAM
+chmod 0644 /etc/systemd/system/$SOFT_PROGRAM.service
 
 systemctl enable /etc/systemd/system/$SOFT_PROGRAM.service
 systemctl daemon-reload
