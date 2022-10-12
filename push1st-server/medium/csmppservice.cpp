@@ -316,7 +316,7 @@ namespace smpp {
 
 	class cbind {
 	public:
-		cbind(uint32_t seq, bind_t id = bind_t::receiver, uint32_t status = 0) : command{ (uint32_t)id,status,seq } { ; }
+		cbind(uint32_t seq, bind_t id = bind_t::transceiver, uint32_t status = 0) : command{ (uint32_t)id,status,seq } { ; }
 		param::cmd_t command;
 		param::string_t login, password, system{};
 		param::interface_t version{ 0x34 };
