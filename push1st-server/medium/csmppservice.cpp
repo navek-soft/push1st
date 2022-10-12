@@ -594,15 +594,13 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 
 bool csmppservice::cgateway::IsLeaveUs(std::time_t now) {
 	if (gwPingTime and gwPingTime <= now) {
-		if (std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock, std::defer_lock); lock.try_lock()) {
-			if (gwSocket and gwSocket.GetErrorNo() == 0) {
-				gwPingTime = std::time(nullptr) + gwPingInterval;
-				smpp::cenquire enq{ Seq(), smpp::cenquire::req_id };
-				syslog.print(7, "Ping: %ld ( %ld sec ) ... %s\n", gwPingTime, gwPingInterval, Send(enq.pack()) == 0 ? "success" : "fail");
-			}
+		if (gwSocket and gwSocket.GetErrorNo() == 0) {
+			gwPingTime = std::time(nullptr) + gwPingInterval;
+			smpp::cenquire enq{ Seq(), smpp::cenquire::req_id };
+			syslog.print(7, "Ping: %ld ( %ld sec ) ... %s\n", gwPingTime, gwPingInterval, Send(enq.pack()) == 0 ? "success" : "fail");
 		}
 	}
-	return true;
+	return false;
 }
 
 inline bool csmppservice::cgateway::Connect() {

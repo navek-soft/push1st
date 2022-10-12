@@ -45,7 +45,7 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 		std::string gwConId;
 		std::shared_ptr<inet::cpoll> gwPoll;
 		std::shared_ptr<cwebhook> gwHook;
-		std::time_t gwPingTime{ 0 }, gwPingInterval{ 30 };
+		std::time_t gwPingTime{ 0 }, gwPingInterval{ 20 };
 	};
 public:
 	csmppservice(const std::string& webhook = {});
