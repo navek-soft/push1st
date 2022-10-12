@@ -1,0 +1,41 @@
+# image: ubuntu:20.04
+
+# options:
+#   docker: true
+#   size: 2x
+
+pipelines:
+  custom:    
+    Push1st build image && push:
+      - step:
+          name: Encode project
+          runs-on: runner2
+          script:
+            - export VERSION=${PRODUCT_MAJOR_VERSION}.${PRODUCT_MINOR_VERSION}
+            - git clone https://github.com/navek-soft/push1st.git
+            - |
+              docker build --build-arg BUILD_NUMBER=${BITBUCKET_BUILD_NUMBER} \
+                           --build-arg VERSION=${VERSION} \
+                           --build-arg BRAND=aivp \
+                           -t download.aivp.io:8443/push1st/release:latest \
+                           -t download.aivp.io:8443/push1st/release:${VERSION} \
+                           -f ./docker/Dockerfile .
+            - |
+              docker build --build-arg BUILD_NUMBER=${BITBUCKET_BUILD_NUMBER} \
+                           --build-arg VERSION=${VERSION} \
+                           --build-arg BRAND=aipix \
+                           -t download.aipix.ai:8443/push1st/release:latest \
+                           -t download.aipix.ai:8443/push1st/release:${VERSION} \
+                           -f ./docker/Dockerfile .
+            - echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_LOGIN} --password-stdin https://download.aivp.io:8443
+            - docker push download.aivp.io:8443/push1st/release:latest       
+            - docker push download.aivp.io:8443/push1st/release:${VERSION}       
+            - echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_LOGIN} --password-stdin https://download.aipix.ai:8443
+            - docker push download.aipix.ai:8443/push1st/release:latest       
+            - docker push download.aipix.ai:8443/push1st/release:${VERSION}
+            - echo 'Successfully encode, build docker image and push to nexus'    
+    
+# definitions:
+#   services:
+#     docker:
+#       memory: 4096

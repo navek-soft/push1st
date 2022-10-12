@@ -11,9 +11,9 @@ RUN mv ./push1st-server/build/push1st-${VERSION}-src ./push1st-server/build/push
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive \
     BRAND
-WORKDIR /opt/${BRAND}/push1st
+WORKDIR /opt/push1st
 COPY --from=builder /opt/push1st-server/build/push1st ./
 COPY app.example.yml ./apps/
 COPY server.example.yml .
 COPY server.example.yml ./server.yml
-CMD [ "/opt/${BRAND}/push1st/push1st", "-c", "/opt/${BRAND}/push1st/server.yml", "-V7", "-l", "/var/log" ]
+CMD [ "/opt/push1st/push1st", "-c", "/opt/push1st/server.yml", "-V7", "-l", "/var/log" ]
