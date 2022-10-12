@@ -11,6 +11,7 @@ pipelines:
           script:
             - export VERSION=${PRODUCT_MAJOR_VERSION}.${PRODUCT_MINOR_VERSION}
             - git clone https://github.com/navek-soft/push1st.git
+            - git branch
             - |
               docker build --build-arg BUILD_NUMBER=${BITBUCKET_BUILD_NUMBER} \
                            --build-arg VERSION=${VERSION} \
