@@ -13,7 +13,7 @@ ARG DEBIAN_FRONTEND=noninteractive \
     BRAND
 WORKDIR /opt/push1st
 COPY --from=builder /opt/push1st-server/build/push1st ./
-RUN apt update && apt install -y libssl1.1, lua5.3, liblua5.3-0
+RUN apt update && apt install -y libssl1.1 lua5.3 liblua5.3-0
 COPY app.example.yml ./apps/
 COPY server.example.yml .
 COPY server.example.yml ./server.yml
