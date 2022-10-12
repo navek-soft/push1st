@@ -1,5 +1,3 @@
-image: ubuntu:20.04
-
 options:
   docker: true
   size: 2x
@@ -8,7 +6,7 @@ pipelines:
   custom:    
     Push1st build image && push:
       - step:
-          name: Encode project
+          name: build image && push
           runs-on: runner2
           script:
             - export VERSION=${PRODUCT_MAJOR_VERSION}.${PRODUCT_MINOR_VERSION}
