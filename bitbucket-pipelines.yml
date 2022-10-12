@@ -4,11 +4,9 @@
 #   docker: true
 #   size: 2x
 
-pipelines:
-  branches:
-    master:
-  # custom:    
-  #   Push1st build image && push:
+pipelines:  
+  custom:    
+    Push1st build image && push:
       - step:
           name: Encode project
           runs-on: runner2
