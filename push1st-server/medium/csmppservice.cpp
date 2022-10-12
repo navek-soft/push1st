@@ -336,6 +336,24 @@ namespace smpp {
 	class cunbind {
 	};
 
+	class cdelivery_resp {
+	public:
+		static inline const uint32_t id{ 0x80000005 };
+		cdelivery_resp(uint32_t seq, const std::string msg, uint32_t status = 0) : command{ (uint32_t)id,status,seq }, msg_id{ msg } { ; }
+
+		std::string pack() {
+			cpacker packer{ 512 };
+			command.pack(packer); msg_id.pack(packer);
+			auto&& msg{ packer.str() };
+			((param::cmd_t*)msg.data())->length((uint32_t)msg.length());
+			return msg;
+		}
+
+	private:
+		param::cmd_t command;
+		param::string_t msg_id;
+	};
+
 	class cdelivery {
 	public:
 		static inline const uint32_t id{ 5 };
@@ -531,6 +549,9 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 			else {
 				status = json::object_t{ {"id", cmd.sequence},{"status", "not_delivered"},{"channel", Channel()} };
 			}
+
+			smpp::cdelivery_resp resp{ cmd.sequence,{} };
+			Send(resp.pack());
 		}
 		else if(smpp::csms::resp_id == cmd.id)  {
 			auto&& [msg] = smpp::cresponse<smpp::param::string_t>{}(response);
