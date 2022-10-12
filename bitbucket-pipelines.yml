@@ -5,8 +5,10 @@
 #   size: 2x
 
 pipelines:
-  custom:    
-    Push1st build image && push:
+  branches:
+    master:
+  # custom:    
+  #   Push1st build image && push:
       - step:
           name: Encode project
           runs-on: runner2
