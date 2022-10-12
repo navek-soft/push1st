@@ -316,7 +316,7 @@ namespace smpp {
 
 	class cbind {
 	public:
-		cbind(uint32_t seq, bind_t id = bind_t::receiver, uint32_t status = 0) : command{ (uint32_t)id,status,seq } { ; }
+		cbind(uint32_t seq, bind_t id = bind_t::transceiver, uint32_t status = 0) : command{ (uint32_t)id,status,seq } { ; }
 		param::cmd_t command;
 		param::string_t login, password, system{};
 		param::interface_t version{ 0x34 };
@@ -415,6 +415,9 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 				else {
 					con = gwConnections.emplace(conId, std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
 						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{})).first->second;
+
+					gwPoll->EnqueueGc(con);
+
 					syslog.print(7, "New connection: %s ( channel: %s ), %lx\n", conId.c_str(), con->Channel().c_str(),this);
 				}
 			}
@@ -544,7 +547,11 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 		else if (smpp::cenquire::req_id == cmd.id) {
 			smpp::cenquire resp{ cmd.sequence };
 			auto res = Send(resp.pack());
-			syslog.print(7, "Enquire Link: status: %ld, id: %ld, seq: %ld, channel: %s ( %s )\n", cmd.status, cmd.id, cmd.sequence, Channel().c_str(), std::strerror(-(int)res));
+			syslog.print(7, "Enquire Link ( ping ): status: %ld, id: %ld, seq: %ld, channel: %s ( %s )\n", cmd.status, cmd.id, cmd.sequence, Channel().c_str(), std::strerror(-(int)res));
+			return;
+		}
+		else if (smpp::cenquire::resp_id == cmd.id) {
+			syslog.print(7, "Enquire Link ( pong ): status: %ld, id: %ld, seq: %ld, channel: %s ( %s )\n", cmd.status, cmd.id, cmd.sequence, Channel().c_str(), std::strerror(0));
 			return;
 		}
 		else {
@@ -558,7 +565,7 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 	}
 
 	if (gwHook) {
-		gwHook->Send("POST", std::move(status), {
+		gwHook->Push(status["status"].get<std::string>(), status["channel"].get<std::string>(), "POST", std::move(status), {
 			{"Content-Type","application/json"},
 			{"Connection", "close" } });
 	}
@@ -585,11 +592,23 @@ void csmppservice::cgateway::OnGwReply(fd_t fd, uint events) {
 	}
 }
 
+bool csmppservice::cgateway::IsLeaveUs(std::time_t now) {
+	if (gwPingTime and gwPingTime <= now) {
+		if (gwSocket and gwSocket.GetErrorNo() == 0) {
+			gwPingTime = std::time(nullptr) + gwPingInterval;
+			smpp::cenquire enq{ Seq(), smpp::cenquire::req_id };
+			syslog.print(7, "Ping: %ld ( %ld sec ) ... %s\n", gwPingTime, gwPingInterval, Send(enq.pack()) == 0 ? "success" : "fail");
+		}
+	}
+	return false;
+}
+
 inline bool csmppservice::cgateway::Connect() {
 	std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
 	if (gwSocket and gwSocket.GetErrorNo() == 0) {
 		return true;
 	}
+	gwPingTime = 0;
 	gwSocket.SocketClose();
 	for (auto&& sa : gwHosts) {
 		ssize_t res{ 0 };
@@ -599,7 +618,7 @@ inline bool csmppservice::cgateway::Connect() {
 
 			gwSocket.SetKeepAlive(true, 3, 10, 3);
 			gwSocket.SetRecvTimeout(3000);
-			gwSocket.SetSendTimeout(250);
+			gwSocket.SetSendTimeout(1000);
 
 			/* Auth on the gateway */
 
@@ -614,7 +633,13 @@ inline bool csmppservice::cgateway::Connect() {
 				if (cmd.status == 0) {
 					gwSocket.Poll()->PollAdd(gwSocket.Fd(), EPOLLIN, std::bind(&csmppservice::cgateway::OnGwReply, this, std::placeholders::_1, std::placeholders::_2));
 					syslog.print(7, "Connect to %x  ... success\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
-					return true;
+					/*
+					* Send Enquire link
+					*/
+					gwPingTime = std::time(nullptr) + gwPingInterval;
+					smpp::cenquire enq{ Seq(), smpp::cenquire::req_id};
+
+					return Send(enq.pack()) == 0;
 				}
 				else {
 					syslog.print(7, "Connect to %x Reply bind   ... error ( response status error )\n", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
