@@ -48,6 +48,7 @@ namespace inet {
 
 	template<typename OBJ>
 	inline void cpoll::EnqueueGc(const std::shared_ptr<OBJ>& obj) {
+		std::unique_lock<decltype(fdLock)> lock(fdLock);
 		fdQueueGC.emplace_back(std::dynamic_pointer_cast<cgc>(obj));
 	}
 

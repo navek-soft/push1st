@@ -14,7 +14,7 @@
 */
 
 class csmppservice : public std::enable_shared_from_this<csmppservice> {
-	class cgateway : public std::enable_shared_from_this<cgateway> {
+	class cgateway : public inet::cpoll::cgc, public std::enable_shared_from_this<cgateway> {
 	public:
 		cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::shared_ptr<cwebhook>& hook, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
 		~cgateway();
@@ -28,6 +28,9 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 		inline uint32_t MsgId() { return seqNo; }
 		inline const std::string& Channel() { return gwConId; }
 		inline int Fd() const { return gwSocket.Fd(); }
+
+		virtual bool IsLeaveUs(std::time_t now);
+
 	private:
 		void OnGwReply(fd_t, uint);
 		inline void OnDeliveryStatus(const std::string& response);
@@ -42,6 +45,7 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 		std::string gwConId;
 		std::shared_ptr<inet::cpoll> gwPoll;
 		std::shared_ptr<cwebhook> gwHook;
+		std::time_t gwPingTime{ 0 }, gwPingInterval{ 30 };
 	};
 public:
 	csmppservice(const std::string& webhook = {});

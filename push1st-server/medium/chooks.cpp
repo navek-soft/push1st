@@ -44,6 +44,19 @@ inline void cwebhook::ReadResponse() {
 	}
 }
 
+void cwebhook::Push(const std::string& trigger, const std::string& channel, std::string method, json::value_t&& data, std::unordered_map<std::string_view, std::string> headers) {
+	headers.emplace("Accept", "application/json");
+	headers.emplace("Content-Type", "application/json");
+	headers.emplace("Connection", "close");
+	headers.emplace("Host", std::string{ webEndpoint.host() });
+
+	syslog.print(7, "[ WEBHOOK:%s ] %s:%s\n", std::string{ webEndpoint.hostport() }.c_str(), channel.c_str(), trigger.c_str());
+
+	HookProcessing.enqueue([this, method, request = json::serialize(std::move(data)), headers]() {
+		Write(method, webEndpoint.url(), std::move(std::unordered_map<std::string_view, std::string>{headers}), std::string{ request });
+	});
+}
+
 void cwebhook::Send(const std::string_view& method, json::value_t&& data, std::unordered_map<std::string_view, std::string>&& headers) {
 	ssize_t res{ -ECONNRESET };
 	headers["Host"] = std::string{ webEndpoint.host() };
@@ -93,11 +106,11 @@ inline bool cwebhook::Connect() {
 
 	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, webEndpoint.hostport(), fdSsl ? "443" : "80", AF_INET)) == 0 ) {
 		if (!fdSslCtx) {
-			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 3000)) == 0) {
-				inet::SetRecvTimeout(fdEndpoint, 1000);
+			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 1000)) == 0) {
+				//inet::SetRecvTimeout(fdEndpoint, 1000);
 				//inet::SetTcpCork(fdEndpoint, false);
 				//inet::SetTcpNoDelay(fdEndpoint, true);
-				::shutdown(fdEndpoint, SHUT_RD);
+				//::shutdown(fdEndpoint, SHUT_RD);
 				return true;
 			}
 		}
