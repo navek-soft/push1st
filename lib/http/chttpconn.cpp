@@ -6,7 +6,7 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
 {
 	request.resize(max_size);
 	ssize_t res{ -1 };
-	if (size_t nread, contentLength{ 0 }; (res = fd.SocketRecv(request.data(), request.size(), nread, MSG_WAITFORONE)) == 0) {
+	if (size_t nread, contentLength{ 0 }; (res = fd.SocketRecv(request.data(), request.size(), nread, MSG_DONTWAIT)) == 0) {
 		std::string_view data;
 
 		request.resize(nread);
