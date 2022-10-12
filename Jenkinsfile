@@ -25,7 +25,7 @@ pipeline {
 
     environment {
         NEXUS = credentials('nexus-credentials')
-        VERSION = ${AIPIX_MAJOR_VERSION}.${AIPIX_MINOR_VERSION}
+        VERSION = "${AIPIX_MAJOR_VERSION}.${AIPIX_MINOR_VERSION}"
         SLACK_TOKEN = credentials('slack-oauth-token')
     }
 
