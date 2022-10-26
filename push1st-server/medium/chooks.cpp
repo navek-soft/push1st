@@ -83,12 +83,12 @@ inline void cwebhook::Write(const std::string_view& method, const std::string_vi
 	std::unique_lock<decltype(fdLock)> lock(fdLock);
 	if (Connect()) {
 		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
-			if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); }
+			if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
 			return;
 		}
-		if (inet::Close(fdEndpoint); Connect()) {
+		if (Connect()) {
 			if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
-				if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); }
+				if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
 				return;
 			}
 		}
@@ -97,11 +97,13 @@ inline void cwebhook::Write(const std::string_view& method, const std::string_vi
 }
 
 inline bool cwebhook::Connect() {
+	
 	if (fdEndpoint > 0 and inet::GetErrorNo(fdEndpoint) == 0) {
 		return true;
 	}
-	if (fdEndpoint > 0) { fdSsl.reset(); inet::Close(fdEndpoint); }
 
+	fdSsl.reset(); inet::Close(fdEndpoint); fdEndpoint = -1;
+	
 	ssize_t res{ -1 };
 
 	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, webEndpoint.hostport(), fdSsl ? "443" : "80", AF_INET)) == 0 ) {
@@ -117,6 +119,7 @@ inline bool cwebhook::Connect() {
 		else if ((res = inet::SslConnect(fdEndpoint, sa, false, 3000,fdSslCtx,fdSsl)) == 0) {
 			return true;
 		}
+		fdEndpoint = -1;
 	}
 	
 	syslog.error("[ HOOK ] Connect %s error ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));

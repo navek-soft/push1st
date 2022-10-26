@@ -55,6 +55,9 @@ size_t cchannel::Gc() {
 				chChannels->UnRegister(chUid);
 			}
 		}
+		else {
+			return 1;
+		}
 	}
 	while (!alive.empty()) {
 		if (auto&& sess{ alive.front().lock() }; sess) {
@@ -142,8 +145,13 @@ size_t cchannel::Push(message_t&& message) {
 		}
 	}
 
+	size_t notPushed{ 0 };
+
+//	auto msgPacked{ message->dump() };
+
 	for (auto&& subs : to) {
 		if (subs->Push(message) != 0) {
+			++notPushed;
 			UnSubscribe(subs->Id());
 		}
 	}
