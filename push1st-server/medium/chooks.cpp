@@ -64,13 +64,13 @@ void cwebhook::Send(const std::string_view& method, json::value_t&& data, std::u
 	if (Connect()) {
 		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, webEndpoint.url(), std::move(headers), json::serialize(std::move(data))); res == 0) {
 			ReadResponse();
-			if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); }
+			if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
 			return;
 		}
 		if (inet::Close(fdEndpoint); Connect()) {
 			if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, webEndpoint.url(), std::move(headers), json::serialize(std::move(data))); res == 0) {
 				ReadResponse();
-				if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); }
+				if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset();  fdEndpoint = -1; }
 				return;
 			}
 		}
@@ -108,7 +108,7 @@ inline bool cwebhook::Connect() {
 
 	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, webEndpoint.hostport(), fdSsl ? "443" : "80", AF_INET)) == 0 ) {
 		if (!fdSslCtx) {
-			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 1000)) == 0) {
+			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 3000)) == 0) {
 				//inet::SetRecvTimeout(fdEndpoint, 1000);
 				//inet::SetTcpCork(fdEndpoint, false);
 				//inet::SetTcpNoDelay(fdEndpoint, true);
