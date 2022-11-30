@@ -190,6 +190,7 @@ void cconfig::credential_t::load(const std::filesystem::path& path) {
 
 			if (cred.second["hook"].IsDefined()) {
 				OptionKeepAlive = Value<bool>(cred.second["hook"]["keep-alive"], OptionKeepAlive);
+				OptionKeepAlive = false;
 				if (cred.second["hook"]["trigger"].IsSequence()) {
 					Hooks = Map(cred.second["hook"]["trigger"], {
 						{"register", hook_t::type::reg},{"unregister",hook_t::type::unreg},{"join",hook_t::type::join},{"leave",hook_t::type::leave},{"push",hook_t::type::push} },

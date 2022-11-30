@@ -19,8 +19,7 @@ void cwebhook::Trigger(hook_t::type trigger, std::string app, std::string channe
 			{"Accept","application/json"},
 			{"Content-Type","application/json"},
 			{"Connection", !fdKeepAlive ? "close" : "keep-alive"},
-			{"Host", std::string{ webEndpoint.host()} },
-			{"Keep-Alive","30"} }, std::string{ request });
+			{"Host", std::string{ webEndpoint.host()} } });
 	});
 }
 
@@ -82,16 +81,16 @@ inline void cwebhook::Write(const std::string_view& method, const std::string_vi
 	ssize_t res{ -ECONNRESET };
 	std::unique_lock<decltype(fdLock)> lock(fdLock);
 	if (Connect()) {
-		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
-			if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
-			return;
+		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res != 0) {
+			syslog.error("[ HOOK ] Send event %s error ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 		}
-		if (Connect()) {
-			if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
-				if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
-				return;
-			}
+		else {
+			ReadResponse();
 		}
+
+		inet::Close(fdEndpoint); 
+		fdSsl.reset(); 
+		fdEndpoint = -1;
 	}
 	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 }
@@ -108,7 +107,7 @@ inline bool cwebhook::Connect() {
 
 	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, webEndpoint.hostport(), fdSsl ? "443" : "80", AF_INET)) == 0 ) {
 		if (!fdSslCtx) {
-			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 3000)) == 0) {
+			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 1500)) == 0) {
 				//inet::SetRecvTimeout(fdEndpoint, 1000);
 				//inet::SetTcpCork(fdEndpoint, false);
 				//inet::SetTcpNoDelay(fdEndpoint, true);
@@ -116,7 +115,7 @@ inline bool cwebhook::Connect() {
 				return true;
 			}
 		}
-		else if ((res = inet::SslConnect(fdEndpoint, sa, false, 3000,fdSslCtx,fdSsl)) == 0) {
+		else if ((res = inet::SslConnect(fdEndpoint, sa, false, 1500,fdSslCtx,fdSsl)) == 0) {
 			return true;
 		}
 		fdEndpoint = -1;

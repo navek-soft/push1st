@@ -179,7 +179,7 @@ ssize_t http::ParseRequest(std::string_view request, std::string_view& method, u
 	if (auto proto = parserNext(request, '\n'); proto.compare(0, 5, "HTTP/") == 0 or proto.compare(0, 7, "RTSP/1.") == 0) {
 
 		while (!request.empty()) {
-			if (auto hk{ parserNext(request, ':') }; !hk.empty()) {
+			if (auto hk{ parserNext(request, ':') }; !hk.empty() and !request.empty()) {
 				request.remove_prefix(1);
 				headers.emplace(toLower(hk), parserNext(request, '\n'));
 				if (eod != std::string_view{ request.data() - 4, 4 }) {
@@ -308,12 +308,14 @@ static inline size_t parseNumber(std::string_view value) {
 
 static inline std::string_view parserNext(std::string_view& data, char symbol) {
 	std::string_view from{ data };
-	while (!data.empty() && data.front() != symbol) { data.remove_prefix(1); }
-	from = { from.begin(),(size_t)(data.begin() - from.begin()) };
-	while (!from.empty() && std::isspace(from.front())) { from.remove_prefix(1); }
-	while (!from.empty() && std::isspace(from.back())) { from.remove_suffix(1); }
-	while (!data.empty() && std::isspace(data.front())) { data.remove_prefix(1); }
-	return from;
+	if (!data.empty()) {
+		while (!data.empty() && data.front() != symbol) { data.remove_prefix(1); }
+		from = { from.begin(),(size_t)(data.begin() - from.begin()) };
+		while (!from.empty() && std::isspace(from.front())) { from.remove_prefix(1); }
+		while (!from.empty() && std::isspace(from.back())) { from.remove_suffix(1); }
+		while (!data.empty() && std::isspace(data.front())) { data.remove_prefix(1); }
+		return from;
+	}
 }
 
 static inline char splitBy(std::string_view& data, std::string_view& result, const char* symbol) {
