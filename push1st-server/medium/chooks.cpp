@@ -63,16 +63,15 @@ void cwebhook::Send(const std::string_view& method, json::value_t&& data, std::u
 	if (Connect()) {
 		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, webEndpoint.url(), std::move(headers), json::serialize(std::move(data))); res == 0) {
 			ReadResponse();
-			if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
-			return;
 		}
-		if (inet::Close(fdEndpoint); Connect()) {
-			if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, webEndpoint.url(), std::move(headers), json::serialize(std::move(data))); res == 0) {
-				ReadResponse();
-				if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset();  fdEndpoint = -1; }
-				return;
-			}
+		else {
+			syslog.error("[ HOOK ] Send event %s error ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 		}
+
+		inet::Close(fdEndpoint);
+		fdSsl.reset();
+		fdEndpoint = -1;
+		return;
 	}
 	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 }
@@ -81,25 +80,27 @@ inline void cwebhook::Write(const std::string_view& method, const std::string_vi
 	ssize_t res{ -ECONNRESET };
 	std::unique_lock<decltype(fdLock)> lock(fdLock);
 	if (Connect()) {
-		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res != 0) {
-			syslog.error("[ HOOK ] Send event %s error ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
+		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
+			ReadResponse();
 		}
 		else {
-			ReadResponse();
+			syslog.error("[ HOOK ] Send event %s error ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 		}
 
 		inet::Close(fdEndpoint); 
 		fdSsl.reset(); 
 		fdEndpoint = -1;
+		return;
 	}
 	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 }
 
 inline bool cwebhook::Connect() {
-	
+	/*
 	if (fdEndpoint > 0 and inet::GetErrorNo(fdEndpoint) == 0) {
 		return true;
 	}
+	*/
 
 	fdSsl.reset(); inet::Close(fdEndpoint); fdEndpoint = -1;
 	
