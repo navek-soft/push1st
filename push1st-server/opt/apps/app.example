@@ -1,5 +1,5 @@
 app-test:
-  enbale: true  
+  enable: true  
   name: "Default Application for tests"
   key: "app-key"
   secret: "secret"

@@ -1,5 +1,5 @@
 smpp-test:
-  enbale: true  
+  enable: true  
   name: "Default Application for tests"
   channels: [ smpp ]
   credentials:
