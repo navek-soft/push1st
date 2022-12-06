@@ -19,8 +19,7 @@ void cwebhook::Trigger(hook_t::type trigger, std::string app, std::string channe
 			{"Accept","application/json"},
 			{"Content-Type","application/json"},
 			{"Connection", !fdKeepAlive ? "close" : "keep-alive"},
-			{"Host", std::string{ webEndpoint.host()} },
-			{"Keep-Alive","30"} }, std::string{ request });
+			{"Host", std::string{ webEndpoint.host()} } });
 	});
 }
 
@@ -64,16 +63,15 @@ void cwebhook::Send(const std::string_view& method, json::value_t&& data, std::u
 	if (Connect()) {
 		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, webEndpoint.url(), std::move(headers), json::serialize(std::move(data))); res == 0) {
 			ReadResponse();
-			if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
-			return;
 		}
-		if (inet::Close(fdEndpoint); Connect()) {
-			if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, webEndpoint.url(), std::move(headers), json::serialize(std::move(data))); res == 0) {
-				ReadResponse();
-				if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset();  fdEndpoint = -1; }
-				return;
-			}
+		else {
+			syslog.error("[ HOOK ] Send event %s error ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 		}
+
+		inet::Close(fdEndpoint);
+		fdSsl.reset();
+		fdEndpoint = -1;
+		return;
 	}
 	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 }
@@ -83,24 +81,26 @@ inline void cwebhook::Write(const std::string_view& method, const std::string_vi
 	std::unique_lock<decltype(fdLock)> lock(fdLock);
 	if (Connect()) {
 		if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
-			if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
-			return;
+			ReadResponse();
 		}
-		if (Connect()) {
-			if (res = HttpWriteRequest({ fdEndpoint, fdSsl }, method, uri, std::move(headers), request); res == 0) {
-				if (!fdKeepAlive) { inet::Close(fdEndpoint); fdSsl.reset(); fdEndpoint = -1; }
-				return;
-			}
+		else {
+			syslog.error("[ HOOK ] Send event %s error ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 		}
+
+		inet::Close(fdEndpoint); 
+		fdSsl.reset(); 
+		fdEndpoint = -1;
+		return;
 	}
 	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 }
 
 inline bool cwebhook::Connect() {
-	
+	/*
 	if (fdEndpoint > 0 and inet::GetErrorNo(fdEndpoint) == 0) {
 		return true;
 	}
+	*/
 
 	fdSsl.reset(); inet::Close(fdEndpoint); fdEndpoint = -1;
 	
@@ -108,7 +108,7 @@ inline bool cwebhook::Connect() {
 
 	if (sockaddr_storage sa; (res = inet::GetSockAddr(sa, webEndpoint.hostport(), fdSsl ? "443" : "80", AF_INET)) == 0 ) {
 		if (!fdSslCtx) {
-			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 3000)) == 0) {
+			if ((res = inet::TcpConnect(fdEndpoint, sa, false, 1500)) == 0) {
 				//inet::SetRecvTimeout(fdEndpoint, 1000);
 				//inet::SetTcpCork(fdEndpoint, false);
 				//inet::SetTcpNoDelay(fdEndpoint, true);
@@ -116,7 +116,7 @@ inline bool cwebhook::Connect() {
 				return true;
 			}
 		}
-		else if ((res = inet::SslConnect(fdEndpoint, sa, false, 3000,fdSslCtx,fdSsl)) == 0) {
+		else if ((res = inet::SslConnect(fdEndpoint, sa, false, 1500,fdSslCtx,fdSsl)) == 0) {
 			return true;
 		}
 		fdEndpoint = -1;

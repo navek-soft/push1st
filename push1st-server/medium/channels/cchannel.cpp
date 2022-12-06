@@ -18,7 +18,12 @@ json::value_t cchannel::ApiOverview() {
 	{
 		std::shared_lock<decltype(chSubscribersLock)> lock;
 		for (auto&& [sid, ses] : chSubscribers) {
-			sess.emplace_back(sid);
+			if (auto obj{ ses.lock() }; obj) {
+				sess.emplace_back(json::object_t{ {"id",sid},{"ip",obj->Ip()}});
+			}
+			else {
+				sess.emplace_back(json::object_t{ {"id",sid},{"ip",nullptr} });
+			}
 		}
 	}
 	return json::object_t{

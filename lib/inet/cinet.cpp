@@ -22,6 +22,8 @@ namespace inet::ssl {
 
 int inet::Close(int& sock) {
 	if (fd_t fd{ sock }, sock = -1; fd > 0) { 
+		struct linger linger { .l_onoff = 1, .l_linger = 0 };
+		setsockopt(fd, SOL_SOCKET, SO_LINGER, (const void*)&linger, sizeof(struct linger));
 		::close(fd); sock = -1; 
 		return fd; 
 	}
@@ -163,7 +165,10 @@ ssize_t inet::TcpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, st
 	ssize_t res{ 0 };
 	fd = -1;
 	if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_STREAM | (nonblock ? SOCK_NONBLOCK : 0), 0); fd > 0) {
-		if (conntimeout) { inet::SetSendTimeout(fd, conntimeout); }
+		if (conntimeout) { 
+			int tcpOpt{ (int)conntimeout };
+			setsockopt((int)fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &tcpOpt, sizeof(tcpOpt));
+		}
 		if (::connect((int)fd, (sockaddr*)&sa, sizeof(sockaddr_storage)) == 0) {
 			return 0;
 		}
@@ -199,7 +204,10 @@ ssize_t inet::SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, st
 	}
 
 	if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_STREAM | (nonblock ? SOCK_NONBLOCK : 0), 0); fd > 0) {
-		if (conntimeout) { inet::SetSendTimeout(fd, conntimeout); }
+		if (conntimeout) {
+			int tcpOpt{ (int)conntimeout };
+			setsockopt((int)fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &tcpOpt, sizeof(tcpOpt));
+		}
 		
 		SSL_set_fd(ssl.get(), (int)fd);
 
