@@ -64,7 +64,9 @@ ssize_t cwsconnection::WsReadMessage(size_t maxMessageLength) {
 			OnWsMessage((websocket_t::opcode_t)packet.opcode, std::move(message), nlength); return 0;
 		}
 		else if (opcode == websocket_t::opcode_t::ping) {
-			OnWsPing();  return 0;
+			OnWsPing();  
+			WsSendMessage(websocket_t::opcode_t::pong, {});
+			return 0;
 		}
 		else if (opcode == websocket_t::opcode_t::close) {
 			OnWsClose();  return 0;
