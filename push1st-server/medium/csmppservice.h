@@ -28,7 +28,7 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 		inline uint32_t MsgId() { return seqNo; }
 		inline const std::string& Channel() { return gwConId; }
 		inline int Fd() const { return gwSocket.Fd(); }
-
+		inline void Close() { gwSocket.SocketClose(); }
 		virtual bool IsLeaveUs(std::time_t now);
 
 	private:

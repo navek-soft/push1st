@@ -220,7 +220,7 @@ namespace smpp {
 				value.assign(data.data(), len); data.remove_prefix(len);
 			}
 			inline std::vector<std::string> split(const std::string& msg) {
-				if (msg.length() <= 132) {
+				if (msg.length() <= 140) { /* no split 140 symbols */
 					return { msg };
 				}
 				std::vector<std::string> parts;
@@ -487,6 +487,7 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 				return { "201", json::object_t{ {"id", MsgId},{"status","pending"},{"channel", con->Channel()} } };
 			}
 			else {
+				con->Close();
 				syslog.print(7, "Connection was lost ( %s )\n", con->Channel().c_str());
 			}
 			return { "400", json::object_t{ {"error","invalid gateway"},{"channel", con->Channel() } } };
@@ -525,7 +526,7 @@ ssize_t csmppservice::cgateway::Send(const std::string& msg) {
 	//std::unique_lock<decltype(gwSocketLock)> lock(gwSocketLock);
 	if (gwSocket) {
 		ssize_t err{ 0 };
-		if (size_t nbytes{ 0 }; (err = gwSocket.SocketSend(msg.data(), msg.length(), nbytes, MSG_DONTWAIT)) == 0) {
+		if (size_t nbytes{ 0 }; (err = gwSocket.SocketSend(msg.data(), msg.length(), nbytes, 0)) == 0) {
 			return 0;
 		}
 		gwSocket.SocketClose();
