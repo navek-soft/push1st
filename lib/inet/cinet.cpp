@@ -22,8 +22,10 @@ namespace inet::ssl {
 
 int inet::Close(int& sock) {
 	if (fd_t fd{ sock }, sock = -1; fd > 0) { 
+		/*
 		struct linger linger { .l_onoff = 1, .l_linger = 0 };
 		setsockopt(fd, SOL_SOCKET, SO_LINGER, (const void*)&linger, sizeof(struct linger));
+		*/
 		::close(fd); sock = -1; 
 		return fd; 
 	}
