@@ -37,7 +37,7 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
 	return res;
 }
 
-ssize_t chttpconnection::HttpWriteRequest(const inet::csocket& fd, const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers, const std::string_view& request) {
+ssize_t chttpconnection::HttpWriteRequest(const inet::csocket& fd, const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers, const std::string& request) {
 	std::string reply;
 
 	reply.reserve(2048 + request.length());
@@ -57,7 +57,7 @@ ssize_t chttpconnection::HttpWriteRequest(const inet::csocket& fd, const std::st
 }
 
 
-ssize_t chttpconnection::HttpWriteResponse(const inet::csocket& fd, const std::string_view& code, const std::string_view& response, std::unordered_map<std::string_view, std::string>&& headers) {
+ssize_t chttpconnection::HttpWriteResponse(const inet::csocket& fd, const std::string_view& code, const std::string& response, std::unordered_map<std::string_view, std::string>&& headers) {
 	std::string reply;
 
 	reply.reserve(2048);
