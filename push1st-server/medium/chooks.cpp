@@ -19,7 +19,7 @@ void cwebhook::Trigger(hook_t::type trigger, std::string app, std::string channe
 			{"Accept","application/json"},
 			{"Content-Type","application/json"},
 			{"Connection", !fdKeepAlive ? "close" : "keep-alive"},
-			{"Host", std::string{ webEndpoint.host()} } });
+			{"Host", std::string{ webEndpoint.host()} } }, request);
 	});
 }
 
@@ -76,7 +76,7 @@ void cwebhook::Send(const std::string_view& method, json::value_t&& data, std::u
 	syslog.error("[ HOOK ] Connection %s lost ( %s )\n", std::string{ webEndpoint.hostport() }.c_str(), std::strerror(-(int)res));
 }
 
-inline void cwebhook::Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers, std::string&& request) {
+inline void cwebhook::Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers, const std::string& request) {
 	ssize_t res{ -ECONNRESET };
 	std::unique_lock<decltype(fdLock)> lock(fdLock);
 	if (Connect()) {
