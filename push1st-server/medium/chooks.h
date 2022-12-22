@@ -21,7 +21,7 @@ public:
 	void Push(const std::string& trigger, const std::string& channel, std::string method, json::value_t&& data, std::unordered_map<std::string_view, std::string> headers);
 private:
 	void Send(const std::string_view& method, json::value_t&& data, std::unordered_map<std::string_view, std::string>&& headers = {});
-	inline void Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers = {}, std::string&& request = "");
+	inline void Write(const std::string_view& method, const std::string_view& uri, std::unordered_map<std::string_view, std::string>&& headers = {}, const std::string& request = "");
 	inline bool Connect();
 	inline void ReadResponse();
 private:
