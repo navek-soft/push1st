@@ -91,6 +91,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WSL2_1_0</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node1|x86'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -252,6 +253,14 @@
     </ClCompile>
     <Link>
       <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;lua5.3</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <ClCompile>
+      <CppLanguageStandard>c++2a</CppLanguageStandard>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>crypto;ssl;lua5.3;yaml-cpp</LibraryDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

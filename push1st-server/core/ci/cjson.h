@@ -13,6 +13,9 @@ public:
 	static inline std::string serialize(value_t&& document) {
 		return document.dump(-1);
 	}
+	static inline std::string serialize(const value_t& document) {
+		return document.dump(-1);
+	}
 	static inline bool unserialize(const std::string_view& document, value_t& value) {
 		try {
 			value = std::move(value_t::parse(document.begin(), document.end()));

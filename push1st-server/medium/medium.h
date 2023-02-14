@@ -1,5 +1,6 @@
 #pragma once
 #include "../core/cconfig.h"
+#include <string>
 #include <cstring>
 #include <memory>
 
