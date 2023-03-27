@@ -470,7 +470,7 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 //				auto MsgId{ con->MsgId() };
 				auto&& chunks{ sms.message.split(sms.encoding.encode(src)) };
 
-				sms.esm(chunks.size() == 132 ? 0 : 0x40);
+				sms.esm(chunks.size() == 1 ? 0 : 0x40);
 
 				std::vector<uint32_t> MsgId;
 
