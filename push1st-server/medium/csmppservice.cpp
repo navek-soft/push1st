@@ -411,9 +411,14 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 			std::string gwPassword{ message.contains("password") ? message["password"].get<std::string>() : std::string{} };
 			std::vector<std::string> gwHosts;
 
-			if (message.contains("hosts") and message["hosts"].is_array()) {
-				for (auto&& host : message["hosts"]) {
-					gwHosts.emplace_back(host.get<std::string>());
+			if (message.contains("hosts")) {
+				if (message["hosts"].is_array()) {
+					for (auto&& host : message["hosts"]) {
+						gwHosts.emplace_back(host.get<std::string>());
+					}
+				}
+				else if (message["hosts"].is_string()) {
+					gwHosts.emplace_back(message["hosts"].get<std::string>());
 				}
 			}
 
@@ -432,7 +437,9 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 				}
 				else {
 					con = gwConnections.emplace(conId, std::make_shared<cgateway>(gwPoll, gwHook, gwLogin, gwPassword,
-						gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{})).first->second;
+						gwHosts, message.contains("port") ? 
+							(message["port"].is_string() ? message["port"].get<std::string>() : std::to_string(message["port"].get<size_t>())) : 
+							std::string{})).first->second;
 
 					gwPoll->EnqueueGc(con);
 
@@ -446,7 +453,6 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 				sms.src(message["source_ton"].get<uint8_t>(), message["source_npi"].get<uint8_t>(), message["source_addr"].get<std::string>());
 				sms.dst(message["destination_ton"].get<uint8_t>(), message["destination_npi"].get<uint8_t>(), message["destination_addr"].get<std::string>());
 				sms.encoding(smpp::param::encoding_t::ucs2);
-				sms.esm(src.length() <= 132 ? 0 : 0x40);
 				sms.esm.receipt(smpp::receipt_t::always);
 
 				if (message.contains("receipt")) {
@@ -463,6 +469,8 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
 
 //				auto MsgId{ con->MsgId() };
 				auto&& chunks{ sms.message.split(sms.encoding.encode(src)) };
+
+				sms.esm(chunks.size() == 132 ? 0 : 0x40);
 
 				std::vector<uint32_t> MsgId;
 
@@ -659,6 +667,7 @@ inline bool csmppservice::cgateway::Connect() {
 					* Send Enquire link
 					*/
 					gwPingTime = std::time(nullptr) + gwPingInterval;
+
 					smpp::cenquire enq{ Seq(), smpp::cenquire::req_id};
 
 					return Send(enq.pack()) == 0;
