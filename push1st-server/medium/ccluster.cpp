@@ -25,8 +25,8 @@ namespace proto {
 	};
 #pragma pack(pop)
 
-	inline array_t Pack(op_t op, json::value_t&& data) {
-		auto&& packedData{ json::serialize(std::move(data)) };
+	inline array_t Pack(op_t op, json::object_t&& msg) {
+		auto&& packedData{ json::serialize(msg) };
 		array_t frame{ nullptr,packedData.size() + sizeof(hdr_t) };
 		if (frame.first = std::shared_ptr<uint8_t[]>(new uint8_t[frame.second]); frame.first) {
 			auto hdr{ (hdr_t*)frame.first.get() };
@@ -40,14 +40,14 @@ namespace proto {
 		}
 		return { nullptr,0 };
 	}
-	inline array_t Pack(hook_t::type trigger, json::value_t&& data) {
+	inline array_t Pack(hook_t::type trigger, json::object_t&& msg) {
 		switch (trigger)
 		{
-		case hook_t::type::push: return Pack(op_t::push, std::move(data));
-		case hook_t::type::join: return Pack(op_t::join, std::move(data));
-		case hook_t::type::leave: return Pack(op_t::leave, std::move(data));
-		case hook_t::type::reg: return Pack(op_t::reg, std::move(data));
-		case hook_t::type::unreg: return Pack(op_t::unreg, std::move(data));
+		case hook_t::type::push: return Pack(op_t::push, std::move(msg));
+		case hook_t::type::join: return Pack(op_t::join, std::move(msg));
+		case hook_t::type::leave: return Pack(op_t::leave, std::move(msg));
+		case hook_t::type::reg: return Pack(op_t::reg, std::move(msg));
+		case hook_t::type::unreg: return Pack(op_t::unreg, std::move(msg));
 		default:
 			break;
 		}
@@ -204,18 +204,18 @@ void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<in
 	}
 }
 
-void ccluster::Push(channel_t::type type, const app_t& app, sid_t channel, message_t&& msg)
+void ccluster::Push(channel_t::type type, const app_t& app, sid_t channel, const json::object_t& data)
 { 
 	if (clusFd and app->IsAllowTrigger(type, hook_t::type::push)) {
-		(*msg)["#msg-from"] = "cluster";
-		Send(proto::Pack(hook_t::type::push, { {"app", app->Id },{"channel", channel },{"data", (*msg)} }));
+		//(*msg)["#msg-from"] = "cluster";
+		Send(proto::Pack(hook_t::type::push, { {"app", app->Id },{"channel", channel },{"data", json::serialize(data)} }));
 	}
 }
 
-void ccluster::Trigger(channel_t::type type, hook_t::type trigger, const app_t& app, sid_t channel, sid_t session, json::value_t&& data)
+void ccluster::Trigger(channel_t::type type, hook_t::type trigger, const app_t& app, sid_t channel, sid_t session, const json::object_t& data)
 { 
 	if (clusFd and (clusSync & trigger)) {
-		Send(proto::Pack(trigger, { {"app", app->Id },{"channel", channel },{"data",data} }));
+		Send(proto::Pack(trigger, { {"app", app->Id },{"channel", channel },{"data",json::serialize(data)} }));
 	}
 }
 

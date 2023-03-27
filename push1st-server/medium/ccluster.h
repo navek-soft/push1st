@@ -20,8 +20,8 @@ class ccluster : public inet::cudpserver, public std::enable_shared_from_this<cc
 public:
 	ccluster(const std::shared_ptr<cbroker>&, const config::cluster_t&);
 	virtual ~ccluster();
-	void Trigger(channel_t::type type, hook_t::type trigger, const app_t& app, sid_t channel, sid_t session, json::value_t&&);
-	void Push(channel_t::type type, const app_t& app, sid_t channel, message_t&& msg);
+	void Trigger(channel_t::type type, hook_t::type trigger, const app_t& app, sid_t channel, sid_t session, const json::object_t& msg);
+	void Push(channel_t::type type, const app_t& app, sid_t channel, const json::object_t& msg);
 	void Ping();
 protected:
 	virtual void OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll);

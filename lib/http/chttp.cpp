@@ -316,6 +316,7 @@ static inline std::string_view parserNext(std::string_view& data, char symbol) {
 		while (!data.empty() && std::isspace(data.front())) { data.remove_prefix(1); }
 		return from;
 	}
+	return {};
 }
 
 static inline char splitBy(std::string_view& data, std::string_view& result, const char* symbol) {

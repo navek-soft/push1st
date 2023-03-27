@@ -5,7 +5,7 @@
 #include "../ccluster.h"
 
 size_t cpublicchannel::Push(message_t&& msg) {
-	Cluster->Push(chType, chApp, chName, std::move(msg));
+	Cluster->Push(chType, chApp, chName, *msg);
 	return cchannel::Push(std::move(msg));
 }
 
