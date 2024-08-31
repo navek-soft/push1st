@@ -7,7 +7,7 @@ pipelines:
     Push1st build image && push:
       - step:
           name: build image && push
-          runs-on: runner2
+          # runs-on: runner2
           script:
             - export VERSION=${PRODUCT_MAJOR_VERSION}.${PRODUCT_MINOR_VERSION}
             - git clone https://github.com/navek-soft/push1st.git
