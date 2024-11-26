@@ -4,10 +4,10 @@ options:
 
 pipelines:  
   custom:    
-    Push1st build image && push:
+    Build image && push:
       - step:
           name: build image && push
-          # runs-on: runner2
+          runs-on: colocation.runner
           script:
             - export VERSION=${PRODUCT_MAJOR_VERSION}.${PRODUCT_MINOR_VERSION}
             - git clone https://github.com/navek-soft/push1st.git
@@ -18,24 +18,18 @@ pipelines:
             - |
               docker build --build-arg BUILD_NUMBER=${BITBUCKET_BUILD_NUMBER} \
                            --build-arg VERSION=${VERSION} \
-                           --build-arg BRAND=aivp \
                            -t download.aivp.io:8443/push1st/release:latest \
                            -t download.aivp.io:8443/push1st/release:${VERSION} \
-                           -f ./docker/Dockerfile .
-            - |
-              docker build --build-arg BUILD_NUMBER=${BITBUCKET_BUILD_NUMBER} \
-                           --build-arg VERSION=${VERSION} \
-                           --build-arg BRAND=aipix \
                            -t download.aipix.ai:8443/push1st/release:latest \
                            -t download.aipix.ai:8443/push1st/release:${VERSION} \
                            -f ./docker/Dockerfile .
-            - echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_LOGIN} --password-stdin https://download.aivp.io:8443
+            - echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_LOGIN} --password-stdin ${DOCKER_REGISTRY_AIVP}
             - docker push download.aivp.io:8443/push1st/release:latest       
             - docker push download.aivp.io:8443/push1st/release:${VERSION}       
-            - echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_LOGIN} --password-stdin https://download.aipix.ai:8443
+            - echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_LOGIN} --password-stdin ${DOCKER_REGISTRY_AIPIX}
             - docker push download.aipix.ai:8443/push1st/release:latest       
             - docker push download.aipix.ai:8443/push1st/release:${VERSION}
-            - echo 'Successfully encode, build docker image and push to nexus'    
+            - echo 'Successfully build docker image and push to nexus'    
     
 definitions:
   services:
