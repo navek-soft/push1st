@@ -37,21 +37,14 @@ pipeline {
             steps {
                 sh """
                     git clone https://github.com/navek-soft/push1st.git
-                    docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
+                    docker buildx build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                  --build-arg VERSION=${VERSION} \
-                                 --build-arg BRAND=aivp \
                                  --build-arg COMMIT=${COMMIT:-6ce8dcfac9a9b9bbd22a25f3b68752763f71aa21} \
                                  --platform linux/amd64,linux/arm64 \
                                  -t download.aivp.io:8443/push1st/release:latest \
                                  -t download.aivp.io:8443/push1st/release:${VERSION} \
-                                 -f ./docker/Dockerfile .
-                    docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
-                                 --build-arg VERSION=${VERSION} \
-                                 --build-arg BRAND=aipix \
-                                 --build-arg COMMIT=${COMMIT:-6ce8dcfac9a9b9bbd22a25f3b68752763f71aa21} \
-                                 --platform linux/amd64,linux/arm64 \
                                  -t download.aipix.ai:8443/push1st/release:latest \
-                                 -t download.aipix.ai:8443/push1st/release:${VERSION} \
+                                 -t download.aipix.ai:8443/push1st/release:${VERSION}
                                  -f ./docker/Dockerfile .
                     echo ${NEXUS_PSW} | docker login -u ${NEXUS_USR} --password-stdin https://download.aivp.io:8443
                     docker push download.aivp.io:8443/push1st/release:latest

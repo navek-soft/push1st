@@ -17,7 +17,7 @@ pipelines:
             # - cd push1st && git checkout 6ce8dcf && cd ../
             # Use Dockerfile ADD instead of git clone
             - |
-              docker build --build-arg BUILD_NUMBER=${BITBUCKET_BUILD_NUMBER} \
+              docker buildx build --build-arg BUILD_NUMBER=${BITBUCKET_BUILD_NUMBER} \
                            --build-arg VERSION=${VERSION} \
                            --build-arg COMMIT=${COMMIT:-6ce8dcfac9a9b9bbd22a25f3b68752763f71aa21} \
                            --platform linux/amd64,linux/arm64 \
