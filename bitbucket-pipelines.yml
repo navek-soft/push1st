@@ -2,8 +2,8 @@ options:
   docker: true
   size: 2x
 
-pipelines:  
-  custom:    
+pipelines:
+  custom:
     Build image && push:
       - step:
           name: build image && push
@@ -12,25 +12,27 @@ pipelines:
             - export VERSION=${PRODUCT_MAJOR_VERSION}.${PRODUCT_MINOR_VERSION}
             - git clone https://github.com/navek-soft/push1st.git
             # latest commit was changed to c6e2b1e at 4 Jan 2024, but commit was not good too
-            # - cd push1st && git checkout c6e2b1e && cd ../  
+            # - cd push1st && git checkout c6e2b1e && cd ../
             # 22 Jan 2024, trying 6ce8dcf commit
-            - cd push1st && git checkout 6ce8dcf && cd ../  
+            - cd push1st && git checkout 6ce8dcf && cd ../
             - |
               docker build --build-arg BUILD_NUMBER=${BITBUCKET_BUILD_NUMBER} \
                            --build-arg VERSION=${VERSION} \
+                           --platform linux/amd64 \
+                           --platform linux/arm64 \
                            -t download.aivp.io:8443/push1st/release:latest \
                            -t download.aivp.io:8443/push1st/release:${VERSION} \
                            -t download.aipix.ai:8443/push1st/release:latest \
                            -t download.aipix.ai:8443/push1st/release:${VERSION} \
                            -f ./docker/Dockerfile .
             - echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_LOGIN} --password-stdin ${DOCKER_REGISTRY_AIVP}
-            - docker push download.aivp.io:8443/push1st/release:latest       
-            - docker push download.aivp.io:8443/push1st/release:${VERSION}       
+            - docker push download.aivp.io:8443/push1st/release:latest
+            - docker push download.aivp.io:8443/push1st/release:${VERSION}
             - echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_LOGIN} --password-stdin ${DOCKER_REGISTRY_AIPIX}
-            - docker push download.aipix.ai:8443/push1st/release:latest       
+            - docker push download.aipix.ai:8443/push1st/release:latest
             - docker push download.aipix.ai:8443/push1st/release:${VERSION}
-            - echo 'Successfully build docker image and push to nexus'    
-    
+            - echo 'Successfully build docker image and push to nexus'
+
 definitions:
   services:
     docker:

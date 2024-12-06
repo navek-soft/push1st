@@ -2,7 +2,7 @@
 // curl -X POST -is -u navek_jenkins:d8HD3xMVeRffqUR2UNn4 -H 'Content-Type: application/json' https://api.bitbucket.org/2.0/repositories/naveksoft/jenkins-push1st/pipelines/ -d '{"target": {"ref_type": "branch", "type": "pipeline_ref_target", "ref_name": "master", "selector": {"type": "custom", "pattern": "Push1st build image && push"}}}'
 
 pipeline {
-    agent { label 'runner1' }   
+    agent { label 'runner1' }
 
     triggers {
         GenericTrigger(
@@ -40,24 +40,28 @@ pipeline {
                     docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                  --build-arg VERSION=${VERSION} \
                                  --build-arg BRAND=aivp \
+                                 --platform linux/amd64 \
+                                 --platform linux/arm64 \
                                  -t download.aivp.io:8443/push1st/release:latest \
                                  -t download.aivp.io:8443/push1st/release:${VERSION} \
                                  -f ./docker/Dockerfile .
                     docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                  --build-arg VERSION=${VERSION} \
                                  --build-arg BRAND=aipix \
+                                 --platform linux/amd64 \
+                                 --platform linux/arm64 \
                                  -t download.aipix.ai:8443/push1st/release:latest \
                                  -t download.aipix.ai:8443/push1st/release:${VERSION} \
                                  -f ./docker/Dockerfile .
                     echo ${NEXUS_PSW} | docker login -u ${NEXUS_USR} --password-stdin https://download.aivp.io:8443
-                    docker push download.aivp.io:8443/push1st/release:latest       
-                    docker push download.aivp.io:8443/push1st/release:${VERSION}       
+                    docker push download.aivp.io:8443/push1st/release:latest
+                    docker push download.aivp.io:8443/push1st/release:${VERSION}
                     echo ${NEXUS_PSW} | docker login -u ${NEXUS_USR} --password-stdin https://download.aipix.ai:8443
-                    docker push download.aipix.ai:8443/push1st/release:latest       
-                    docker push download.aipix.ai:8443/push1st/release:${VERSION}       
+                    docker push download.aipix.ai:8443/push1st/release:latest
+                    docker push download.aipix.ai:8443/push1st/release:${VERSION}
                 """
             }
-        }        
+        }
     }
 
     post {
