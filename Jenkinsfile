@@ -40,16 +40,14 @@ pipeline {
                     docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                  --build-arg VERSION=${VERSION} \
                                  --build-arg BRAND=aivp \
-                                 --platform linux/amd64 \
-                                 --platform linux/arm64 \
+                                 --platform linux/amd64,linux/arm64 \
                                  -t download.aivp.io:8443/push1st/release:latest \
                                  -t download.aivp.io:8443/push1st/release:${VERSION} \
                                  -f ./docker/Dockerfile .
                     docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                  --build-arg VERSION=${VERSION} \
                                  --build-arg BRAND=aipix \
-                                 --platform linux/amd64 \
-                                 --platform linux/arm64 \
+                                 --platform linux/amd64,linux/arm64 \
                                  -t download.aipix.ai:8443/push1st/release:latest \
                                  -t download.aipix.ai:8443/push1st/release:${VERSION} \
                                  -f ./docker/Dockerfile .
