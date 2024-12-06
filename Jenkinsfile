@@ -40,6 +40,7 @@ pipeline {
                     docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                  --build-arg VERSION=${VERSION} \
                                  --build-arg BRAND=aivp \
+                                 --build-arg COMMIT=${COMMIT:-6ce8dcfac9a9b9bbd22a25f3b68752763f71aa21} \
                                  --platform linux/amd64,linux/arm64 \
                                  -t download.aivp.io:8443/push1st/release:latest \
                                  -t download.aivp.io:8443/push1st/release:${VERSION} \
@@ -47,6 +48,7 @@ pipeline {
                     docker build --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
                                  --build-arg VERSION=${VERSION} \
                                  --build-arg BRAND=aipix \
+                                 --build-arg COMMIT=${COMMIT:-6ce8dcfac9a9b9bbd22a25f3b68752763f71aa21} \
                                  --platform linux/amd64,linux/arm64 \
                                  -t download.aipix.ai:8443/push1st/release:latest \
                                  -t download.aipix.ai:8443/push1st/release:${VERSION} \
