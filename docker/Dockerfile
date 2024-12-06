@@ -3,7 +3,7 @@ ARG DEBIAN_FRONTEND=noninteractive \
     BUILD_NUMBER \
     VERSION \
     COMMIT
-ADD https://github.com/navek-soft/push1st.git#${COMMIT} /opt/push1st
+ADD --chown=root:root https://github.com/navek-soft/push1st.git#${COMMIT} /opt/push1st
 RUN ls -al /opt /opt/push1st
 WORKDIR /opt/push1st
 RUN apt update && apt -y install git build-essential libyaml-cpp-dev libssl-dev lua5.3 liblua5.3-dev
