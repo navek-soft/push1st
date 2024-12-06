@@ -2,13 +2,13 @@
 // curl -X POST -is -u navek_jenkins:d8HD3xMVeRffqUR2UNn4 -H 'Content-Type: application/json' https://api.bitbucket.org/2.0/repositories/naveksoft/jenkins-push1st/pipelines/ -d '{"target": {"ref_type": "branch", "type": "pipeline_ref_target", "ref_name": "master", "selector": {"type": "custom", "pattern": "Push1st build image && push"}}}'
 
 pipeline {
-    agent { label 'runner1' }
+    agent { label 'btk.runner' }
 
     triggers {
         GenericTrigger(
             genericVariables: [
-                [key: 'NAME', value: '$.commits[0].author.name'],
-                [key: 'BRANCH', value: '$.ref']
+                [key: 'NAME', value: '$.actor.display_name'],
+                [key: 'BRANCH', value: '$.push.changes[0].new.name']
             ],
 
             causeString: 'Triggered by $NAME, branch to build $BRANCH.',
