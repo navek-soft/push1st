@@ -1,0 +1,164 @@
+{
+	"info": {
+		"_postman_id": "c9ff96df-5cd1-42e6-b37e-31fa1adae65d",
+		"name": "Push1ST API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "TriggerEvent",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"App\\\\Events\\\\PublicPush\",\r\n    \"channels\":[\r\n        \"private-user.1\"\r\n    ],\r\n    \"socket_id\":\"\",\r\n    \"data\": \"event data payload\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{api-server}}/{{app-id}}/events",
+					"host": [
+						"{{api-server}}"
+					],
+					"path": [
+						"{{app-id}}",
+						"events"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetSessionToken",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"session\": \"1234\",\r\n    \"channel\": \"private-user.1\",\r\n    \"data\": \"event data payload\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{api-server}}/{{app-id}}/token/session/",
+					"host": [
+						"{{api-server}}"
+					],
+					"path": [
+						"{{app-id}}",
+						"token",
+						"session",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetAccessToken",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"channel\": \"*\",\r\n    \"origin\": \"*\",\r\n    \"ttl\": 0\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{api-server}}/{{app-id}}/token/access/",
+					"host": [
+						"{{api-server}}"
+					],
+					"path": [
+						"{{app-id}}",
+						"token",
+						"access",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Channels",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api-server}}/{{app-id}}/channels",
+					"host": [
+						"{{api-server}}"
+					],
+					"path": [
+						"{{app-id}}",
+						"channels"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Channel info",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api-server}}/{{app-id}}/channels/<channel-name>",
+					"host": [
+						"{{api-server}}"
+					],
+					"path": [
+						"{{app-id}}",
+						"channels",
+						"<channel-name>"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

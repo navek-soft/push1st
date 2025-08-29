@@ -1,0 +1,268 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="node1|ARM">
+      <Configuration>node1</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="node1|ARM64">
+      <Configuration>node1</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="node1|x64">
+      <Configuration>node1</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="node1|x86">
+      <Configuration>node1</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="node2|ARM">
+      <Configuration>node2</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="node2|ARM64">
+      <Configuration>node2</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="node2|x64">
+      <Configuration>node2</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="node2|x86">
+      <Configuration>node2</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM">
+      <Configuration>Release</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x86">
+      <Configuration>Debug</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x86">
+      <Configuration>Release</Configuration>
+      <Platform>x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{f627d8ba-fa83-466f-abc8-3abb9542e5b4}</ProjectGuid>
+    <Keyword>Linux</Keyword>
+    <RootNamespace>push1st_server</RootNamespace>
+    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
+    <ApplicationType>Linux</ApplicationType>
+    <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
+    <TargetLinuxPlatform>Generic</TargetLinuxPlatform>
+    <LinuxProjectType>{D51BCBC9-82E9-4017-911E-C93873C4EA2B}</LinuxProjectType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node1|ARM'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node2|ARM'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WSL2_1_0</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node1|x86'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node2|x86'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WSL2_1_0</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node1|x64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node2|x64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node1|ARM64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node2|ARM64'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared">
+    <Import Project="..\lib\inet\inet.vcxitems" Label="Shared" />
+    <Import Project="..\lib\http\http.vcxitems" Label="Shared" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>/usr/include</IncludePath>
+    <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node1|x64'">
+    <IncludePath>/usr/include</IncludePath>
+    <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='node2|x64'">
+    <IncludePath>/usr/include</IncludePath>
+    <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>/usr/include</IncludePath>
+    <ProjectPublicIncludePath>/usr/include</ProjectPublicIncludePath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ClCompile Include="core\ci\casyncqueue.cpp" />
+    <ClCompile Include="core\ci\cbase62.cpp" />
+    <ClCompile Include="core\ci\ccmd.cpp" />
+    <ClCompile Include="core\csyslog.cpp" />
+    <ClCompile Include="core\lua\clua.cpp" />
+    <ClCompile Include="medium\capiserver.cpp" />
+    <ClCompile Include="medium\channels\cpresencechannel.cpp" />
+    <ClCompile Include="medium\channels\cprivatechannel.cpp" />
+    <ClCompile Include="medium\proto\cpushersession.cpp" />
+    <ClCompile Include="medium\cmessage.cpp" />
+    <ClCompile Include="medium\channels\cpublicchannel.cpp" />
+    <ClCompile Include="medium\channels\cchannel.cpp" />
+    <ClCompile Include="medium\csubscriber.cpp" />
+    <ClCompile Include="medium\cchannels.cpp" />
+    <ClCompile Include="medium\csmppservice.cpp" />
+    <ClCompile Include="medium\proto\cwssession.cpp" />
+    <ClCompile Include="medium\cwebsocketserver.cpp" />
+    <ClCompile Include="medium\ccluster.cpp" />
+    <ClCompile Include="medium\cbroker.cpp" />
+    <ClCompile Include="core\cconfig.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="medium\ccredentials.cpp" />
+    <ClCompile Include="medium\chooks.cpp" />
+    <ClCompile Include="test\test-http-route.cpp" />
+    <ClCompile Include="version.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="makefile" />
+    <None Include="opt\apps\app.example" />
+    <None Include="opt\apps\smpp.example" />
+    <None Include="opt\modules\cluster.lua" />
+    <None Include="opt\modules\hook.lua" />
+    <None Include="opt\server.example.yml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="core\ci\casyncqueue.h" />
+    <ClInclude Include="core\ci\cbase62.h" />
+    <ClInclude Include="core\ci\ccmd.h" />
+    <ClInclude Include="core\lua\clua.h" />
+    <ClInclude Include="medium\capiserver.h" />
+    <ClInclude Include="core\ci\cspinlock.h" />
+    <ClInclude Include="core\ci\nlohmann\json.hpp" />
+    <ClInclude Include="medium\channels\cpresencechannel.h" />
+    <ClInclude Include="medium\channels\cprivatechannel.h" />
+    <ClInclude Include="medium\proto\cpushersession.h" />
+    <ClInclude Include="medium\cmessage.h" />
+    <ClInclude Include="medium\channels\cpublicchannel.h" />
+    <ClInclude Include="medium\csubscriber.h" />
+    <ClInclude Include="medium\cchannels.h" />
+    <ClInclude Include="medium\channels\cchannel.h" />
+    <ClInclude Include="medium\csmppservice.h" />
+    <ClInclude Include="medium\proto\cwssession.h" />
+    <ClInclude Include="medium\cwebsocketserver.h" />
+    <ClInclude Include="medium\ccluster.h" />
+    <ClInclude Include="medium\cbroker.h" />
+    <ClInclude Include="core\cconfig.h" />
+    <ClInclude Include="core\ci\cflag.h" />
+    <ClInclude Include="core\ci\cjson.h" />
+    <ClInclude Include="core\csyslog.h" />
+    <ClInclude Include="core\ci\cyaml.h" />
+    <ClInclude Include="medium\ccredentials.h" />
+    <ClInclude Include="medium\chooks.h" />
+    <ClInclude Include="medium\medium.h" />
+    <ClInclude Include="version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="makedeb" />
+  </ItemGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <CppLanguageStandard>c++17</CppLanguageStandard>
+      <PreprocessorDefinitions>DEBUG</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;lua5.3</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='node1|x64'">
+    <ClCompile>
+      <CppLanguageStandard>c++17</CppLanguageStandard>
+      <PreprocessorDefinitions>DEBUG</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;lua5.3</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='node2|x64'">
+    <ClCompile>
+      <CppLanguageStandard>c++17</CppLanguageStandard>
+      <PreprocessorDefinitions>DEBUG</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;lua5.3</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <CppLanguageStandard>c++17</CppLanguageStandard>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>pthread;ssl;crypto;yaml-cpp;lua5.3</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <ClCompile>
+      <CppLanguageStandard>c++2a</CppLanguageStandard>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>crypto;ssl;lua5.3;yaml-cpp</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>
