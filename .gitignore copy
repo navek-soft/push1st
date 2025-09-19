@@ -29,4 +29,3 @@ config/server.teststart.json
 .test*
 *doctest_registerlibrary.cpp
 docs/.structurizr
-logs/

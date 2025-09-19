@@ -1,0 +1,36 @@
+FormatStyle: 'file'
+
+Checks: '-*,
+        bugprone-*,-bugprone-assignment-in-if-condition,-bugprone-easily-swappable-parameters,-bugprone-unchecked-optional-access,-bugprone-narrowing-conversions,-bugprone-implicit-widening-of-multiplication-result,-bugprone-branch-clone,
+        clang-analyzer-*,
+        modernize-*,-modernize-use-equals-default,-modernize-use-nodiscard,-modernize-use-trailing-return-type,-modernize-avoid-c-arrays,-hicpp-signed-bitwise,-modernize-pass-by-value,
+        performance-*,
+        portability-*,
+        readability-*,-readability-qualified-auto,-readability-isolate-declaration,-readability-simplify-boolean-expr,-readability-redundant-access-specifiers,-readability-named-parameter,-readability-else-after-return,-readability-magic-numbers,-readability-identifier-length,-readability-function-cognitive-complexity,-readability-implicit-bool-conversion,
+        misc-*,-misc-non-private-member-variables-in-classes,-misc-const-correctness,-misc-confusable-identifiers,-misc-no-recursion'
+
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: lower_case
+  - key: readability-identifier-naming.ClassPrefix
+    value: c
+  - key: readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.ClassMethodCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: lower_case
+  - key: readability-identifier-naming.StructMethodCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructSuffix
+    value: _t
+
+WarningsAsErrors: '*'
+
+ExtraArgs: [
+  "--std=c++20"
+]
+
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: true
+

@@ -1,0 +1,12 @@
+const char* VersionInfo[] { 
+/* Version.AppName =        */    "@APP@",
+/* Version.Patch =          */    "@PATCH@",
+/* Version.BuildNo =        */    "@BUILD_NO@",
+/* Version.Minor =          */    "@VERSION_MINOR@",
+/* Version.Major =          */    "@VERSION_MAJOR@", 
+/* Version.Commit =         */    "@COMMIT@",
+/* Version.Revision =       */    "@REVISION@",
+/* Version.BuildTimestamp = */    "@TIMESTAMP@",
+/* Version.BuildType =      */    "@BUILD_TYPE@",
+/* Version.BuildFlags =      */    "@BUILD_FLAGS@"
+};
