@@ -77,7 +77,7 @@ void cpoll::PollThread(const std::shared_ptr<cpoll>& self, int numEventsMax, [[m
 
 ssize_t cpoll::Listen(int pollSize, int pollTimeoutMs) {
     if (fdPoll > 0 and !pollThread.joinable()) {
-        pollThread = std::thread(
+        pollThread = std::jthread(
             [](auto&& PH1, auto&& PH2, auto&& PH3) {
                 cpoll::PollThread(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3));
             },

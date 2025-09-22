@@ -71,7 +71,7 @@ void cwssession::OnSocketSend() {
 #endif
 
 void cwssession::OnSocketError(ssize_t err) {
-    PSHT_TRACE("RAW:{}:{} Error ( {} ) ({})", Fd(), Id().c_str(), std::strerror((int)-err), SubscribedTo.size());
+    PSHT_ERROR("RAW:{}:{} Error ( {} ) ({})", Fd(), Id().c_str(), std::strerror((int)-err), SubscribedTo.size());
     for (auto&& it : SubscribedTo) {
         if (auto&& ch {it.second.lock()}; ch) {
             ch->UnSubscribe(subsId);

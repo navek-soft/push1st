@@ -1,15 +1,19 @@
 #include "capiserver.h"
 
 #include <cstring>
+#include <memory>
 
 #include "channels/cchannel.h"
 #include "channels/cchannels.h"
 #include "core/cluster/ccluster.h"
 #include "core/config/cconfig.h"
 #include "core/credentials/ccredentials.h"
+#include "core/util/casyncqueue.h"
 #include "log/clog.h"
 
 #include "../smppservice/csmppservice.h"
+
+static core::casyncqueue ApiProcessing {4, "apimgm"};
 
 static inline message_t DupChannelMessage(const json::value_t& msg, const std::string& channel) {
     message_t&& out {std::make_shared<json::value_t>(json::object_t {})};
@@ -30,7 +34,7 @@ static inline message_t DupChannelMessage(const json::value_t& msg, const std::s
     return out;
 }
 
-void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
+void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const inet::socket_t& fd, const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
     if (method == "POST") {
         auto&& tmStart {std::chrono::system_clock::now().time_since_epoch().count()};
         if (auto&& app {Credentials->GetAppById(std::string {vals[0]})}; app) {
@@ -66,7 +70,7 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
     }
 }
 
-void capiserver::ApiOnChannels(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, const http::headers_t& headers, [[maybe_unused]] const std::string_view& content) {
+void capiserver::ApiOnChannels(const std::vector<std::string_view>& vals, const inet::socket_t& fd, const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, const http::headers_t& headers, [[maybe_unused]] const std::string_view& content) {
     if (method == "GET") {
         if (auto&& app {Credentials->GetAppById(std::string {vals[0]})}; app) {
             if (vals[1].empty()) {
@@ -91,7 +95,7 @@ void capiserver::ApiOnChannels(const std::vector<std::string_view>& vals, const 
     }
 }
 
-void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, [[maybe_unused]] const http::headers_t& headers, const std::string_view& content) {
+void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const inet::socket_t& fd, const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, [[maybe_unused]] const http::headers_t& headers, const std::string_view& content) {
     if (method == "POST") {
         if (auto&& app {Credentials->GetAppById(std::string {vals[0]})}; app) {
             if (vals[1] == "session") {
@@ -123,12 +127,16 @@ void capiserver::ApiOnToken(const std::vector<std::string_view>& vals, const ine
     }
 }
 
-void capiserver::ApiOnModuleSmpp(const std::vector<std::string_view>& vals, const inet::csocket& fd, const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, [[maybe_unused]] const http::headers_t& headers, const std::string_view& content) {
+void capiserver::ApiOnModuleSmpp(const std::vector<std::string_view>& vals, const inet::socket_t& fd, const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, [[maybe_unused]] const http::headers_t& headers, const std::string_view& content) {
     if (method == "POST") {
         if (auto&& app {Credentials->GetAppById(std::string {vals[0]})}; app) {
             if (json::value_t request; cjson::Unserialize(content, request) and request.is_object()) {
-                auto&& [code, response] = ApiSmpp->Send(request);
-                ApiResponse(fd, code, cjson::Serialize(std::move(response)), true);
+                ApiProcessing.Enqueue([this, weak = weak_from_this(), fd, request]() {
+                    if (auto&& self = weak.lock(); self) {
+                        auto&& [code, response] = ApiSmpp->Send(request);
+                        ApiResponse(fd, code, cjson::Serialize(std::move(response)), true);
+                    }
+                });
             } else {
                 ApiResponse(fd, "400", {}, true);
             }
@@ -140,38 +148,40 @@ void capiserver::ApiOnModuleSmpp(const std::vector<std::string_view>& vals, cons
     }
 }
 
-void capiserver::ApiOnWebHook([[maybe_unused]] const std::vector<std::string_view>& vals, const inet::csocket& fd, [[maybe_unused]] const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, const http::headers_t& headers, [[maybe_unused]] const std::string_view& content) {
+void capiserver::ApiOnWebHook([[maybe_unused]] const std::vector<std::string_view>& vals, const inet::socket_t& fd, [[maybe_unused]] const std::string_view& method, [[maybe_unused]] const http::uri_t& uri, const http::headers_t& headers, [[maybe_unused]] const std::string_view& content) {
     ApiResponse(fd, "200", {}, http::IsConnectionKeepAlive(headers));
 }
 
-void capiserver::ApiResponse(const inet::csocket& fd, const std::string_view& code, const std::string& response, bool close) {
+void capiserver::ApiResponse(const inet::socket_t& fd, const std::string_view& code, const std::string& response, bool close) {
     if (close or KeepAliveTimeout.empty()) {
         HttpWriteResponse(fd, code, response, {{"Connection", "Close"}, {"Content-Type", "application/json; charset=utf-8"}});
-        fd.SocketClose();
+        fd->SocketClose();
     } else {
         HttpWriteResponse(fd, code, response, {{"Connection", "Keep-Alive"}, {"Content-Type", "application/json; charset=utf-8"}, {"Keep-Alive", "timeout=" + KeepAliveTimeout}});
     }
 }
-void capiserver::OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, [[maybe_unused]] const std::string& request, const std::string_view& content) {
-    PSHT_INFO("fd {} method {} uri {}", fd.Fd(), std::string {method}.c_str(), std::string {path.uriFull}.c_str());
+
+/// MAIN
+void capiserver::OnHttpRequest(const inet::socket_t& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, [[maybe_unused]] const std::string& request, const std::string_view& content) {
+    PSHT_DEBUG("fd {} method {} uri {}", fd->Fd(), std::string {method}.c_str(), std::string {path.uriFull}.c_str());
     try {
         if (!ApiRoutes.Call(fd, method, path, headers, content)) {
             HttpWriteResponse(fd, "404");
-            fd.SocketClose();
+            fd->SocketClose();
         }
     } catch (std::exception& ex) {
-        PSHT_ERROR("fd {} method {} uri {}: {}", fd.Fd(), std::string {method}.c_str(), std::string {path.uriFull}.c_str(), ex.what());
+        PSHT_ERROR("fd {} method {} uri {}: {}", fd->Fd(), std::string {method}.c_str(), std::string {path.uriFull}.c_str(), ex.what());
         HttpWriteResponse(fd, "400");
-        fd.SocketClose();
+        fd->SocketClose();
     }
 }
 
-void capiserver::Listen(const std::shared_ptr<inet::cpoll>& poll) {
+void capiserver::Join() {
     if (ApiTcp) {
-        ApiTcp->Listen(poll);
+        ApiTcp->Join();
     }
     if (ApiUnix) {
-        ApiUnix->Listen(poll);
+        ApiUnix->Join();
     }
 }
 
@@ -216,13 +226,13 @@ capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::sh
 
 capiserver::~capiserver() {}
 
-void capiserver::ctcpapiserver::OnHttpError(const inet::csocket& fd, ssize_t err) {
+void capiserver::ctcpapiserver::OnHttpError(const inet::socket_t& fd, ssize_t err) {
     PSHT_INFO("Tcp server request error ( {} )", std::strerror(-(int)err));
-    fd.SocketClose();
+    fd->SocketClose();
 }
 
 capiserver::ctcpapiserver::ctcpapiserver(capiserver& api, config::interface_t config) :
-    inet::chttpserver {"tapi:srv", std::string {config.Tcp.HostPort()}, config.Ssl.Context(), MaxHttpHeaderSize},
+    inet::chttpserver {"tapi:srv", config.Threads, config.Accept, std::string {config.Tcp.HostPort()}, config.Ssl.Context(), MaxHttpHeaderSize},
     Api {api} {
     PSHT_INFO("Web ... enable {} proto, listen on {}, route /{}/",
               config.Ssl.Enable ? "https" : "http",
@@ -242,9 +252,9 @@ ssize_t capiserver::cunixapiserver::OnUnixAccept(fd_t fd, const sockaddr_storage
     return res;
 }
 
-void capiserver::cunixapiserver::OnHttpError(const inet::csocket& fd, ssize_t err) {
+void capiserver::cunixapiserver::OnHttpError(const inet::socket_t& fd, ssize_t err) {
     PSHT_ERROR("Unix server request error ( {}sss )", std::strerror(-(int)err));
-    fd.SocketClose();
+    fd->SocketClose();
 }
 
 void capiserver::cunixapiserver::OnHttpData(fd_t fd, [[maybe_unused]] uint events, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) {
@@ -254,7 +264,7 @@ void capiserver::cunixapiserver::OnHttpData(fd_t fd, [[maybe_unused]] uint event
         http::uri_t path;
         http::headers_t headers;
         std::string request;
-        inet::csocket so(fd, sa, ssl, poll);
+        auto&& so = std::make_shared<inet::csocket>(fd, sa, ssl, poll);
         if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
             OnHttpRequest(so, method, path, headers, request, content);
         } else {
@@ -266,7 +276,7 @@ void capiserver::cunixapiserver::OnHttpData(fd_t fd, [[maybe_unused]] uint event
 }
 
 capiserver::cunixapiserver::cunixapiserver(capiserver& api, config::interface_t config, size_t httpMaxHeaderSize) :
-    inet::cunixserver {"uapi:srv", false, 30},
+    inet::cunixserver {"uapi:srv", config.Threads, config.Accept, false, 30},
     Api {api},
     HttpMaxHeaderSize {httpMaxHeaderSize} {
     try {
@@ -274,18 +284,13 @@ capiserver::cunixapiserver::cunixapiserver(capiserver& api, config::interface_t 
 
         std::filesystem::create_directories(saFile.parent_path());
 
-        if (auto res = UnixListen(config.Unix.Path(), true, 16); res == 0) {
-            PSHT_INFO("Unix ... enable, listen on {}, route /{}/", saFile.c_str(), config.Path.c_str());
-        } else {
-            PSHT_ERROR("Unix API Initialize server error ( {} )", std::strerror(-(int)res));
-            throw std::runtime_error("Unix API server exception");
-        }
+        UnixListen(config.Unix.Path(), 16, AF_UNIX);
+        PSHT_INFO("Unix ... enable, listen on {}, route /{}/", saFile.c_str(), config.Path.c_str());
+
     } catch (std::exception& ex) {
         PSHT_ERROR("Unix API Initialize server error ( {} )", ex.what());
         throw std::runtime_error("Unix API server exception");
     }
 }
 
-capiserver::cunixapiserver::~cunixapiserver() {
-    UnixClose();
-}
+capiserver::cunixapiserver::~cunixapiserver() {}

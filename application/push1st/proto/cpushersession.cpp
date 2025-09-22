@@ -188,7 +188,6 @@ bool cpushersession::OnWsConnect([[maybe_unused]] const http::uri_t& path, [[may
 }
 
 cpushersession::cpushersession(const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, size_t maxMessageLength, const channel_t& pushOnChannels, std::time_t keepAlive) :
-
     inet::csocket {std::move(fd)},
     csubscriber {GetAddress(), GetPort()},
     MaxMessageLength {maxMessageLength},

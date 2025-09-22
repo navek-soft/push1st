@@ -2,12 +2,7 @@
 #include <atomic>
 #include <mutex>
 
-#include "core/config/cconfig.h"
-#include "core/credentials/ccredentials.h"
 #include "core/hooks/chooks.h"
-#include "http/chttpconn.h"
-#include "http/chttpserver.h"
-#include "inet/cunixserver.h"
 #include "log/clog.h"
 
 /*
@@ -19,7 +14,7 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
 
     class cgateway : public inet::cpoll::cgc, public std::enable_shared_from_this<cgateway> {
        public:
-        cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::shared_ptr<cwebhook>& hook, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
+        cgateway(const std::shared_ptr<csmppservice>& svc, const std::shared_ptr<inet::cpoll>& poll, const std::shared_ptr<cwebhook>& hook, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port);
         ~cgateway() override;
 
         inline bool Connect();
@@ -49,10 +44,10 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
         inline void OnDeliveryStatus(const std::string& data);
 
        private:
+        std::shared_ptr<csmppservice> svc;
         std::string gwLogin, gwPassword;
         std::vector<sockaddr_storage> gwHosts;
         mutable std::mutex gwSocketLock;
-        //		mutable std::shared_ptr<inet::csocket> gwSocket;
         inet::csocket gwSocket;
         mutable std::atomic_uint32_t seqNo {0};
         size_t gwHash {0};
@@ -71,6 +66,7 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
         gwPoll->Listen();
     }
     std::pair<std::string, json::value_t> Send(const json::value_t& message);
+    void ReleaseGateway(const std::string& gwLogin, const std::string& gwPassword);
 
    private:
     std::mutex gwConnectionLock;

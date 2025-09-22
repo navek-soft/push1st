@@ -4,17 +4,23 @@
 
 #include "chttpconn.h"
 #include "cwebsocket.h"
+#include "inet/csocket.h"
 
 namespace inet {
 class cwsserver : public inet::ctcpserver, public inet::chttpconnection {
    public:
-    cwsserver(const std::string& name, const std::string& HostPort, const inet::ssl_ctx_t& SslCtx, size_t httpMaxHeaderSize = 8192);
+    cwsserver(const std::string& name, size_t numthreads, size_t numaccept, const std::string& HostPort, const inet::ssl_ctx_t& SslCtx, size_t httpMaxHeaderSize = 8192);
     ~cwsserver() override;
+
+   public:
+    void Join() {
+        inet::ctcpserver::TcpJoin();
+    }
 
    protected:
     virtual void WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll);
-    virtual ssize_t WsUpgrade(const inet::csocket& fd, [[maybe_unused]] const http::uri_t& path, const http::headers_t& headers);
-    virtual inet::socket_t OnWsUpgrade(const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) = 0;
+    virtual ssize_t WsUpgrade(const inet::socket_t& fd, [[maybe_unused]] const http::uri_t& path, const http::headers_t& headers);
+    virtual inet::socket_t OnWsUpgrade(const inet::socket_t& fd, const http::uri_t& path, const http::headers_t& headers) = 0;
 
    private:
     inline std::shared_ptr<inet::ctcpserver> TcpSelf() override = 0;

@@ -19,6 +19,9 @@ build-*
 
 *.test.sh
 *.test.json
+*.test.yaml
+*.test.yml
+*.test
 *.log
 *.tmp
 application/*/version.cpp

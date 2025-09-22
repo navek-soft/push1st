@@ -40,6 +40,41 @@ ssize_t inet::GetAddress(fd_t fd, sockaddr_storage& sa) {
     return getsockname((int)fd, (struct sockaddr*)&sa, &len) == 0 ? 0 : -errno;
 }
 
+ssize_t inet::GetAddress(sockaddr_storage& sa, int af, const std::string& port, const std::string& host) {
+    memset(&sa, 0, sizeof(sa));
+    if (not host.empty() and host != "*") { /* get addr by hostname */
+        if (af != AF_UNIX) {
+            if (/* is hostname */ auto* haddr = gethostbyname2(host.c_str(), af); haddr) {
+                if (haddr->h_addrtype == AF_INET) {
+                    sa.ss_family = (sa_family_t)af;
+                    memcpy(&(((sockaddr_in*)&sa)->sin_addr.s_addr), haddr->h_addr, haddr->h_length);
+                } else if (haddr->h_addrtype == AF_INET6) {
+                    sa.ss_family = (sa_family_t)AF_INET6;
+                    memcpy(((sockaddr_in6*)&sa)->sin6_addr.__in6_u.__u6_addr8, haddr->h_addr, haddr->h_length);
+                } else {
+                    return -h_errno;
+                }
+            } else {
+                return -EHOSTUNREACH;
+            }
+        } else {
+            sa.ss_family = AF_UNIX;
+        }
+    } else {
+        sa.ss_family = (sa_family_t)af;
+    }
+    if (sa.ss_family == AF_INET) {
+        ((sockaddr_in*)&sa)->sin_port = htons((uint16_t)std::stoi(port));
+    } else if (af == AF_INET6) {
+        ((sockaddr_in6*)&sa)->sin6_port = htons((uint16_t)std::stoi(port));
+    } else if (af == AF_UNIX) {
+        strncpy(((struct sockaddr_un&)sa).sun_path, port.data(), std::min((size_t)108UL, port.length()));
+    } else {
+        return -EAFNOSUPPORT;
+    }
+    return 0;
+}
+
 std::string inet::GetIp(const sockaddr_storage& sa) {
     auto&& buffer {(char*)alloca(256)};
     if (sa.ss_family == AF_INET) {
@@ -215,7 +250,7 @@ ssize_t inet::UdpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock) {
 ssize_t inet::TcpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout) {
     ssize_t res {0};
     fd = -1;
-    if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_STREAM | (nonblock ? SOCK_NONBLOCK : 0), 0); fd > 0) {
+    if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_STREAM | (nonblock ? SOCK_NONBLOCK : 0), IPPROTO_TCP); fd > 0) {
         if (conntimeout) {
             int tcpOpt {(int)conntimeout};
             setsockopt((int)fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &tcpOpt, sizeof(tcpOpt));

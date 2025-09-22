@@ -2,6 +2,7 @@
 
 #include "core/util/casyncqueue.h"
 #include "core/util/medium.h"
+#include "inet/csocket.h"
 #include "log/clog.h"
 
 static core::casyncqueue HookProcessing {2, "hookmgm"};
@@ -33,7 +34,7 @@ inline void cwebhook::ReadResponse() {
     http::uri_t path;
     http::headers_t headers;
     std::string request;
-    if (HttpReadRequest({fdEndpoint, fdSsl}, method, path, headers, request, content, 65536) != 0) {
+    if (HttpReadRequest(std::make_shared<inet::csocket>(fdEndpoint, fdSsl), method, path, headers, request, content, 65536) != 0) {
         inet::Close(fdEndpoint);
         fdSsl.reset();
     }
@@ -57,7 +58,7 @@ void cwebhook::Send(const std::string_view& method, json::value_t&& data, std::u
     headers["Host"] = std::string {webEndpoint.Host()};
     std::unique_lock<decltype(fdLock)> lock(fdLock);
     if (Connect()) {
-        if (res = HttpWriteRequest({fdEndpoint, fdSsl}, method, webEndpoint.Url(), std::move(headers), json::Serialize(std::move(data))); res == 0) {
+        if (res = HttpWriteRequest(std::make_shared<inet::csocket>(fdEndpoint, fdSsl), method, webEndpoint.Url(), std::move(headers), json::Serialize(std::move(data))); res == 0) {
             ReadResponse();
         } else {
             PSHT_ERROR("Send event {} error ( {} )", std::string {webEndpoint.HostPort()}.c_str(), std::strerror(-(int)res));
@@ -75,7 +76,7 @@ inline void cwebhook::Write(const std::string_view& method, const std::string_vi
     ssize_t res {-ECONNRESET};
     std::unique_lock<decltype(fdLock)> lock(fdLock);
     if (Connect()) {
-        if (res = HttpWriteRequest({fdEndpoint, fdSsl}, method, uri, std::move(headers), request); res == 0) {
+        if (res = HttpWriteRequest(std::make_shared<inet::csocket>(fdEndpoint, fdSsl), method, uri, std::move(headers), request); res == 0) {
             ReadResponse();
         } else {
             PSHT_ERROR("Send event {} error ( {} )", std::string {webEndpoint.HostPort()}.c_str(), std::strerror(-(int)res));

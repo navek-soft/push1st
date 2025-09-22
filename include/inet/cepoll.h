@@ -57,7 +57,7 @@ class cpoll : public std::enable_shared_from_this<cpoll> {
     static inline std::unordered_map<fd_t, handler_t> fdHandlers;
     static inline std::mutex fdLock;
     std::list<std::weak_ptr<cgc>> fdQueueGC;
-    std::thread pollThread;
+    std::jthread pollThread;
 };
 
 template <typename OBJ>
@@ -93,4 +93,6 @@ inline ssize_t cpoll::PollUpdate(fd_t fd, uint events, FN_T&& callback) {
     }
     return -ENOENT;
 }
+
+using poll_t = std::shared_ptr<cpoll>;
 }// namespace inet

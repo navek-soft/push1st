@@ -7,12 +7,17 @@ namespace inet {
 
 class chttpserver : public inet::ctcpserver, public inet::chttpconnection {
    public:
-    chttpserver(const std::string& name, const std::string& HostPort, const inet::ssl_ctx_t& SslCtx, size_t httpMaxHeaderSize = 65536);
+    chttpserver(const std::string& name, size_t numthreads, size_t numaccept, const std::string& HostPort, const inet::ssl_ctx_t& SslCtx, size_t httpMaxHeaderSize = 65536);
     ~chttpserver() override;
 
+   public:
+    void Join() {
+        inet::ctcpserver::TcpJoin();
+    }
+
    protected:
-    virtual void OnHttpRequest(const inet::csocket& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, const std::string& request, const std::string_view& content) = 0;
-    virtual void OnHttpError(const inet::csocket& fd, ssize_t err) = 0;
+    virtual void OnHttpRequest(const inet::socket_t& fd, const std::string_view& method, const http::uri_t& path, const http::headers_t& headers, const std::string& request, const std::string_view& content) = 0;
+    virtual void OnHttpError(const inet::socket_t& fd, ssize_t err) = 0;
     inline std::shared_ptr<inet::ctcpserver> TcpSelf() override = 0;
 
    private:

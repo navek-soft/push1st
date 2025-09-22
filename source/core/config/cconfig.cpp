@@ -2,8 +2,10 @@
 
 #include <fnmatch.h>
 
+#include <cstddef>
 #include <filesystem>
 #include <regex>
+#include <unordered_map>
 
 #include <yaml-cpp/node/node.h>
 
@@ -63,6 +65,7 @@ void cconfig::server_t::Load([[maybe_unused]] const std::filesystem::path& path,
     if (options.IsDefined() and options.IsMap()) {
         Proto = Map(options["proto"], {{"pusher", proto_t::type::pusher}, {"mqtt", proto_t::type::mqtt3}, {"websocket", proto_t::type::websocket}}, proto_t::type::none);
         Threads = Value<size_t>(options["threads"], Threads);
+        Accept = Value<size_t>(options["accept"], Accept);
         Listen = options["listen"];
         Ssl.Cert = Value<std::string>(options["ssl"]["cert"], {});
         Ssl.Key = Value<std::string>(options["ssl"]["key"], {});
@@ -140,6 +143,8 @@ void cconfig::interface_t::Load(const std::filesystem::path& path, const yaml_t&
     KeepAlive = Value<std::time_t>(options["keep-alive-timeout"], 0);
     Interface = Map(options["interface"], {{"pusher", api_t::type::pusher}, {"push1st", api_t::type::push1st}}, api_t::type::disable);
     Path = PathValue(options["path"], "apps");
+    Threads = Value<size_t>(options["threads"], Threads);
+    Accept = Value<size_t>(options["accept"], Accept);
     Ssl.Cert = Value<std::string>(options["ssl"]["cert"], {});
     Ssl.Key = Value<std::string>(options["ssl"]["key"], {});
     Ssl.Enable = Value<bool>(options["ssl"]["enable"], false);

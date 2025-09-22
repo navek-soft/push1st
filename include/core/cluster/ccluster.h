@@ -1,5 +1,6 @@
 #pragma once
 #include <log/clog.h>
+#include <unistd.h>
 
 #include "core/config/cconfig.h"
 #include "core/credentials/ccredentials.h"
@@ -29,7 +30,7 @@ class ccluster : public inet::cudpserver, public std::enable_shared_from_this<cc
     void Ping();
 
    protected:
-    void OnUdpData(fd_t fd, const inet::ssl_t& ssl, const std::weak_ptr<inet::cpoll>& poll) override;
+    ssize_t OnUdpData(fd_t fd, const inet::ssl_t& ssl) override;
     inline std::shared_ptr<inet::cudpserver> UdpSelf() override {
         return std::dynamic_pointer_cast<inet::cudpserver>(shared_from_this());
     }

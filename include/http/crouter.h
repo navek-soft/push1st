@@ -7,7 +7,7 @@
 #include "inet/csocket.h"
 
 namespace http {
-using routefn_t = std::function<void(const std::vector<std::string_view>&, const inet::csocket&, const std::string_view&, const http::uri_t&, const http::headers_t&, const std::string_view&)>;
+using routefn_t = std::function<void(const std::vector<std::string_view>&, const inet::socket_t&, const std::string_view&, const http::uri_t&, const http::headers_t&, const std::string_view&)>;
 class crouter {
     struct key_t {
         std::string route;
@@ -80,7 +80,7 @@ class crouter {
         key_t key {route, callback};
         routes.emplace(std::string {key.path.at(1)}, std::move(key));
     }
-    inline bool Call(const inet::csocket& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
+    inline bool Call(const inet::socket_t& fd, const std::string_view& method, const http::uri_t& uri, const http::headers_t& headers, const std::string_view& content) {
         if (uri.uriPathList.size() > 1) {
             std::vector<std::string_view> args;
             for (auto&& [it, end] {routes.equal_range(std::string {uri.uriPathList[1]})}; it != end; ++it) {

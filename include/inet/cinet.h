@@ -1,5 +1,6 @@
 #pragma once
 #include <sys/socket.h>
+#include <sys/types.h>
 
 #include <cstring>
 #include <ctime>
@@ -10,6 +11,11 @@ struct ssl_st;
 struct ssl_ctx_st;
 
 using fd_t = int;
+
+enum {
+    IPPROTO_UNIX = 0,
+#define IPPROTO_UNIX IPPROTO_UNIX
+};
 
 namespace inet {
 
@@ -25,6 +31,7 @@ inline int GetAF(const sockaddr_storage& sa) {
 ssize_t ResolveAddress(const std::string& hostUrl, sockaddr_storage& sa, const std::string& defPort = {});
 uint16_t GetPort(const sockaddr_storage& sa);
 ssize_t GetAddress(int fd, sockaddr_storage& sa);
+ssize_t GetAddress(sockaddr_storage& sa, int af, const std::string& port, const std::string& host = {});
 ssize_t GetSockAddr(sockaddr_storage& sa, const std::string_view& strHostPort, const std::string_view& strPort, int defaultAF);
 ssize_t GetErrorNo(fd_t fd);
 ssize_t SetKeepAlive(fd_t fd, bool enable, int count, int idle_sec, int intrvl_sec);

@@ -597,6 +597,15 @@ class cresponse {
 };
 }// namespace smpp
 
+void csmppservice::ReleaseGateway(const std::string& gwLogin, const std::string& gwPassword) {
+    std::string conId {gwLogin + ":" + gwPassword};
+    {
+        std::unique_lock lock(gwConnectionLock);
+        gwConnections.erase(conId);
+    }
+    PSHT_TRACE("release {} gateway", conId);
+}
+
 std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& message) {
     try {
         std::shared_ptr<cgateway> con;
@@ -630,7 +639,8 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
                 } else {
                     con = gwConnections
                               .emplace(conId,
-                                       std::make_shared<cgateway>(gwPoll,
+                                       std::make_shared<cgateway>(shared_from_this(),
+                                                                  gwPoll,
                                                                   gwHook,
                                                                   gwLogin,
                                                                   gwPassword,
@@ -707,7 +717,7 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
                 return {"201", json::object_t {{"id", MsgId}, {"status", "pending"}, {"channel", con->Channel()}}};
             } else {
                 con->Close();
-                PSHT_INFO("Connection was lost ( {} )", con->Channel().c_str());
+                PSHT_ERROR("Connection was lost ( {} )", con->Channel().c_str());
             }
             return {"400", json::object_t {{"error", "invalid gateway"}, {"channel", con->Channel()}}};
         } else {
@@ -840,6 +850,7 @@ void csmppservice::cgateway::OnGwReply([[maybe_unused]] fd_t fd, uint events) {
             PSHT_ERROR("Reply error: {}", std::strerror(-(int)err));
         }
         gwSocket.SocketClose();
+        svc->ReleaseGateway(gwLogin, gwPassword);
     }
 }
 
@@ -848,7 +859,11 @@ bool csmppservice::cgateway::IsLeaveUs(std::time_t now) {
         if (gwSocket and gwSocket.GetErrorNo() == 0) {
             gwPingTime = std::time(nullptr) + gwPingInterval;
             smpp::cenquire enq {Seq(), smpp::cenquire::req_id};
-            PSHT_ERROR("Ping: {} ( {} sec ) ... {}", gwPingTime, gwPingInterval, Send(enq.Pack()) == 0 ? "success" : "fail");
+            if (Send(enq.Pack()) == 0) {
+                PSHT_TRACE("Ping: {} ( {} sec ) ... {}", gwPingTime, gwPingInterval, "success");
+            } else {
+                PSHT_ERROR("Ping: {} ( {} sec ) ... {}", gwPingTime, gwPingInterval, "fail");
+            }
         }
     }
     return false;
@@ -942,7 +957,8 @@ void csmppservice::cgateway::Assign(const std::string& login, const std::string&
     gwSocket.SocketClose();
 }
 
-csmppservice::cgateway::cgateway(const std::shared_ptr<inet::cpoll>& poll, const std::shared_ptr<cwebhook>& hook, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port) :
+csmppservice::cgateway::cgateway(const std::shared_ptr<csmppservice>& svc, const std::shared_ptr<inet::cpoll>& poll, const std::shared_ptr<cwebhook>& hook, const std::string& login, const std::string& pwd, const std::vector<std::string>& hosts, const std::string& port) :
+    svc {svc},
     gwSocket {-1, {}},
     gwPoll {poll},
     gwHook {hook} {

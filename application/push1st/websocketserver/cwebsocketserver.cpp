@@ -6,7 +6,7 @@
 #include "../proto/cpushersession.h"
 #include "../proto/cwssession.h"
 
-ssize_t cwebsocketserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) {
+ssize_t cwebsocketserver::WsUpgrade(const inet::socket_t& fd, const http::uri_t& path, const http::headers_t& headers) {
     if (auto&& proto {ProtoRoutes.find(std::string {path.At(1)})}; proto != ProtoRoutes.end()) {
         if (path.At(1) != AppPath) {
             if (auto&& App {Credentials->GetAppByKey(std::string {path.At(3)})}; App) {
@@ -19,28 +19,28 @@ ssize_t cwebsocketserver::WsUpgrade(const inet::csocket& fd, const http::uri_t& 
         }
 
         HttpWriteResponse(fd, "403");
-        fd.SocketClose();
+        fd->SocketClose();
         return -EACCES;
     }
     HttpWriteResponse(fd, "404");
-    fd.SocketClose();
+    fd->SocketClose();
     return -ENOTDIR;
 }
 
-inet::socket_t cwebsocketserver::OnWsUpgrade(const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) {
+inet::socket_t cwebsocketserver::OnWsUpgrade(const inet::socket_t& fd, const http::uri_t& path, const http::headers_t& headers) {
     std::string AppId {std::string {path.At(path.At(1) != AppPath ? 3 : 2)}};
     auto&& App {Credentials->GetAppByKey(AppId)};
     if (auto&& conn {ProtoRoutes[std::string {path.At(1)}](Channels, App, fd, path, headers)}; App and conn) {
         return conn;
     } else {
         HttpWriteResponse(fd, "400");
-        fd.SocketClose();
+        fd->SocketClose();
     }
     return {};
 }
 
 cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, const std::shared_ptr<ccredentials>& credentials, config::server_t config) :
-    inet::cwsserver {"ws:srv", std::string {config.Listen.HostPort()}, config.Ssl.Context(), 8192},
+    inet::cwsserver {"ws:srv", config.Threads, config.Accept, std::string {config.Listen.HostPort()}, config.Ssl.Context(), 8192},
     Channels {channels},
     Credentials {credentials},
     AppPath {config.Path} {
@@ -49,9 +49,9 @@ cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, c
                   config.Ssl.Enable ? "https" : "http",
                   std::string {config.Listen.HostPort()}.c_str(),
                   config.WebSocket.Path.c_str());
-        ProtoRoutes[config.WebSocket.Path] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
+        ProtoRoutes[config.WebSocket.Path] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::socket_t& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
             if (auto&& conn {std::make_shared<cwssession>(
-                    channels, app, fd, config.WebSocket.MaxPayloadSize, config.WebSocket.PushOn, config.WebSocket.ActivityTimeout, std::string {path.Arg("session")})};
+                    channels, app, *fd, config.WebSocket.MaxPayloadSize, config.WebSocket.PushOn, config.WebSocket.ActivityTimeout, std::string {path.Arg("session")})};
                 conn and conn->OnWsConnect(path, headers)) {
                 return std::dynamic_pointer_cast<inet::csocket>(conn);
             }
@@ -67,9 +67,9 @@ cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, c
                   config.Ssl.Enable ? "https" : "http",
                   std::string {config.Listen.HostPort()}.c_str(),
                   "app");
-        ProtoRoutes["app"] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
+        ProtoRoutes["app"] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::socket_t& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
             if (auto&& conn {std::make_shared<cpushersession>(
-                    channels, app, fd, config.Pusher.MaxPayloadSize, config.Pusher.PushOn, config.Pusher.ActivityTimeout)};
+                    channels, app, *fd, config.Pusher.MaxPayloadSize, config.Pusher.PushOn, config.Pusher.ActivityTimeout)};
                 conn and conn->OnWsConnect(path, headers)) {
                 return std::dynamic_pointer_cast<inet::csocket>(conn);
             }
@@ -79,9 +79,9 @@ cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, c
                   config.Ssl.Enable ? "https" : "http",
                   std::string {config.Listen.HostPort()}.c_str(),
                   config.Pusher.Path.c_str());
-        ProtoRoutes[config.Pusher.Path] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
+        ProtoRoutes[config.Pusher.Path] = [config](const std::shared_ptr<cchannels>& channels, const app_t& app, const inet::socket_t& fd, const http::uri_t& path, const http::headers_t& headers) -> inet::socket_t {
             if (auto&& conn {std::make_shared<cpushersession>(
-                    channels, app, fd, config.Pusher.MaxPayloadSize, config.Pusher.PushOn, config.Pusher.ActivityTimeout)};
+                    channels, app, *fd, config.Pusher.MaxPayloadSize, config.Pusher.PushOn, config.Pusher.ActivityTimeout)};
                 conn and conn->OnWsConnect(path, headers)) {
                 return std::dynamic_pointer_cast<inet::csocket>(conn);
             }
@@ -96,7 +96,7 @@ cwebsocketserver::cwebsocketserver(const std::shared_ptr<cchannels>& channels, c
                   config.Ssl.Enable ? "https" : "http",
                   std::string {config.Listen.HostPort()}.c_str(),
                   config.MQTT.Path.c_str());
-        ProtoRoutes[config.MQTT.Path] = [config]([[maybe_unused]] const std::shared_ptr<cchannels>& channels, [[maybe_unused]] const app_t& app, [[maybe_unused]] const inet::csocket& fd, [[maybe_unused]] const http::uri_t& path, [[maybe_unused]] const http::headers_t& headers) -> inet::socket_t {
+        ProtoRoutes[config.MQTT.Path] = [config]([[maybe_unused]] const std::shared_ptr<cchannels>& channels, [[maybe_unused]] const app_t& app, [[maybe_unused]] const inet::socket_t& fd, [[maybe_unused]] const http::uri_t& path, [[maybe_unused]] const http::headers_t& headers) -> inet::socket_t {
             return {};
         };
     } else {

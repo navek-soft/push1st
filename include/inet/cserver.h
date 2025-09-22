@@ -1,4 +1,6 @@
 #pragma once
+#include <unistd.h>
+
 #include "cinet.h"
 
 namespace inet {
@@ -11,12 +13,11 @@ class cserver {
     virtual ~cserver() {
         ;
     }
-    virtual void Listen(const std::shared_ptr<cpoll>& poll) = 0;
 
    protected:
     virtual std::shared_ptr<cserver> GetInstance() = 0;
-    virtual void OnAccept(fd_t, uint, std::weak_ptr<cpoll> poll) = 0;
-    virtual void OnAcceptSSL(fd_t, uint, std::weak_ptr<cpoll> poll) = 0;
+    virtual ssize_t Accept(fd_t, std::weak_ptr<cpoll> poll) = 0;
+    virtual ssize_t AcceptSSL(fd_t, std::weak_ptr<cpoll> poll) = 0;
     inline const char* NameOf() {
         return SrvName.c_str();
     }

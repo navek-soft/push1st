@@ -18,7 +18,7 @@ void cwsserver::WsData(fd_t fd, uint events, inet::socket_t& so, const std::weak
     }
 }
 
-ssize_t cwsserver::WsUpgrade(const inet::csocket& fd, [[maybe_unused]] const http::uri_t& path, const http::headers_t& headers) {
+ssize_t cwsserver::WsUpgrade(const inet::socket_t& fd, [[maybe_unused]] const http::uri_t& path, const http::headers_t& headers) {
     return HttpWriteResponse(fd,
                              "101",
                              {},
@@ -48,7 +48,7 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
             http::uri_t path;
             http::headers_t headers;
             std::string request;
-            inet::csocket so(fd, sa, ssl, poll);
+            auto&& so = std::make_shared<inet::csocket>(fd, sa, ssl, poll);
             if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
                 if (method == "GET" and strncasecmp(http::GetValue(headers, "connection").data(), "upgrade", 7) == 0
                     and strncasecmp(http::GetValue(headers, "upgrade").data(), "websocket", 9) == 0 and http::ToNumber(http::GetValue(headers, "sec-websocket-version")) >= 12) {
@@ -74,12 +74,10 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
     }
 }
 
-cwsserver::cwsserver(const std::string& name, const std::string& HostPort, const inet::ssl_ctx_t& SslCtx, size_t httpMaxHeaderSize) :
-    inet::ctcpserver {name, false, 1500, 2000, true},
+cwsserver::cwsserver(const std::string& name, size_t numthreads, size_t numaccept, const std::string& HostPort, const inet::ssl_ctx_t& SslCtx, size_t httpMaxHeaderSize) :
+    inet::ctcpserver {name, numthreads, numaccept, false, 1500, 2000, true},
     HttpMaxHeaderSize {httpMaxHeaderSize} {
-    TcpListen(HostPort, true, true, true, 4096, SslCtx);
+    TcpListen(HostPort, 4096, AF_INET, SslCtx);
 }
 
-cwsserver::~cwsserver() {
-    TcpClose();
-}
+cwsserver::~cwsserver() {}

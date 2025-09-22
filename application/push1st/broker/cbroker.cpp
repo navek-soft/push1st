@@ -73,34 +73,20 @@ void cbroker::Initialize(const core::cconfig& config) {
     Cluster = std::make_shared<ccluster>(shared_from_this(), config.Cluster);
     Channels = std::make_shared<cchannels>(Cluster);
     Credentials = std::make_shared<ccredentials>(shared_from_this(), config.Credentials);
-    ApiServer = std::make_shared<capiserver>(Channels, Credentials, Cluster, config.Api);
+    ApiServer = capiserver::MakeShared(Channels, Credentials, Cluster, config.Api);
     if (!config.Server.Proto.Empty()) {
         WsServer = std::make_shared<cwebsocketserver>(Channels, Credentials, config.Server);
     }
 
-    std::vector<std::shared_ptr<inet::cpoll>> ServerPoll;
     std::shared_ptr<inet::cpoll> ClusterPoll {std::make_shared<inet::cpoll>()};
     Cluster->Listen(ClusterPoll);
-
-    ServerPoll.reserve(config.Server.Threads);
-
-    for (auto n {config.Server.Threads}; n--;) {
-        ServerPoll.emplace_back(std::make_shared<inet::cpoll>());
-        if (WsServer) {
-            WsServer->Listen(ServerPoll.back());
-        }
-        ApiServer->Listen(ServerPoll.back());
-        //        Cluster->Listen(ServerPoll.back());
-        ServerPoll.back()->Listen();
-    }
-
     ClusterPoll->Listen();
 
     WaitFor({SIGINT, SIGQUIT, SIGABRT, SIGSEGV, SIGHUP});
 
-    for (auto& poll : ServerPoll) {
-        poll->Join();
-    }
+    ClusterPoll->Join();
+    ApiServer->Join();
+    WsServer->Join();
 }
 
 static volatile int nsig {-1};

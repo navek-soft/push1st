@@ -1,10 +1,10 @@
 #pragma once
 
+#include <cstddef>
 #include <ctime>
 #include <filesystem>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 
 #include "core/util/cflag.h"
@@ -117,6 +117,7 @@ class cconfig {
     struct server_t {
         proto_t Proto {proto_t::type::none};
         size_t Threads {3};
+        size_t Accept {3};
         cdsn Listen;
         ssloptions_t Ssl;
         std::string Path;
@@ -149,6 +150,9 @@ class cconfig {
         std::string Path;
         std::time_t KeepAlive {10};
         ssloptions_t Ssl;
+        size_t Threads {3};
+        size_t Accept {3};
+
         struct smpp_t {
             bool Enable {false};
             std::string Hook;

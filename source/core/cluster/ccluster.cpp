@@ -155,7 +155,7 @@ inline void ccluster::Send(data_t data) {
     }
 }
 
-void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, [[maybe_unused]] const std::weak_ptr<inet::cpoll>& poll) {
+ssize_t ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl) {
     if (inet::csocket so {fd, ssl}; so) {
         struct sockaddr_storage sa;
         ssize_t nread {0};
@@ -188,37 +188,43 @@ void ccluster::OnUdpData(fd_t fd, const inet::ssl_t& ssl, [[maybe_unused]] const
                             break;
                         default:
                             PSHT_ERROR("Network error ( {} )", std::strerror(EBADMSG));
-                            break;
+                            return -EAGAIN;
                     }
                 } else {
                     PSHT_ERROR("Network error ( {} )", std::strerror(EMSGSIZE));
+                    return -EAGAIN;
                 }
             } else {
                 PSHT_ERROR("Network error ( {} )", std::strerror(-(int)res));
+                return res;
             }
         } else {
             PSHT_ERROR("Network error ( {} )", std::strerror(-(int)res));
+            return res;
         }
     } else {
         PSHT_ERROR("Network error ( {} )", std::strerror(EBADFD));
+        return -EBADFD;
     }
+
+    return 0;
 }
 
 void ccluster::Push(channel_t::type type, const app_t& app, sid_t channel, const json::object_t& data) {
-    if (clusFd and app->IsAllowTrigger(type, hook_t::type::push)) {
+    if (app->IsAllowTrigger(type, hook_t::type::push)) {
         //(*msg)["#msg-from"] = "cluster";
         Send(proto::Pack(hook_t::type::push, {{"app", app->Id}, {"channel", channel}, {"data", json::Serialize(data)}}));
     }
 }
 
 void ccluster::Trigger([[maybe_unused]] channel_t::type type, hook_t::type trigger, const app_t& app, sid_t channel, [[maybe_unused]] sid_t session, const json::object_t& data) {
-    if (clusFd and (clusSync & trigger)) {
+    if (clusSync & trigger) {
         Send(proto::Pack(trigger, {{"app", app->Id}, {"channel", channel}, {"data", json::Serialize(data)}}));
     }
 }
 
 void ccluster::Ping() {
-    if (clusFd and clusPingInterval) {
+    if (clusPingInterval) {
         if (auto now = std::time(nullptr); now >= clusPingTime) {
             clusPingTime = now + clusPingInterval;
             Send(proto::Pack(proto::op_t::ping, json::object_t {}));
@@ -277,7 +283,4 @@ ccluster::ccluster(const broker_t& broker, config::cluster_t& config) :
     }
 }
 
-ccluster::~ccluster() {
-    clusFd.SocketClose();
-    // cliFd.SocketClose();
-}
+ccluster::~ccluster() {}

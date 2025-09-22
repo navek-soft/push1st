@@ -73,7 +73,10 @@ int main(int argc, char* argv[]) {
         cfg.Load(configFile);
         util::log::initialize(cfg.Logger);
         broker->Initialize(cfg);
-    } catch (std::exception& ex) { return EXIT_FAILURE; }
+    } catch (std::exception& ex) {
+        fmt::print("Startup error: {}\n", ex.what());
+        return EXIT_FAILURE;
+    }
     return 0;
 #else
     extern int test_http_route(int argc, char* argv[]);

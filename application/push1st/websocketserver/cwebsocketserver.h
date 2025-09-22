@@ -14,8 +14,8 @@ class cwebsocketserver : public inet::cwsserver, public std::enable_shared_from_
     ~cwebsocketserver() override;
 
    protected:
-    ssize_t WsUpgrade(const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) override;
-    inet::socket_t OnWsUpgrade(const inet::csocket& fd, const http::uri_t& path, const http::headers_t& headers) override;
+    ssize_t WsUpgrade(const inet::socket_t& fd, const http::uri_t& path, const http::headers_t& headers) override;
+    inet::socket_t OnWsUpgrade(const inet::socket_t& fd, const http::uri_t& path, const http::headers_t& headers) override;
     inline std::shared_ptr<inet::ctcpserver> TcpSelf() override {
         return std::dynamic_pointer_cast<inet::ctcpserver>(shared_from_this());
     }
@@ -23,6 +23,6 @@ class cwebsocketserver : public inet::cwsserver, public std::enable_shared_from_
    private:
     std::shared_ptr<cchannels> Channels;
     std::shared_ptr<ccredentials> Credentials;
-    std::unordered_map<std::string, std::function<inet::socket_t(const std::shared_ptr<cchannels>&, const app_t&, const inet::csocket&, const http::uri_t&, const http::headers_t&)>> ProtoRoutes;
+    std::unordered_map<std::string, std::function<inet::socket_t(const std::shared_ptr<cchannels>&, const app_t&, const inet::socket_t&, const http::uri_t&, const http::headers_t&)>> ProtoRoutes;
     std::string AppPath {"app"};
 };
