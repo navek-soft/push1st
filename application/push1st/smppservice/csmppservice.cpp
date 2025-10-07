@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <cinttypes>
+#include <cstddef>
 #include <cstdint>
 
 #include "log/clog.h"
@@ -599,11 +600,15 @@ class cresponse {
 
 void csmppservice::ReleaseGateway(const std::string& gwLogin, const std::string& gwPassword) {
     std::string conId {gwLogin + ":" + gwPassword};
+    size_t removed {0};
     {
         std::unique_lock lock(gwConnectionLock);
-        gwConnections.erase(conId);
+        removed = gwConnections.erase(conId);
     }
-    PSHT_TRACE("release {} gateway", conId);
+
+    if (removed) {
+        PSHT_DEBUG("Release {} gateway", conId);
+    }
 }
 
 std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& message) {
@@ -634,7 +639,7 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
                     con->Assign(gwLogin, gwPassword,
                         gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
                         */
-                    PSHT_INFO("Reuse connection: {} ( channel: {} ), {}", gwLogin.c_str(), con->Channel().c_str(), *(int64_t*)this);
+                    PSHT_INFO("Reuse connection: {} ( channel: {} ), {}", gwLogin, con->Channel(), *(int64_t*)this);
 
                 } else {
                     con = gwConnections
@@ -741,7 +746,7 @@ ssize_t csmppservice::cgateway::Send(const std::string& msg, std::string& respon
                 }
             }
         }
-        gwSocket.SocketClose();
+        Close();
         return err;
     }
     return -EBADFD;
@@ -754,7 +759,7 @@ ssize_t csmppservice::cgateway::Send(const std::string& msg) {
         if (size_t nbytes {0}; (err = gwSocket.SocketSend(msg.data(), msg.length(), nbytes, 0)) == 0) {
             return 0;
         }
-        gwSocket.SocketClose();
+        Close();
         return err;
     }
     return -EBADFD;
@@ -764,63 +769,81 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
     std::string_view response {data};
     json::value_t status;
     if (auto&& [cmd] = smpp::cresponse<smpp::param::ccmd> {}(response); cmd.status == 0) {
-        if (cmd.id == smpp::cdelivery::id) {
-            auto&& [report] = smpp::cresponse<smpp::cdelivery> {}(response);
+        switch (cmd.id) {
+            case smpp::cdelivery::id: {
+                auto&& [report] = smpp::cresponse<smpp::cdelivery> {}(response);
 
-            PSHT_INFO("Delivery SMS: status: {}, id: {}, seq: {} ( {} ), channel: {}",
-                      cmd.status,
-                      cmd.id,
-                      cmd.sequence,
-                      report.message.Str().c_str(),
-                      Channel().c_str());
+                if (cmd.status == 0) {
+                    status = json::object_t {
+                        {"id", cmd.sequence}, {"status", "delivered"}, {"channel", Channel()}, {"data", report.message.Str()}};
+                } else {
+                    status = json::object_t {{"id", cmd.sequence}, {"status", "not_delivered"}, {"channel", Channel()}};
+                }
 
-            if (cmd.status == 0) {
-                status = json::object_t {
-                    {"id", cmd.sequence}, {"status", "delivered"}, {"channel", Channel()}, {"data", report.message.Str()}};
-            } else {
-                status = json::object_t {{"id", cmd.sequence}, {"status", "not_delivered"}, {"channel", Channel()}};
-            }
+                smpp::cdelivery_resp resp {cmd.sequence, {}};
+                auto res = Send(resp.Pack());
 
-            smpp::cdelivery_resp resp {cmd.sequence, {}};
-            Send(resp.Pack());
-        } else if (smpp::csms::resp_id == cmd.id) {
-            auto&& [msg] = smpp::cresponse<smpp::param::cstring> {}(response);
-
-            if (cmd.status == 0) {
-                status = json::object_t {{"id", cmd.sequence}, {"status", "accepted"}, {"channel", Channel()}, {"uid", msg.Str()}};
-                PSHT_INFO("Accept SMS: status: {}, id: {}, seq: {}, uid: {}, channel: {}",
+                PSHT_INFO("Delivery SMS: status: {}, id: {}, seq: {} ( {} ), channel: {} ( {} )",
                           cmd.status,
                           cmd.id,
                           cmd.sequence,
-                          msg.Str().c_str(),
-                          Channel().c_str());
-            } else {
-                status = json::object_t {{"id", cmd.sequence}, {"status", "not_accepted"}, {"channel", Channel()}};
-                PSHT_INFO(
-                    "Accept SMS: status: {}, id: {}, seq: {}, channel: {}", cmd.status, cmd.id, cmd.sequence, Channel().c_str());
+                          report.message.Str().c_str(),
+                          Channel().c_str(),
+                          std::strerror(-(int)res));
+
+                break;
             }
-        } else if (smpp::cenquire::req_id == cmd.id) {
-            smpp::cenquire resp {cmd.sequence};
-            auto res = Send(resp.Pack());
-            PSHT_INFO("Enquire Link ( ping ): status: {}, id: {}, seq: {}, channel: {} ( {} )",
-                      cmd.status,
-                      cmd.id,
-                      cmd.sequence,
-                      Channel().c_str(),
-                      std::strerror(-(int)res));
-            return;
-        } else if (smpp::cenquire::resp_id == cmd.id) {
-            PSHT_INFO("Enquire Link ( pong ): status: {}, id: {}, seq: {}, channel: {} ( {} )",
-                      cmd.status,
-                      cmd.id,
-                      cmd.sequence,
-                      Channel().c_str(),
-                      std::strerror(0));
-            return;
-        } else {
-            PSHT_INFO("Status SMS: {}, id: {}, seq: {}", cmd.status, cmd.id, cmd.sequence);
-            status = json::object_t {{"id", cmd.sequence}, {"status", "event"}, {"code", cmd.status}, {"channel", Channel()}};
-        }
+            case smpp::csms::resp_id: {
+                auto&& [msg] = smpp::cresponse<smpp::param::cstring> {}(response);
+
+                if (cmd.status == 0) {
+                    status = json::object_t {{"id", cmd.sequence}, {"status", "accepted"}, {"channel", Channel()}, {"uid", msg.Str()}};
+                    PSHT_INFO("Accept SMS: status: {}, id: {}, seq: {}, uid: {}, channel: {}",
+                              cmd.status,
+                              cmd.id,
+                              cmd.sequence,
+                              msg.Str().c_str(),
+                              Channel().c_str());
+                } else {
+                    status = json::object_t {{"id", cmd.sequence}, {"status", "not_accepted"}, {"channel", Channel()}};
+                    PSHT_INFO("Accept SMS: status: {}, id: {}, seq: {}, channel: {}",
+                              cmd.status,
+                              cmd.id,
+                              cmd.sequence,
+                              Channel().c_str());
+                }
+                break;
+            }
+            case smpp::cenquire::req_id: {
+                smpp::cenquire resp {cmd.sequence};
+                auto res = Send(resp.Pack());
+                gwPPTimeout = std::time(nullptr) + gwTimeoutInterval;
+                PSHT_DEBUG("Enquire Link ( ping ): status: {}, id: {}, seq: {}, channel: {}, timeout: {} sec ( {} )",
+                           cmd.status,
+                           cmd.id,
+                           cmd.sequence,
+                           Channel().c_str(),
+                           gwPPTimeout,
+                           std::strerror(-(int)res));
+                return;
+            }
+            case smpp::cenquire::resp_id: {
+                gwPPTimeout = std::time(nullptr) + gwTimeoutInterval;
+                PSHT_DEBUG("Enquire Link ( pong ): status: {}, id: {}, seq: {}, channel: {}, timeout: {} sec ( {} )",
+                           cmd.status,
+                           cmd.id,
+                           cmd.sequence,
+                           Channel().c_str(),
+                           gwPPTimeout,
+                           std::strerror(0));
+                return;
+            }
+            default: {
+                PSHT_INFO("Status SMS: {}, id: {}, seq: {}", cmd.status, cmd.id, cmd.sequence);
+                status = json::object_t {{"id", cmd.sequence}, {"status", "event"}, {"code", cmd.status}, {"channel", Channel()}};
+                break;
+            }
+        };
     } else {
         PSHT_INFO("Invalid reply SMS: {}, id: {}, seq: {}", cmd.status, cmd.id, cmd.sequence);
         status = json::object_t {{"id", cmd.sequence}, {"status", "error"}, {"code", cmd.status}, {"channel", Channel()}};
@@ -849,21 +872,22 @@ void csmppservice::cgateway::OnGwReply([[maybe_unused]] fd_t fd, uint events) {
             }
             PSHT_ERROR("Reply error: {}", std::strerror(-(int)err));
         }
-        gwSocket.SocketClose();
-        svc->ReleaseGateway(gwLogin, gwPassword);
+        Close();
     }
 }
 
 bool csmppservice::cgateway::IsLeaveUs(std::time_t now) {
+    if (gwPPTimeout and gwPPTimeout <= now) {
+        Close();
+        PSHT_ERROR("Ping timeout {} <= {}, channel: {}, {}", gwPPTimeout, now, Channel(), *(int64_t*)this);
+        return true;
+    }
+
     if (gwPingTime and gwPingTime <= now) {
         if (gwSocket and gwSocket.GetErrorNo() == 0) {
             gwPingTime = std::time(nullptr) + gwPingInterval;
             smpp::cenquire enq {Seq(), smpp::cenquire::req_id};
-            if (Send(enq.Pack()) == 0) {
-                PSHT_TRACE("Ping: {} ( {} sec ) ... {}", gwPingTime, gwPingInterval, "success");
-            } else {
-                PSHT_ERROR("Ping: {} ( {} sec ) ... {}", gwPingTime, gwPingInterval, "fail");
-            }
+            PSHT_DEBUG("Ping: {} ( {} sec )... {}", gwPingTime, gwPingInterval, Send(enq.Pack()) == 0 ? "success" : "fail");
         }
     }
     return false;
@@ -904,7 +928,7 @@ inline bool csmppservice::cgateway::Connect() {
                      * Send Enquire link
                      */
                     gwPingTime = std::time(nullptr) + gwPingInterval;
-
+                    gwPPTimeout = std::time(nullptr) + gwTimeoutInterval;
                     smpp::cenquire enq {Seq(), smpp::cenquire::req_id};
 
                     return Send(enq.Pack()) == 0;
@@ -915,7 +939,7 @@ inline bool csmppservice::cgateway::Connect() {
             } else {
                 PSHT_ERROR("Connect to {} Send bind  ... error ( {} )", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
             }
-            gwSocket.SocketClose();
+            Close();
         } else {
             PSHT_ERROR("Connect to {}  ... error ( {} )", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
         }

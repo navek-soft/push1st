@@ -1,5 +1,8 @@
 #pragma once
+#include <unistd.h>
+
 #include <atomic>
+#include <cstddef>
 #include <mutex>
 
 #include "core/hooks/chooks.h"
@@ -36,6 +39,7 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
         }
         inline void Close() {
             gwSocket.SocketClose();
+            svc->ReleaseGateway(gwLogin, gwPassword);
         }
         bool IsLeaveUs(std::time_t now) override;
 
@@ -54,7 +58,8 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
         std::string gwConId;
         std::shared_ptr<inet::cpoll> gwPoll;
         std::shared_ptr<cwebhook> gwHook;
-        std::time_t gwPingTime {0}, gwPingInterval {30};
+        std::time_t gwPingTime {0}, gwPPTimeout {0};
+        const std::time_t gwPingInterval {30}, gwTimeoutInterval {40};
     };
 
    public:
@@ -62,6 +67,8 @@ class csmppservice : public std::enable_shared_from_this<csmppservice> {
     virtual ~csmppservice() {
         gwPoll->Join();
     };
+
+   public:
     inline void Listen() {
         gwPoll->Listen();
     }
