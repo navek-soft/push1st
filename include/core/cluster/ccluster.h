@@ -2,6 +2,8 @@
 #include <log/clog.h>
 #include <unistd.h>
 
+#include <memory>
+
 #include "core/config/cconfig.h"
 #include "core/credentials/ccredentials.h"
 #include "core/lua/clua.h"
@@ -11,16 +13,10 @@
 #include "inet/cudpserver.h"
 
 class cibroker;
+class cadapter;
 
 class ccluster : public inet::cudpserver, public std::enable_shared_from_this<ccluster> {
     log_as(cluster);
-
-    class cnode {
-       public:
-        uint32_t NodeIp {0};
-        std::time_t NodeLastActivity {0};
-        struct sockaddr_storage NodeAddress;
-    };
 
    public:
     ccluster(const std::shared_ptr<cibroker>&, config::cluster_t&);
@@ -28,6 +24,7 @@ class ccluster : public inet::cudpserver, public std::enable_shared_from_this<cc
     void Trigger(channel_t::type type, hook_t::type trigger, const app_t& app, sid_t channel, sid_t session, const json::object_t& data);
     void Push(channel_t::type type, const app_t& app, sid_t channel, const json::object_t& data);
     void Ping();
+    void Check();
 
    protected:
     ssize_t OnUdpData(fd_t fd, const inet::ssl_t& ssl) override;
@@ -50,8 +47,7 @@ class ccluster : public inet::cudpserver, public std::enable_shared_from_this<cc
     sync_t clusSync {sync_t::type::push};
     inet::csocket clusFd {-1, nullptr};
     // inet::csocket cliFd{ -1,nullptr };
-    core::cspinlock clusLock;
-    std::unordered_map<uint32_t /* ip */, std::unique_ptr<cnode>> clusNodes;
+    std::unique_ptr<cadapter> clusNodes;
     bool clusModuleAllowed {false};
     std::filesystem::path clusModule;
     clua::engine jitLua;

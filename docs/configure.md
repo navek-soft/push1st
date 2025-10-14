@@ -40,7 +40,9 @@ cluster:
 #    listen: disable # udp://<host>:<port>, multicast://<multicast-group-address>:<port>/<bind-iface-ip-address>
     ping-interval: 30 # 0 - to disable ping
     listen: udp://*:8001 # strongly recommended bind to internal IP or close port with iptables
-    family: [ node1.push1st.local, node2.push1st.local ]
+    family: 
+        adapter: peers
+        nodes: [ node1.push1st.local, node2.push1st.local ]
     sync: [ register, unregister, join, leave, push ]
 
 api:
@@ -53,6 +55,28 @@ api:
 
 credentials: 
     - apps/*.yml
+```
+
+#### Cluster configuration
+
+Cluster has two adapter types: `peers` and `k8s`.
+- `peers` let you explicitly specified list of peers to connect
+```yaml
+    family: 
+        adapter: peers
+        nodes: [ node1.push1st.local, node2.push1st.local ]
+```
+
+- `k8s` let you discover new push1st peers through k8s api
+```yaml
+    family:
+        adapter: k8s
+        ssl:                    ## k8s API works with SSL
+            enable: true
+            cert: config/k8s/client.crt
+            key: config/k8s/client.key 
+        url: 192.168.49.2:8443  ## k8s API endpoint
+        namespace: default      ## k8s namespace
 ```
 
 #### App. registration and setting permissions (apps/app.example.yaml)

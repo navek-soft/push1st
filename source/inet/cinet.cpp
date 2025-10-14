@@ -155,6 +155,18 @@ uint16_t inet::GetPort(const sockaddr_storage& sa) {
     return 0;
 }
 
+std::string inet::GetAddress(const sockaddr_storage& sa) {
+    auto&& buffer {(char*)alloca(256)};
+    if (sa.ss_family == AF_INET) {
+        inet_ntop(AF_INET, &((sockaddr_in*)&sa)->sin_addr, buffer, 256);
+        return std::string(buffer).append(":").append(std::to_string(htobe16(((sockaddr_in*)&sa)->sin_port)));
+    } else if (sa.ss_family == AF_INET6) {
+        inet_ntop(AF_INET6, &((sockaddr_in6*)&sa)->sin6_addr, buffer, 256);
+        return std::string(buffer).append(":").append(std::to_string(htobe16(((sockaddr_in6*)&sa)->sin6_port)));
+    }
+    return "";
+}
+
 ssize_t inet::GetErrorNo(fd_t fd) {
     int soerror {0};
     if (socklen_t so_len {sizeof(soerror)}; getsockopt((int)fd, SOL_SOCKET, SO_ERROR, &soerror, &so_len) == 0) {
@@ -267,19 +279,6 @@ ssize_t inet::TcpConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, st
     return res;
 }
 
-ssize_t inet::SslCreateClientContext(ssl_ctx_t& sslCtx) {
-    if (sslCtx = std::shared_ptr<SSL_CTX> {SSL_CTX_new(TLS_client_method()),
-                                           [](SSL_CTX* ctx) {
-                                               SSL_CTX_free(ctx);
-                                           }};
-        sslCtx) {
-        SSL_CTX_set_ecdh_auto(sslCtx.get(), 1);
-        SSL_CTX_set_verify(sslCtx.get(), SSL_VERIFY_NONE, nullptr);
-        return 0;
-    }
-    return -EINVAL;
-}
-
 ssize_t inet::SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout, const inet::ssl_ctx_t& ctx, inet::ssl_t& ssl) {
     ssize_t res {0};
     fd = -1;
@@ -296,7 +295,7 @@ ssize_t inet::SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, st
         return -EINVAL;
     }
 
-    if (fd = ::socket(sa.ss_family, SOCK_CLOEXEC | SOCK_STREAM | (nonblock ? SOCK_NONBLOCK : 0), 0); fd > 0) {
+    if (fd = socket(sa.ss_family, SOCK_CLOEXEC | SOCK_STREAM | (nonblock ? SOCK_NONBLOCK : 0), 0); fd > 0) {
         if (conntimeout) {
             int tcpOpt {(int)conntimeout};
             setsockopt((int)fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &tcpOpt, sizeof(tcpOpt));
@@ -316,8 +315,24 @@ ssize_t inet::SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, st
         ssl.reset();
         ::close((int)fd);
         fd = -1;
+    } else {
+        res = -errno;
     }
+
     return res;
+}
+
+std::string inet::SslGetErrorString() {
+    std::string message;
+
+    unsigned long error = 0;
+    while ((error = ERR_get_error()) != 0) {
+        char str[120];
+        ERR_error_string_n(error, str, sizeof(str));
+        message.append(" #").append(str);
+    }
+
+    return message;
 }
 
 ssize_t inet::TcpServer(int& fd, const sockaddr_storage& sa, bool reuseaddress, bool reuseport, bool nonblock, int maxlisten) {
@@ -562,6 +577,34 @@ ssize_t inet::SslCreateSelfSignedContext(std::shared_ptr<SSL_CTX>& sslCtx) {
     SSL_CTX_set_verify(sslCtx.get(), SSL_VERIFY_NONE, nullptr);
 
     return 0;
+}
+
+ssize_t inet::SslCreateClientContext(ssl_ctx_t& sslCtx, const std::string& certFile, const std::string& privateKeyFile) {
+    if (sslCtx = std::shared_ptr<SSL_CTX> {SSL_CTX_new(TLS_client_method()),
+                                           [](SSL_CTX* ctx) {
+                                               SSL_CTX_free(ctx);
+                                           }};
+        sslCtx) {
+        SSL_CTX_set_ecdh_auto(sslCtx.get(), 1);
+        SSL_CTX_set_verify(sslCtx.get(), SSL_VERIFY_NONE, nullptr);
+
+        if (!certFile.empty() && !privateKeyFile.empty()) {
+            /* Set the key and cert */
+            if (SSL_CTX_use_certificate_chain_file(sslCtx.get(), certFile.c_str()) <= 0) {
+                ERR_print_errors_fp(stderr);
+                exit(EXIT_FAILURE);
+            }
+
+            if (SSL_CTX_use_PrivateKey_file(sslCtx.get(), privateKeyFile.c_str(), SSL_FILETYPE_PEM) <= 0) {
+                ERR_print_errors_fp(stderr);
+                exit(EXIT_FAILURE);
+            }
+
+            SSL_CTX_set_session_cache_mode(sslCtx.get(), SSL_SESS_CACHE_OFF);
+        }
+        return 0;
+    }
+    return -EINVAL;
 }
 
 ssize_t inet::SslCreateContext(std::shared_ptr<SSL_CTX>& sslCtx, const std::string& certFile, const std::string& privateKeyFile, bool novalidate) {

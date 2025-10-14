@@ -2,10 +2,11 @@
 
 #include <fnmatch.h>
 
-#include <cstddef>
 #include <filesystem>
 #include <regex>
 #include <unordered_map>
+
+#include "spdlog/fmt/bundled/core.h"
 
 #include <yaml-cpp/node/node.h>
 
@@ -104,7 +105,20 @@ void cconfig::server_t::Load([[maybe_unused]] const std::filesystem::path& path,
     }
 }
 
+cconfig::cluster_t::type_t cconfig::cluster_t::FromStr(const std::string_view& str) {
+    if (str == "k8s") {
+        return type_t::k8s;
+    }
+
+    if (str == "peers") {
+        return type_t::peers;
+    }
+
+    throw std::runtime_error(fmt::format("wrong cluster adapter type {}", str));
+}
+
 void cconfig::cluster_t::Load([[maybe_unused]] const std::filesystem::path& path, const yaml_t& options) {
+    Enable = false;
     if (options.IsDefined() and options.IsMap()) {
         Listen = options["listen"];
         Module = options["module"];
@@ -112,23 +126,65 @@ void cconfig::cluster_t::Load([[maybe_unused]] const std::filesystem::path& path
         PingInterval = (std::time_t)Value<size_t>(options["ping-interval"], PingInterval);
         Sync = Map(options["sync"], {{"register", sync_t::type::reg}, {"unregister", sync_t::type::unreg}, {"join", sync_t::type::join}, {"leave", sync_t::type::leave}, {"push", sync_t::type::push}}, sync_t::type::none);
 
-        if (options["family"].IsSequence()) {
-            for (auto&& node : options["family"]) {
-                Nodes.emplace(Value<std::string>(node, {}));
-            }
+        if (not options["family"].IsMap()) {
+            return;
         }
+
+        const auto& family = options["family"];
+
+        if (not family["adapter"].IsDefined()) {
+            return;
+        }
+
+        Type = FromStr(family["adapter"].as<std::string>());
+
+        switch (Type) {
+            case type_t::peers: {
+                for (auto&& node : family["nodes"]) {
+                    Nodes.emplace(Value<std::string>(node, {}));
+                    Enable = !Nodes.empty();
+                }
+                break;
+            }
+            case type_t::k8s: {
+                Url = family["url"].as<std::string>();
+                Namespace = Value<std::string>(family["namespace"], "default");
+                if (auto&& ssl = family["ssl"]; ssl.IsDefined() and ssl.IsMap()) {
+                    Ssl.Cert = Value<std::string>(ssl["cert"], {});
+                    Ssl.Key = Value<std::string>(ssl["key"], {});
+
+                    if (std::filesystem::path file {Ssl.Cert}; file.is_relative()) {
+                        Ssl.Cert = std::filesystem::absolute(file).string();
+                    }
+                    if (std::filesystem::path file {Ssl.Key}; file.is_relative()) {
+                        Ssl.Key = std::filesystem::absolute(file).string();
+                    }
+
+                    Ssl.Enable = Value<bool>(ssl["enable"], false);
+                    Ssl.Client = true;
+                }
+
+                Enable = !Url.empty();
+
+                break;
+            }
+            default:
+                throw std::runtime_error(fmt::format("wrong cluster adapter type {}", (int)Type));
+        };
+
         Enable = !Listen.Empty();
-    } else {
-        Enable = false;
     }
 }
 
 inet::ssl_ctx_t cconfig::ssloptions_t::Context() const {
     inet::ssl_ctx_t ctx;
     if (Enable) {
-        inet::SslCreateContext(ctx, Cert, Key, true);
+        if (Client) {
+            inet::SslCreateClientContext(ctx, Cert, Key);
+        } else {
+            inet::SslCreateContext(ctx, Cert, Key, true);
+        }
     }
-
     return ctx;
 }
 

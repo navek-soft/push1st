@@ -63,6 +63,7 @@ void cbroker::OnIdle() {
         break;
     }
     Cluster->Ping();
+    Cluster->Check();
 }
 
 void cbroker::Initialize(const core::cconfig& config) {

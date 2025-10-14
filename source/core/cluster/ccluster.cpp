@@ -2,7 +2,10 @@
 
 #include <unistd.h>
 
+#include <memory>
+
 #include "broker/api.h"
+#include "core/cluster/adapters/clistadapter.h"
 #include "core/credentials/ccredentials.h"
 #include "core/util/cjson.h"
 #include "inet/ciface.h"
@@ -62,19 +65,7 @@ inline array_t Pack(hook_t::type trigger, json::object_t&& msg) {
 }// namespace proto
 
 inline void ccluster::OnClusterPing(struct sockaddr_storage& sa, const std::string_view& data) {
-    auto ip {inet::GetIp4(sa)};
-    std::unique_lock<decltype(clusLock)> lock(clusLock);
-    if (auto&& it {clusNodes.find(ip)}; it != clusNodes.end()) {
-        it->second->NodeLastActivity = std::time(nullptr);
-
-        PSHT_INFO("Node {}:{} ... PING", inet::GetIp(sa).c_str(), inet::GetPort(sa));
-    } else if (std::unique_ptr<cnode> node {new cnode}; node) {
-        node->NodeIp = ip;
-        node->NodeLastActivity = std::time(nullptr);
-        std::memcpy(&node->NodeAddress, &sa, sizeof(struct sockaddr_storage));
-        clusNodes.emplace(ip, std::move(node));
-        PSHT_INFO("Node {}:{} ... ADD ( PING )", inet::GetIp(sa).c_str(), inet::GetPort(sa));
-    }
+    clusNodes->UpdatePeer(sa);
     CallModule("OnClusterPing", {inet::GetIp(sa), data});
 }
 
@@ -130,26 +121,23 @@ inline void ccluster::OnClusterPush(struct sockaddr_storage& sa, const std::stri
 
 inline void ccluster::Send(data_t data) {
     if (data.first and data.second <= proto::MaxFrameSize) {
-        std::unique_lock<decltype(clusLock)> lock(clusLock);
         size_t nwrite {0};
-        ssize_t res {0};
-        for (auto&& [ip, node] : clusNodes) {
+        clusNodes->ProcessPeers([&](auto /* ip */, const auto& node) {
             /*
-            int cliFd{ -1 };
-            if (inet::UdpConnect(cliFd, node->NodeAddress, false) == 0) {
-                res = ::send(cliFd, data.first.get(), data.second, MSG_NOSIGNAL);
-                ::close(cliFd);
-                PSHT_INFO("Send to `{}:{}` ( {} )", inet::GetIp(node->NodeAddress).c_str(),
-            be16toh(inet::GetPort(node->NodeAddress)), nwrite, std::strerror(-(int)res)); continue;
+        //     int cliFd{ -1 };
+        //     if (inet::UdpConnect(cliFd, node->NodeAddress, false) == 0) {
+        //         res = ::send(cliFd, data.first.get(), data.second, MSG_NOSIGNAL);
+        //         ::close(cliFd);
+        //         PSHT_INFO("Send to `{}:{}` ( {} )", inet::GetIp(node->NodeAddress).c_str(),
+        //     be16toh(inet::GetPort(node->NodeAddress)), nwrite, std::strerror(-(int)res)); continue;
+        //     }
+        //     */
+            if (auto&& res = clusFd.SocketSend(node->NodeAddress, data.first.get(), data.second, nwrite, 0); res == 0) {
+                PSHT_INFO("Send to `{}:{}` ( {} )", inet::GetIp(node->NodeAddress).c_str(), be16toh(inet::GetPort(node->NodeAddress)), nwrite);
+            } else {
+                PSHT_ERROR("Send to `{}` error ( {} )", inet::GetIp(node->NodeAddress).c_str(), std::strerror(-(int)res));
             }
-            */
-            if (res = clusFd.SocketSend(node->NodeAddress, data.first.get(), data.second, nwrite, 0); res == 0) {
-                PSHT_INFO("Send to `{}:{}` ( {} )", inet::GetIp(node->NodeAddress).c_str(), be16toh(inet::GetPort(node->NodeAddress)), nwrite, std::strerror(-(int)res));
-                continue;
-            }
-
-            PSHT_ERROR("Send to `{}` error ( {} )", inet::GetIp(node->NodeAddress).c_str(), std::strerror(-(int)res));
-        }
+        });
     } else {
         PSHT_ERROR("Send error ( {} )", "Message to long");
     }
@@ -232,6 +220,12 @@ void ccluster::Ping() {
     }
 }
 
+void ccluster::Check() {
+    if (clusNodes) {
+        clusNodes->Check();
+    }
+}
+
 inline void ccluster::CallModule(const std::string& method, std::vector<std::any>&& args) {
     if (clusModuleAllowed) {
         jitLua.luaExecute(clusModule, method, args);
@@ -243,27 +237,11 @@ ccluster::ccluster(const broker_t& broker, config::cluster_t& config) :
     Broker {broker},
     clusPingInterval {config.PingInterval},
     clusSync {config.Sync},
+    clusNodes {clistadapter::MakeUnique(config.Nodes, config.Listen.Port())},
     clusModuleAllowed {std::filesystem::exists(config.Module.Path())},
     clusModule {config.Module.Path()} {
     if (config.Enable) {
         PSHT_INFO("Cluster enable, listen on {}", std::string {config.Listen.HostPort()}.c_str());
-
-        for (auto&& nIt : config.Nodes) {
-            if (!nIt.empty()) {
-                if (std::unique_ptr<cnode> node {new cnode};
-                    node and inet::GetSockAddr(node->NodeAddress, nIt, config.Listen.Port(), AF_INET) == 0) {
-                    node->NodeIp = inet::GetIp4(node->NodeAddress);
-                    if (!inet::IsLocalIp(node->NodeIp)) {
-                        PSHT_INFO("Node {} ... enable, address {}", nIt.c_str(), inet::GetIp(node->NodeAddress).c_str());
-                        clusNodes.emplace(node->NodeIp, std::move(node));
-                    } else {
-                        PSHT_INFO("Node {} ... I'm, address {}", nIt.c_str(), inet::GetIp(node->NodeAddress).c_str());
-                    }
-                } else {
-                    PSHT_ERROR("Node {} ... disabled ( address not resolved )", nIt.c_str());
-                }
-            }
-        }
 
         if (auto res = UdpListen(config.Listen.HostPort(), true, true, false); res == 0) {
             clusFd = Fd();
@@ -278,6 +256,8 @@ ccluster::ccluster(const broker_t& broker, config::cluster_t& config) :
             PSHT_ERROR("Cluster initialize server error ( {} )", std::strerror(-(int)res));
             throw std::runtime_error("Cluster server exception");
         }
+
+        clusNodes->Start();
     } else {
         PSHT_WARNING("Cluster disable");
     }

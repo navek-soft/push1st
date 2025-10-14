@@ -10,13 +10,14 @@
 ###### Install dependencies
 
 ```bash
-	sudo apt install libssl-dev libyaml-cpp-dev liblua5.3-dev
+	sudo apt install cmake clang-tidy-15 libyaml-cpp-dev libssl-dev lua5.3 liblua5.3-dev
 ```
 
 ###### Make Push1st
 ```bash
-	cd push1st-server
-	make build=0 ver=0 bname=src all
+	mkdir build
+	cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug .
+	make -C build -j
 ```
 
 3th library reference ( json library https://github.com/nlohmann/json )

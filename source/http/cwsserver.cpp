@@ -19,7 +19,7 @@ void cwsserver::WsData(fd_t fd, uint events, inet::socket_t& so, const std::weak
 }
 
 ssize_t cwsserver::WsUpgrade(const inet::socket_t& fd, [[maybe_unused]] const http::uri_t& path, const http::headers_t& headers) {
-    return HttpWriteResponse(fd,
+    return HttpWriteResponse(*fd,
                              "101",
                              {},
                              {{"Upgrade", "WebSocket"},
@@ -49,7 +49,7 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
             http::headers_t headers;
             std::string request;
             auto&& so = std::make_shared<inet::csocket>(fd, sa, ssl, poll);
-            if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
+            if (res = HttpReadRequest(*so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
                 if (method == "GET" and strncasecmp(http::GetValue(headers, "connection").data(), "upgrade", 7) == 0
                     and strncasecmp(http::GetValue(headers, "upgrade").data(), "websocket", 9) == 0 and http::ToNumber(http::GetValue(headers, "sec-websocket-version")) >= 12) {
                     if (res = WsUpgrade(so, path, headers); res == 0) {
@@ -62,10 +62,10 @@ void cwsserver::WsAccept(fd_t fd, uint events, const sockaddr_storage& sa, const
                     }
                     return;
                 } else {
-                    HttpWriteResponse(so, "426");
+                    HttpWriteResponse(*so, "426");
                 }
             } else {
-                HttpWriteResponse(so, "400");
+                HttpWriteResponse(*so, "400");
             }
         }
         self->PollDelete(fd);

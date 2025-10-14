@@ -22,7 +22,7 @@ void chttpserver::HttpData(fd_t fd, uint events, const sockaddr_storage& sa, con
             http::uri_t path;
             http::headers_t headers;
             std::string request;
-            if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
+            if (res = HttpReadRequest(*so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
                 OnHttpRequest(so, method, path, headers, request, content);
             } else {
                 OnHttpError(so, res);

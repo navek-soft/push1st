@@ -13,7 +13,7 @@ class csocket {
             write_fn = &csocket::WriteSsl;
             read_fn = &csocket::ReadSsl;
         }
-        memcpy((void*)&sa, &fdSa, sizeof(sockaddr_storage));
+        memcpy((void*)&fdSa, &sa, sizeof(sockaddr_storage));
     }
     csocket(fd_t so, const inet::ssl_t& ssl) : fdSocket {so}, fdSsl {ssl} {
         if (ssl) {

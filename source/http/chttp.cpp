@@ -1,10 +1,14 @@
 #include <http/chttpconn.h>
+#include <sys/types.h>
 
+#include <cstddef>
+#include <cstdio>
 #include <regex>
+#include <string>
 
-using namespace http;
+namespace http {
 
-std::string http::RangeHeader(ssize_t from, ssize_t to, size_t ContentLength, bool withoutLength) {
+std::string RangeHeader(ssize_t from, ssize_t to, size_t ContentLength, bool withoutLength) {
     if (to == 0) {
         to = ContentLength - 1;
     } else if (from < 0) {
@@ -17,7 +21,7 @@ std::string http::RangeHeader(ssize_t from, ssize_t to, size_t ContentLength, bo
     return "bytes " + std::to_string(from) + "-" + std::to_string(from + to - 1) + "/" + (!withoutLength ? std::to_string(ContentLength) : "*");
 }
 
-bool http::IsGetRange(const headers_t& headers, ssize_t& from, ssize_t& to) {
+bool IsGetRange(const headers_t& headers, ssize_t& from, ssize_t& to) {
     if (auto&& hIt {headers.find("range")}; hIt != headers.end()) {
         std::string_view range {hIt->second};
         if (range.compare(0, 6, "bytes=") == 0) {
@@ -203,7 +207,7 @@ static inline char SplitBy(std::string_view& data, std::string_view& result, con
 static inline char SplitBy(std::string_view& data, std::string_view& result, char symbol);
 static inline std::string_view ToLower(std::string_view& data);
 
-ssize_t http::ParseRequest(std::string_view request, std::string_view& method, uri_t& path, headers_t& headers, std::string_view& content, size_t& contentLength) {
+ssize_t ParseRequest(std::string_view request, std::string_view& method, uri_t& path, headers_t& headers, std::string_view& content, size_t& contentLength) {
     static const std::string_view eod {"\r\n\r\n", 4};
 
     const char* begin {request.data()};// for length calculation
@@ -284,16 +288,19 @@ ssize_t http::ParseRequest(std::string_view request, std::string_view& method, u
     return -EPROTONOSUPPORT;
 }
 
-ssize_t http::ParseResponse(std::string_view stream, std::string_view& code, std::string_view& msg, headers_t& headers, size_t& content_length, std::string_view& content) {
+ssize_t ParseResponse(std::string_view stream, std::string_view& code, std::string_view& msg, headers_t& headers, size_t& content_length, std::string_view& content) {
     static const std::string_view eod {"\r\n\r\n", 4};
+    if (stream.find(eod) == std::string::npos) {
+        return -ENODATA;
+    }
 
     const char* begin {stream.data()};// for length calculation
 
-    std::string_view&& method {ParserNext(stream, ' ')};
+    std::string_view&& proto {ParserNext(stream, ' ')};
     code = ParserNext(stream, ' ');
     msg = ParserNext(stream, '\n');
 
-    if (method.compare(0, 5, "HTTP/") == 0 or method.compare(0, 7, "RTSP/1.") == 0) {
+    if (proto.compare(0, 5, "HTTP/") == 0 or proto.compare(0, 7, "RTSP/1.") == 0) {
         while (!stream.empty()) {
             if (auto hk {ParserNext(stream, ':')}; !hk.empty()) {
                 stream.remove_prefix(1);
@@ -305,7 +312,10 @@ ssize_t http::ParseResponse(std::string_view stream, std::string_view& code, std
             }
             return -ENODATA;
         }
-        if (auto&& h_content {headers.find("content-length")}; h_content == headers.end()) {
+
+        if (auto&& h_content {headers.find("transfer-encoding")}; h_content != headers.end() and (h_content->second.find("chunked") != std::string::npos)) {
+            return (ssize_t)((ptrdiff_t)stream.data() - (ptrdiff_t)begin);
+        } else if (auto&& h_content {headers.find("content-length")}; h_content == headers.end()) {
             content = {stream.data(), 0};
         } else {
             content_length = ParseNumber(h_content->second);
@@ -384,7 +394,7 @@ static inline char SplitBy(std::string_view& data, std::string_view& result, cha
     return 0;
 }
 
-std::string_view& http::TrimBlank(std::string_view& str) {
+std::string_view& TrimBlank(std::string_view& str) {
     while (!str.empty() && std::isblank(str.front())) {
         str.remove_prefix(1);
     }
@@ -394,7 +404,7 @@ std::string_view& http::TrimBlank(std::string_view& str) {
     return str;
 }
 
-std::string http::FromBase64(const std::string_view& value) {
+std::string FromBase64(const std::string_view& value) {
     static constexpr uint8_t base64TableDecode[] = {
         255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,//   0..15
         255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,//  16..31
@@ -431,7 +441,69 @@ std::string http::FromBase64(const std::string_view& value) {
     return result;
 }
 
-std::string http::ToBase64(const std::string_view& value) {
+size_t FromHex(std::string_view data) {
+    size_t val {0};
+    while (!data.empty()) {
+        val <<= 4;
+        if (auto ch {data.front()}; ch >= '0' and ch <= '9') {
+            val += ch - '0';
+        } else if (ch >= 'a' and ch <= 'f') {
+            val += 10 + (ch - 'a');
+        } else if (ch >= 'A' and ch <= 'F') {
+            val += 10 + (ch - 'A');
+        } else {
+            break;
+        }
+        data.remove_prefix(1);
+    }
+    return val;
+}
+
+std::string_view FindFirstOf(std::string_view& str, char sym) {
+    if (!str.empty()) {
+        if (auto npos {str.find_first_of(sym)}; npos != std::string_view::npos) {
+            str.remove_prefix(npos + sizeof(sym));
+            return {str.data() - (npos + sizeof(sym)), npos};
+        }
+    }
+    return {};
+}
+
+std::string_view FindFirstOf(std::string_view& str, std::string_view sym) {
+    if (!str.empty()) {
+        if (auto npos {str.find(sym)}; npos != std::string_view::npos) {
+            str.remove_prefix(npos + sym.size());
+            return {str.data() - (npos + sym.size()), npos};
+        }
+    }
+    return {};
+}
+
+ssize_t ExtractJson(const std::string_view& str) {
+    std::stack<char> bracketStack;
+    for (size_t i = 0; i < str.size(); ++i) {
+        char c = str[i];
+        switch (c) {
+            case '{': {
+                bracketStack.push(c);
+                break;
+            }
+            case '}': {
+                bracketStack.pop();
+                if (bracketStack.empty()) {
+                    return i;
+                }
+                break;
+            }
+            default:
+                continue;
+        };
+    }
+
+    return -1;
+}
+
+std::string ToBase64(const std::string_view& value) {
     static constexpr uint8_t base64TableEncode[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                                    "abcdefghijklmnopqrstuvwxyz"
                                                    "0123456789+/";
@@ -478,7 +550,7 @@ std::string http::ToBase64(const std::string_view& value) {
     return ret;
 }
 
-size_t http::ToNumber(std::string_view value) {
+size_t ToNumber(std::string_view value) {
     size_t num {0};
     while (!value.empty() and std::isdigit(value.front())) {
         num *= 10;
@@ -488,7 +560,7 @@ size_t http::ToNumber(std::string_view value) {
     return num;
 }
 
-std::string http::Md5(const std::string& value) {
+std::string Md5(const std::string& value) {
     static constexpr uint32_t k[64] = {
         0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
         0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
@@ -604,7 +676,7 @@ std::string http::Md5(const std::string& value) {
     return digest;
 }
 
-std::string http::Unquote(const std::string_view& value) {
+std::string Unquote(const std::string_view& value) {
     std::string result;
     result.reserve(value.length());
     for (ssize_t n = 0; n < (ssize_t)value.length(); n++) {
@@ -617,3 +689,4 @@ std::string http::Unquote(const std::string_view& value) {
     result.shrink_to_fit();
     return result;
 }
+}// namespace http

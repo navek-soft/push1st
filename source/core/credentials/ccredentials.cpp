@@ -121,7 +121,7 @@ bool ccredentials::capplication::ValidateSession(std::string_view token, const s
 }
 
 bool ccredentials::capplication::ValidateToken(std::string_view token, [[maybe_unused]] const std::string& session, const std::string& channel, [[maybe_unused]] const std::string& custom_data, const std::string& origin) {
-    if (strncasecmp(token.data(), "Bearer ", 7) == 0) {
+    if (token.size() >= 7 and strncasecmp(token.data(), "Bearer ", 7) == 0) {
         token.remove_prefix(7);
     }
     Trim(token);

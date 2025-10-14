@@ -104,8 +104,10 @@ bool cwssession::OnWsConnect(const http::uri_t& path, const http::headers_t& hea
     size_t nchannels {0};
     for (auto&& it {path.uriPathList.begin() + 4}; it != path.uriPathList.end(); ++it) {
         std::string chName {*it};
-        if (auto chType = ChannelType(*it); chType != channel_t::type::none and App->IsAllowChannelToken(chType, Id(), chName, http::GetValue(headers, "authorization", path.Arg("token")), {}, std::string {http::GetValue(headers, "origin")})) {
-            if (auto&& chSelf {Channels->Register(chType, App, chName)}; chSelf) {
+        if (auto chType = ChannelType(*it); chType != channel_t::type::none) {
+            if (not App->IsAllowChannelToken(chType, Id(), chName, http::GetValue(headers, "authorization", path.Arg("token")), {}, std::string {http::GetValue(headers, "origin")})) {
+                PSHT_ERROR("Unauthorized {}:{}:{}", Fd(), chName, Id().c_str());
+            } else if (auto&& chSelf {Channels->Register(chType, App, chName)}; chSelf) {
                 SubscribedTo.emplace(chName, chSelf);
                 chSelf->Subscribe(std::dynamic_pointer_cast<csubscriber>(shared_from_this()));
                 ++nchannels;

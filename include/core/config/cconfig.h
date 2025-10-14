@@ -4,8 +4,11 @@
 #include <ctime>
 #include <filesystem>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_set>
+#include <variant>
 
 #include "core/util/cflag.h"
 #include "core/util/cyaml.h"
@@ -111,6 +114,7 @@ class cconfig {
     std::filesystem::path Path;
     struct ssloptions_t {
         bool Enable {false};
+        bool Client {false};
         std::string Cert, Key;
         inet::ssl_ctx_t Context() const;
     };
@@ -133,12 +137,18 @@ class cconfig {
         void Load(const std::filesystem::path& path, const yaml_t& options);
     } Server;
     struct cluster_t {
+        enum class type_t { nil = -1, peers = 0, k8s };
+        static type_t FromStr(const std::string_view& str);
+
         bool Enable {false};
         sync_t Sync {sync_t::type::none};
         std::time_t PingInterval {30};
         cdsn Listen;
         cdsn Module;
+        type_t Type = type_t::nil;
         std::unordered_set<std::string> Nodes;
+        std::string Url, Namespace;
+        ssloptions_t Ssl;
 
        private:
         friend class cconfig;
@@ -271,3 +281,7 @@ using api_t = core::cconfig::api_t;
 using channel_t = core::cconfig::channel_t;
 using hook_t = core::cconfig::hook_t;
 using dsn_t = core::cconfig::dsn_t;
+
+namespace cluster {
+using type_t = core::cconfig::cluster_t::type_t;
+}// namespace cluster

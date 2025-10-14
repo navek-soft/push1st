@@ -1,6 +1,10 @@
 #pragma once
+#include <sys/types.h>
+
 #include <cstring>
+#include <memory>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -121,6 +125,10 @@ size_t ToNumber(std::string_view value);
 std::string Unquote(const std::string_view& value);
 std::string ToBase64(const std::string_view& value);
 std::string FromBase64(const std::string_view& value);
+size_t FromHex(std::string_view data);
+std::string_view FindFirstOf(std::string_view& str, char sym);
+std::string_view FindFirstOf(std::string_view& str, std::string_view sym);
+ssize_t ExtractJson(const std::string_view& str);
 
 std::string_view GetMessage(std::string_view code);
 }// namespace http

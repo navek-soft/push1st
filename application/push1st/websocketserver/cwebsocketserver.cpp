@@ -18,11 +18,11 @@ ssize_t cwebsocketserver::WsUpgrade(const inet::socket_t& fd, const http::uri_t&
             }
         }
 
-        HttpWriteResponse(fd, "403");
+        HttpWriteResponse(*fd, "403");
         fd->SocketClose();
         return -EACCES;
     }
-    HttpWriteResponse(fd, "404");
+    HttpWriteResponse(*fd, "404");
     fd->SocketClose();
     return -ENOTDIR;
 }
@@ -33,7 +33,7 @@ inet::socket_t cwebsocketserver::OnWsUpgrade(const inet::socket_t& fd, const htt
     if (auto&& conn {ProtoRoutes[std::string {path.At(1)}](Channels, App, fd, path, headers)}; App and conn) {
         return conn;
     } else {
-        HttpWriteResponse(fd, "400");
+        HttpWriteResponse(*fd, "400");
         fd->SocketClose();
     }
     return {};

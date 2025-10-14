@@ -30,6 +30,7 @@ inline int GetAF(const sockaddr_storage& sa) {
 }
 ssize_t ResolveAddress(const std::string& hostUrl, sockaddr_storage& sa, const std::string& defPort = {});
 uint16_t GetPort(const sockaddr_storage& sa);
+std::string GetAddress(const sockaddr_storage& sa);
 ssize_t GetAddress(int fd, sockaddr_storage& sa);
 ssize_t GetAddress(sockaddr_storage& sa, int af, const std::string& port, const std::string& host = {});
 ssize_t GetSockAddr(sockaddr_storage& sa, const std::string_view& strHostPort, const std::string_view& strPort, int defaultAF);
@@ -51,7 +52,7 @@ ssize_t UnixServer(fd_t& fd, const sockaddr_storage& sa, bool nonblock, int maxl
 ssize_t UnixAccept(fd_t fd, fd_t& cli, sockaddr_storage& sa, bool nonblock);
 ssize_t SslConnect(fd_t& fd, const sockaddr_storage& sa, bool nonblock, std::time_t conntimeout, const inet::ssl_ctx_t& ctx, inet::ssl_t& ssl);
 ssize_t SslCreateSelfSignedContext(ssl_ctx_t& sslCtx);
-ssize_t SslCreateClientContext(ssl_ctx_t& sslCtx);
+ssize_t SslCreateClientContext(ssl_ctx_t& sslCtx, const std::string& certFile = {}, const std::string& privateKeyFile = {});
 ssize_t SslCreateContext(ssl_ctx_t& sslCtx, const std::string& certFile, const std::string& privateKeyFile, bool novalidate);
 ssize_t SslAcceptConnection(ssize_t cli, const ssl_ctx_t& sslCtx, ssl_t& sslSocket);
 ssize_t SslSetGlobalContext(const ssl_ctx_t& sslCtx);
@@ -59,5 +60,6 @@ ssl_ctx_t SslGetGlobalContext();
 inline const char* GetErrorStr(ssize_t err) {
     return std::strerror((int)(-err));
 }
+std::string SslGetErrorString();
 int Close(int& sock);
 }// namespace inet

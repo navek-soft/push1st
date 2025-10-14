@@ -154,10 +154,10 @@ void capiserver::ApiOnWebHook([[maybe_unused]] const std::vector<std::string_vie
 
 void capiserver::ApiResponse(const inet::socket_t& fd, const std::string_view& code, const std::string& response, bool close) {
     if (close or KeepAliveTimeout.empty()) {
-        HttpWriteResponse(fd, code, response, {{"Connection", "Close"}, {"Content-Type", "application/json; charset=utf-8"}});
+        HttpWriteResponse(*fd, code, response, {{"Connection", "Close"}, {"Content-Type", "application/json; charset=utf-8"}});
         fd->SocketClose();
     } else {
-        HttpWriteResponse(fd, code, response, {{"Connection", "Keep-Alive"}, {"Content-Type", "application/json; charset=utf-8"}, {"Keep-Alive", "timeout=" + KeepAliveTimeout}});
+        HttpWriteResponse(*fd, code, response, {{"Connection", "Keep-Alive"}, {"Content-Type", "application/json; charset=utf-8"}, {"Keep-Alive", "timeout=" + KeepAliveTimeout}});
     }
 }
 
@@ -166,12 +166,12 @@ void capiserver::OnHttpRequest(const inet::socket_t& fd, const std::string_view&
     PSHT_DEBUG("fd {} method {} uri {}", fd->Fd(), std::string {method}.c_str(), std::string {path.uriFull}.c_str());
     try {
         if (!ApiRoutes.Call(fd, method, path, headers, content)) {
-            HttpWriteResponse(fd, "404");
+            HttpWriteResponse(*fd, "404");
             fd->SocketClose();
         }
     } catch (std::exception& ex) {
         PSHT_ERROR("fd {} method {} uri {}: {}", fd->Fd(), std::string {method}.c_str(), std::string {path.uriFull}.c_str(), ex.what());
-        HttpWriteResponse(fd, "400");
+        HttpWriteResponse(*fd, "400");
         fd->SocketClose();
     }
 }
@@ -265,7 +265,7 @@ void capiserver::cunixapiserver::OnHttpData(fd_t fd, [[maybe_unused]] uint event
         http::headers_t headers;
         std::string request;
         auto&& so = std::make_shared<inet::csocket>(fd, sa, ssl, poll);
-        if (res = HttpReadRequest(so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
+        if (res = HttpReadRequest(*so, method, path, headers, request, content, HttpMaxHeaderSize); res == 0) {
             OnHttpRequest(so, method, path, headers, request, content);
         } else {
             OnHttpError(so, res);
