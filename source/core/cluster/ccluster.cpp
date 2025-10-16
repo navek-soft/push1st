@@ -65,6 +65,10 @@ inline array_t Pack(hook_t::type trigger, json::object_t&& msg) {
 }// namespace proto
 
 inline void ccluster::OnClusterPing(struct sockaddr_storage& sa, const std::string_view& data) {
+    if (not clusNodes) {
+        return;
+    }
+
     clusNodes->UpdatePeer(sa);
     CallModule("OnClusterPing", {inet::GetIp(sa), data});
 }
@@ -120,6 +124,10 @@ inline void ccluster::OnClusterPush(struct sockaddr_storage& sa, const std::stri
 }
 
 inline void ccluster::Send(data_t data) {
+    if (not clusNodes) {
+        return;
+    }
+
     if (data.first and data.second <= proto::MaxFrameSize) {
         size_t nwrite {0};
         clusNodes->ProcessPeers([&](auto /* ip */, const auto& node) {
@@ -237,10 +245,11 @@ ccluster::ccluster(const broker_t& broker, config::cluster_t& config) :
     Broker {broker},
     clusPingInterval {config.PingInterval},
     clusSync {config.Sync},
-    clusNodes {clistadapter::MakeUnique(config.Nodes, config.Listen.Port())},
     clusModuleAllowed {std::filesystem::exists(config.Module.Path())},
     clusModule {config.Module.Path()} {
     if (config.Enable) {
+        MakeInterface(clusNodes, config);
+
         PSHT_INFO("Cluster enable, listen on {}", std::string {config.Listen.HostPort()}.c_str());
 
         if (auto res = UdpListen(config.Listen.HostPort(), true, true, false); res == 0) {

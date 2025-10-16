@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <regex>
+#include <stdexcept>
 #include <unordered_map>
 
 #include "spdlog/fmt/bundled/core.h"
@@ -158,6 +159,14 @@ void cconfig::cluster_t::Load([[maybe_unused]] const std::filesystem::path& path
                     }
                     if (std::filesystem::path file {Ssl.Key}; file.is_relative()) {
                         Ssl.Key = std::filesystem::absolute(file).string();
+                    }
+
+                    if (not std::filesystem::exists(Ssl.Cert)) {
+                        throw std::runtime_error(fmt::format("there is no k8s ssl cert {}", Ssl.Cert.c_str()));
+                    }
+
+                    if (not std::filesystem::exists(Ssl.Key)) {
+                        throw std::runtime_error(fmt::format("there is no k8s ssl key {}", Ssl.Key.c_str()));
                     }
 
                     Ssl.Enable = Value<bool>(ssl["enable"], false);
