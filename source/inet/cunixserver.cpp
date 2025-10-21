@@ -58,7 +58,7 @@ cunixserver::cunixserver(const std::string& nameServer, size_t numthreads, size_
     cacceptor(nameServer, numaccept),
     cliNonBlock {enableClientNonBlockingMode} {
     for (size_t i = 0; i < numthreads; ++i) {
-        svcPolls.emplace_back(std::make_shared<inet::cpoll>());
+        svcPolls.emplace_back(std::make_shared<inet::cpoll>(fmt::format("{}-worker-{}", nameServer, i)));
     }
 }
 

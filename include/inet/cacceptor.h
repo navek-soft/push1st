@@ -13,6 +13,7 @@
 
 #include "cepoll.h"
 #include "cinet.h"
+#include "spdlog/fmt/bundled/core.h"
 
 namespace inet {
 
@@ -33,7 +34,7 @@ class cacceptor {
     cacceptor(const std::string& name, size_t numthreads) : name {name}, numworkers {numthreads} {
         serverPolls.reserve(numworkers);
         for (auto n {numworkers}; n--;) {
-            serverPolls.emplace_back(std::make_shared<inet::cpoll>());
+            serverPolls.emplace_back(std::make_shared<inet::cpoll>(fmt::format("{}-accept", name)));
         }
     }
 

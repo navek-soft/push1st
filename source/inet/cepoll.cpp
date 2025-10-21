@@ -1,5 +1,6 @@
 #include "inet/cepoll.h"
 
+#include <sys/eventfd.h>
 #include <unistd.h>
 
 #include <csignal>
@@ -25,6 +26,8 @@ inline void cpoll::Gc() {
 void cpoll::PollThread(const std::shared_ptr<cpoll>& self, int numEventsMax, [[maybe_unused]] int msTimeout) {
     std::vector<struct epoll_event> events_list(numEventsMax);
     pthread_setname_np(pthread_self(), self->NameOf());
+    PSHT_INFO("{} ({}) start thread {}", self->NameOf(), self->fdPoll, gettid());
+
     try {
         sigset_t epoll_sig_mask;
         sigset_t sigset;
@@ -38,18 +41,23 @@ void cpoll::PollThread(const std::shared_ptr<cpoll>& self, int numEventsMax, [[m
         while (true) {
             if (nevents = epoll_wait((int)self->fdPoll, (struct epoll_event*)events_list.data(), (int)events_list.size(), 100 /*msTimeout*/); nevents > 0) {
                 while (nevents-- > 0) {
+                    auto& event = events_list[nevents];
                     lock.lock();
-                    if (auto&& hFd {self->fdHandlers.find(events_list[nevents].data.fd)}; hFd != self->fdHandlers.end()) {
+                    if (event.data.fd == self->exitFd) {
+                        PSHT_INFO("{} ({}) finish thread {}", self->NameOf(), self->fdPoll, gettid());
+                        return;
+                    }
+                    if (auto&& hFd {self->fdHandlers.find(event.data.fd)}; hFd != self->fdHandlers.end()) {
                         auto handler {hFd->second};
                         lock.unlock();
                         if (handler) {
-                            handler(events_list[nevents].data.fd, events_list[nevents].events);
+                            handler(event.data.fd, event.events);
                             continue;
                         }
                     } else {
                         lock.unlock();
                     }
-                    int fd {events_list[nevents].data.fd};
+                    int fd {event.data.fd};
                     PSHT_ERROR("Unhandled socket ( {} )", fd);
                     inet::Close(fd);
                 }
@@ -84,18 +92,32 @@ ssize_t cpoll::Listen(int pollSize, int pollTimeoutMs) {
             Self(),
             pollSize,
             pollTimeoutMs);
+
+        epoll_event ev {.events = EPOLLIN, .data = {.fd = exitFd}};
+        if (auto err = epoll_ctl(fdPoll, EPOLL_CTL_ADD, exitFd, &ev) == 0 ? 0 : -errno; err != 0) {
+            throw std::runtime_error(fmt::format("{}:{}", __FUNCTION__, std::strerror(err)));
+        }
+
         return pollThread.joinable() ? 0 : -EBADE;
     }
     return -EALREADY;
 }
 
 void cpoll::Join() {
+    eventfd_write(exitFd, 1);
+
+    if (pollThread.joinable()) {
+        pollThread.join();
+    }
+
+    if (exitFd > 0) {
+        ::close(exitFd);
+        exitFd = -1;
+    }
+
     if (fdPoll > 0) {
         ::close(fdPoll);
         fdPoll = -1;
-    }
-    if (pollThread.joinable()) {
-        pollThread.join();
     }
 }
 
@@ -122,11 +144,14 @@ void cpoll::PollDelete(fd_t& fd) {
         */
 }
 
-cpoll::cpoll() {
-    if (fdPoll = epoll_create1(EPOLL_CLOEXEC); fdPoll > 0) {
-        return;
+cpoll::cpoll(const std::string& name) : name {name} {
+    if (fdPoll = epoll_create1(EPOLL_CLOEXEC); fdPoll <= 0) {
+        throw std::runtime_error(fmt::format("{}:{}", __FUNCTION__, std::strerror(errno)));
     }
-    throw std::runtime_error(std::string {"cservice::cservice() "} + strerror(errno));
+
+    if (exitFd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK); exitFd <= 0) {
+        throw std::runtime_error(fmt::format("{}:{}", __FUNCTION__, std::strerror(errno)));
+    }
 }
 
 cpoll::~cpoll() {

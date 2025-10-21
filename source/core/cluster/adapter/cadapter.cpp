@@ -25,7 +25,8 @@ void MakeInterface(std::unique_ptr<cadapter>& adapter, config::cluster_t& config
             break;
         }
         case cluster::type_t::k8s: {
-            adapter = ck8sadapter::MakeUnique(std::make_shared<inet::cpoll>(), config.Url, config.Namespace, config.Ssl.Context());
+            adapter = ck8sadapter::MakeUnique(
+                std::make_shared<inet::cpoll>("k8s-worker"), config.Url, config.Namespace, config.Ssl.Context());
             break;
         }
         default:

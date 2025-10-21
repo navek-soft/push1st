@@ -995,6 +995,6 @@ csmppservice::csmppservice(const std::string& webhook) {
     if (!webhook.empty()) {
         gwHook = std::make_shared<cwebhook>(webhook);
     };
-    gwPoll = std::make_shared<inet::cpoll>();
+    gwPoll = std::make_shared<inet::cpoll>("smpp-worker");
     PSHT_INFO("Api SMPP ... enabled ( Delivery report is {} )", webhook.empty() ? "Disable" : "Enable");
 }

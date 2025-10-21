@@ -79,7 +79,7 @@ void cbroker::Initialize(const core::cconfig& config) {
         WsServer = std::make_shared<cwebsocketserver>(Channels, Credentials, config.Server);
     }
 
-    std::shared_ptr<inet::cpoll> ClusterPoll {std::make_shared<inet::cpoll>()};
+    std::shared_ptr<inet::cpoll> ClusterPoll {std::make_shared<inet::cpoll>("cluster-worker")};
     Cluster->Listen(ClusterPoll);
     ClusterPoll->Listen();
 

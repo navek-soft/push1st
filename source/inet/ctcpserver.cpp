@@ -97,7 +97,7 @@ ctcpserver::ctcpserver(const std::string& nameServer, size_t numthreads, size_t 
     DefaultKeepAliveTimeout {KeepAliveTimeout},
     DefaultKeepAliveInterval {KeepAliveInterval} {
     for (size_t i = 0; i < numthreads; ++i) {
-        svcPolls.emplace_back(std::make_shared<inet::cpoll>());
+        svcPolls.emplace_back(std::make_shared<inet::cpoll>(fmt::format("{}-worker-{}", nameServer, i)));
     }
 }
 

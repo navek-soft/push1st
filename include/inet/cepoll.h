@@ -21,10 +21,10 @@ class cpoll : public std::enable_shared_from_this<cpoll> {
         virtual inline bool IsLeaveUs(std::time_t now) = 0;
     };
 
-    cpoll();
+    cpoll(const std::string& name);
     virtual ~cpoll();
     virtual const char* NameOf() {
-        return "epoll";
+        return name.empty() ? "epoll" : name.c_str();
     }
     ssize_t Listen(int pollSize = 1024, int pollTimeoutMs = -1);
     void Join();
@@ -53,7 +53,8 @@ class cpoll : public std::enable_shared_from_this<cpoll> {
     inline void Gc();
     static void PollThread(const std::shared_ptr<cpoll>& self, int numEventsMax, [[maybe_unused]] int msTimeout);
     using handler_t = std::function<void(fd_t, uint)>;
-    fd_t fdPoll {-1};
+    std::string name;
+    fd_t fdPoll {-1}, exitFd {-1};
     static inline std::unordered_map<fd_t, handler_t> fdHandlers;
     static inline std::mutex fdLock;
     std::list<std::weak_ptr<cgc>> fdQueueGC;
