@@ -62,7 +62,6 @@ void cbroker::OnIdle() {
         Channels->UnRegister(chName);
         break;
     }
-    Cluster->Ping();
     Cluster->Check();
 }
 

@@ -23,7 +23,6 @@ class ccluster : public inet::cudpserver, public std::enable_shared_from_this<cc
     ~ccluster() override;
     void Trigger(channel_t::type type, hook_t::type trigger, const app_t& app, sid_t channel, sid_t session, const json::object_t& data);
     void Push(channel_t::type type, const app_t& app, sid_t channel, const json::object_t& data);
-    void Ping();
     void Check();
 
    protected:
@@ -43,7 +42,7 @@ class ccluster : public inet::cudpserver, public std::enable_shared_from_this<cc
 
    private:
     std::shared_ptr<cibroker> Broker;
-    std::time_t clusPingInterval {30}, clusPingTime {0};
+    std::time_t clusPingInterval {30}, clusPingTime {0}, clusGcTime {0};
     sync_t clusSync {sync_t::type::push};
     inet::csocket clusFd {-1, nullptr};
     // inet::csocket cliFd{ -1,nullptr };

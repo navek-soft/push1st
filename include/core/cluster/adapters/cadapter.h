@@ -2,6 +2,7 @@
 
 #include <log/clog.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include <cstdint>
 #include <memory>
@@ -31,6 +32,7 @@ class cadapter {
 
    public:
     void UpdatePeer(struct sockaddr_storage& sa);
+    ssize_t Gc(std::time_t now, std::time_t pingInterval);
 
     template <class Func>
     void ProcessPeers(const Func& func) {

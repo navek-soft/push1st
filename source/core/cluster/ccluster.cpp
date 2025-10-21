@@ -114,8 +114,13 @@ inline void ccluster::OnClusterPush(struct sockaddr_storage& sa, const std::stri
                              and value.contains("data")) {
         PSHT_INFO("Node {} ... PUSH", inet::GetIp(sa).c_str());
         if (auto&& ch {Broker->GetChannel(value["app"].get<std::string>(), value["channel"].get<std::string>())}; ch) {
-            value["data"]["#from-host"] = inet::GetIp(sa);
-            ch->OnClusterPush(message_t {std::make_shared<json::value_t>(value["data"])});
+            if (json::value_t dataJson; json::Unserialize(value["data"].get<std::string>(), dataJson)) {
+                dataJson["#from-host"] = inet::GetIp(sa);
+                ch->OnClusterPush(message_t {std::make_shared<json::value_t>(dataJson)});
+            } else {
+                PSHT_ERROR("Node {} ... PUSH ( invalid data )", inet::GetIp(sa).c_str());
+                return;
+            }
         }
         CallModule("OnClusterPush", {inet::GetIp(sa), data});
     } else {
@@ -141,7 +146,7 @@ inline void ccluster::Send(data_t data) {
         //     }
         //     */
             if (auto&& res = clusFd.SocketSend(node->NodeAddress, data.first.get(), data.second, nwrite, 0); res == 0) {
-                PSHT_INFO("Send to `{}:{}` ( {} )", inet::GetIp(node->NodeAddress).c_str(), be16toh(inet::GetPort(node->NodeAddress)), nwrite);
+                PSHT_DEBUG("Send to `{}:{}` ( {} )", inet::GetIp(node->NodeAddress).c_str(), be16toh(inet::GetPort(node->NodeAddress)), nwrite);
             } else {
                 PSHT_ERROR("Send to `{}` error ( {} )", inet::GetIp(node->NodeAddress).c_str(), std::strerror(-(int)res));
             }
@@ -219,18 +224,27 @@ void ccluster::Trigger([[maybe_unused]] channel_t::type type, hook_t::type trigg
     }
 }
 
-void ccluster::Ping() {
-    if (clusPingInterval) {
-        if (auto now = std::time(nullptr); now >= clusPingTime) {
-            clusPingTime = now + clusPingInterval;
-            Send(proto::Pack(proto::op_t::ping, json::object_t {}));
-        }
-    }
-}
-
 void ccluster::Check() {
     if (clusNodes) {
         clusNodes->Check();
+    }
+
+    if (clusPingInterval) {
+        auto now = std::time(nullptr);
+
+        if (now >= clusPingTime) {
+            clusPingTime = now + clusPingInterval;
+            Send(proto::Pack(proto::op_t::ping, json::object_t {}));
+        }
+
+        if (clusNodes and clusGcTime) {
+            if (now >= clusGcTime) {
+                clusGcTime = now + clusPingInterval + 10;
+                clusNodes->Gc(now, clusPingInterval);
+            }
+        } else {
+            clusGcTime = now + clusPingInterval + 10;
+        }
     }
 }
 
