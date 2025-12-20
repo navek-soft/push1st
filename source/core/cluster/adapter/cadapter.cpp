@@ -20,7 +20,7 @@ void cadapter::UpdatePeer(struct sockaddr_storage& sa) {
 ssize_t cadapter::Gc(std::time_t now, std::time_t pingInterval) {
     ssize_t deleted = 0;
     std::unique_lock _(clusLock);
-    PSHT_TRACE("Cluster Gc... ()", now);
+    PSHT_TRACE("Cluster Gc... ({})", now);
     for (auto it = clusNodes.begin(); it != clusNodes.end();) {
         auto& node = it->second;
         if (node->NodeLastActivity + pingInterval + 10 < now) {
