@@ -923,7 +923,7 @@ inline bool csmppservice::cgateway::Connect() {
                     gwSocket.Poll()->PollAdd(gwSocket.Fd(), EPOLLIN, [this](auto&& PH1, auto&& PH2) {
                         OnGwReply(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
                     });
-                    PSHT_INFO("Connect to {}  ... success", be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
+                    PSHT_INFO("Connect to {}  ... success", inet::GetAddress(sa));
                     /*
                      * Send Enquire link
                      */
@@ -933,15 +933,14 @@ inline bool csmppservice::cgateway::Connect() {
 
                     return Send(enq.Pack()) == 0;
                 } else {
-                    PSHT_INFO("Connect to {} Reply bind   ... error ( response status error )",
-                              be32toh(((sockaddr_in&)sa).sin_addr.s_addr));
+                    PSHT_INFO("Connect to {} Reply bind   ... error ( response status error )", inet::GetAddress(sa));
                 }
             } else {
-                PSHT_ERROR("Connect to {} Send bind  ... error ( {} )", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
+                PSHT_ERROR("Connect to {} Send bind  ... error ( {} )", inet::GetAddress(sa), std::strerror(-(int)res));
             }
             Close();
         } else {
-            PSHT_ERROR("Connect to {}  ... error ( {} )", be32toh(((sockaddr_in&)sa).sin_addr.s_addr), std::strerror(-(int)res));
+            PSHT_ERROR("Connect to {}  ... error ( {} )", inet::GetAddress(sa), std::strerror(-(int)res));
         }
     }
     return {};
