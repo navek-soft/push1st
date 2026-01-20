@@ -7,6 +7,8 @@
 #include <cstddef>
 #include <regex>
 
+#include <asm-generic/errno.h>
+
 extern "C" {
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -92,21 +94,25 @@ ssize_t csocket::WriteNoSsl(const void* data, size_t length, size_t& nwrited, ui
 }
 
 ssize_t csocket::WriteSsl(const void* data, size_t length, size_t& nwrited, uint flags) const {
+    auto ssl = Ssl();
+    if (not ssl) {
+        return -EBADF;
+    }
     ssize_t nwrite {0};
     uint8_t* buffer {(uint8_t*)data};
     nwrited = 0;
     while (length) {
-        if ((nwrite = SSL_write(Ssl(), buffer, (int)length)) > 0) {
+        if ((nwrite = SSL_write(ssl, buffer, (int)length)) > 0) {
             length -= nwrite;
             nwrited += nwrite;
             buffer += nwrite;
             continue;
-        } else if (nwrite == -1 and SSL_get_error(Ssl(), (int)nwrite) == SSL_ERROR_WANT_WRITE) {
+        } else if (nwrite == -1 and SSL_get_error(ssl, (int)nwrite) == SSL_ERROR_WANT_WRITE) {
             // continue;
         }
         break;
     }
-    switch (int err = SSL_get_error(Ssl(), (int)nwrite); err) {
+    switch (int err = SSL_get_error(ssl, (int)nwrite); err) {
         case SSL_ERROR_NONE:
             return 0;
         case SSL_ERROR_WANT_READ:
@@ -142,11 +148,15 @@ ssize_t csocket::ReadNoSsl(void* data, size_t length, size_t& nreaded, uint flag
 }
 
 ssize_t csocket::ReadSsl(void* data, size_t length, size_t& nreaded, uint flags) const {
+    auto ssl = Ssl();
+    if (not ssl) {
+        return -EBADF;
+    }
     ssize_t nread {0};
     uint8_t* buffer {(uint8_t*)data};
     nreaded = 0;
     while (length) {
-        if ((nread = SSL_read(Ssl(), buffer, (int)length)) > 0) {
+        if ((nread = SSL_read(ssl, buffer, (int)length)) > 0) {
             length -= nread;
             nreaded += nread;
             buffer += nread;
@@ -157,7 +167,7 @@ ssize_t csocket::ReadSsl(void* data, size_t length, size_t& nreaded, uint flags)
         }
         break;
     }
-    switch (int err = SSL_get_error(Ssl(), (int)nread); err) {
+    switch (int err = SSL_get_error(ssl, (int)nread); err) {
         case SSL_ERROR_NONE:
             return 0;
         case SSL_ERROR_WANT_READ:
