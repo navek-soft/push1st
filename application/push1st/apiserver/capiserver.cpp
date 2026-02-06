@@ -39,20 +39,23 @@ void capiserver::ApiOnEvents(const std::vector<std::string_view>& vals, const in
         auto&& tmStart {std::chrono::system_clock::now().time_since_epoch().count()};
         if (auto&& app {Credentials->GetAppById(std::string {vals[0]})}; app) {
             if (message_t message; !content.empty() and (message = msg::Unserialize(content, "api"))) {
-                //				auto&& msg{ msg::ref(message) };
-                if ((*message).contains("channels") and (*message)["channels"].is_array() and (*message).contains("name")) {
+                auto&& msg = *message;
+                if (msg.contains("channel") and msg["channel"].is_string()) {
+                    msg["channels"] = json::array_t {msg["channel"].get<std::string>()};
+                }
+                if (msg.contains("name") and msg.contains("channels") and msg["channels"].is_array()) {
                     json::object_t reply;
-                    reply["msg-id"] = (*message)["#msg-id"];
+                    reply["msg-id"] = msg["#msg-id"];
                     reply["channels"] = json::object_t {};
                     std::string chName;
-                    for (auto&& chIt : (*message)["channels"]) {
+                    for (auto&& chIt : msg["channels"]) {
                         chName = chIt.get<std::string>();
                         if (auto&& ch {Channels->Get(app, chName)}; ch) {
-                            reply["channels"][chName] = ch->Push(DupChannelMessage((*message), chName));
+                            reply["channels"][chName] = ch->Push(DupChannelMessage(msg, chName));
                         } else {
                             reply["channels"][chName] = (size_t)0;
                         }
-                        Cluster->Push(ChannelType(chName), app, chName, *DupChannelMessage((*message), chName).get());
+                        Cluster->Push(ChannelType(chName), app, chName, *DupChannelMessage(msg, chName).get());
                     }
                     reply["time"] = std::chrono::system_clock::now().time_since_epoch().count() - tmStart;
                     ApiResponse(fd, "200", json::Serialize(reply), http::IsConnectionKeepAlive(headers));
