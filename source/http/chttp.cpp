@@ -205,7 +205,6 @@ static inline size_t ParseNumber(std::string_view value);
 static inline std::string_view ParserNext(std::string_view& data, char symbol);
 static inline char SplitBy(std::string_view& data, std::string_view& result, const char* symbol);
 static inline char SplitBy(std::string_view& data, std::string_view& result, char symbol);
-static inline std::string_view ToLower(std::string_view& data);
 
 ssize_t ParseRequest(std::string_view request, std::string_view& method, uri_t& path, headers_t& headers, std::string_view& content, size_t& contentLength) {
     static const std::string_view eod {"\r\n\r\n", 4};
@@ -314,6 +313,7 @@ ssize_t ParseResponse(std::string_view stream, std::string_view& code, std::stri
         }
 
         if (auto&& h_content {headers.find("transfer-encoding")}; h_content != headers.end() and (h_content->second.find("chunked") != std::string::npos)) {
+            content = {stream.data(), stream.length()};
             return (ssize_t)((ptrdiff_t)stream.data() - (ptrdiff_t)begin);
         } else if (auto&& h_content {headers.find("content-length")}; h_content == headers.end()) {
             content = {stream.data(), 0};
@@ -329,14 +329,6 @@ ssize_t ParseResponse(std::string_view stream, std::string_view& code, std::stri
         return (ssize_t)((ptrdiff_t)(content.data() + content.length()) - (ptrdiff_t)begin);
     }
     return -EPROTONOSUPPORT;
-}
-
-static inline std::string_view ToLower(std::string_view& data) {
-    char* ptr {(char*)data.data()};
-    for (size_t n {data.length()}; n--; *ptr = (char)std::tolower(*ptr), ++ptr) {
-        ;
-    }
-    return data;
 }
 
 static inline size_t ParseNumber(std::string_view value) {
@@ -441,8 +433,8 @@ std::string FromBase64(const std::string_view& value) {
     return result;
 }
 
-size_t FromHex(std::string_view data) {
-    size_t val {0};
+ssize_t FromHex(std::string_view data) {
+    ssize_t val {0};
     while (!data.empty()) {
         val <<= 4;
         if (auto ch {data.front()}; ch >= '0' and ch <= '9') {
@@ -452,7 +444,7 @@ size_t FromHex(std::string_view data) {
         } else if (ch >= 'A' and ch <= 'F') {
             val += 10 + (ch - 'A');
         } else {
-            break;
+            return -1;
         }
         data.remove_prefix(1);
     }

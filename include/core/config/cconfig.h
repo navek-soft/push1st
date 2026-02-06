@@ -1,16 +1,14 @@
 #pragma once
 
-#include <sys/types.h>
+#include <unistd.h>
 
 #include <cstddef>
 #include <ctime>
 #include <filesystem>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_set>
-#include <variant>
 
 #include "core/util/cflag.h"
 #include "core/util/cyaml.h"
@@ -142,14 +140,14 @@ class cconfig {
         enum class type_t { nil = -1, peers = 0, k8s };
         static type_t FromStr(const std::string_view& str);
 
-        bool Enable {false};
+        bool Enable {false}, InPod {false};
         sync_t Sync {sync_t::type::none};
         std::time_t PingInterval {30};
         cdsn Listen;
         cdsn Module;
         type_t Type = type_t::nil;
         std::unordered_set<std::string> Nodes;
-        std::string Url, Namespace;
+        std::string Url, Namespace, Token, PodName;
         ssloptions_t Ssl;
 
        private:

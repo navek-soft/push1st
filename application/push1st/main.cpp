@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
         util::log::initialize(cfg.Logger);
         broker->Initialize(cfg);
     } catch (std::exception& ex) {
-        fmt::print("Startup error: {}\n", ex.what());
+        PSHT_DEFAULT_CRITICAL("Startup error: {}\n", ex.what());
         return EXIT_FAILURE;
     }
     return 0;

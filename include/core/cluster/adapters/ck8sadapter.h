@@ -36,7 +36,7 @@ class ck8sadapter : public cadapter, public inet::chttpconnection, public cuniqu
     enum class status_t { none = -1, started = 0, active, disconnected };
 
    protected:
-    ck8sadapter(const std::shared_ptr<inet::cpoll>& poll, const std::string_view& url, const std::string_view& space, const inet::ssl_ctx_t& ssl);
+    ck8sadapter(const std::shared_ptr<inet::cpoll>& poll, const std::string_view& url, const std::string_view& space, const std::string_view& token, const std::string_view& podName, const inet::ssl_ctx_t& ssl);
 
    public:
     ~ck8sadapter() override;
@@ -46,6 +46,7 @@ class ck8sadapter : public cadapter, public inet::chttpconnection, public cuniqu
     void Check() override;
 
    private:
+    void Init();
     void Connect();
 
     void OnK8sReply(fd_t, uint);
@@ -61,7 +62,7 @@ class ck8sadapter : public cadapter, public inet::chttpconnection, public cuniqu
     std::shared_ptr<inet::cpoll> k8sPoll;
     inet::ssl_ctx_t sslCtx;
     const sockaddr_storage sa {};
-    std::string url, space;
+    std::string url, space, token, pod, serviceName {};
 
     std::atomic<status_t> status {status_t::none};
 };

@@ -2,7 +2,6 @@
 #include <sys/types.h>
 
 #include <cstring>
-#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -119,13 +118,22 @@ inline bool IsConnectionKeepAlive(const headers_t& headers) {
     return false;
 }
 
+template <class Str>
+static inline std::string_view ToLower(Str&& data) {
+    char* ptr {(char*)std::forward<Str>(data).data()};
+    for (size_t n {data.length()}; n--; *ptr = (char)std::tolower(*ptr), ++ptr) {
+        ;
+    }
+    return data;
+}
+
 std::string_view& TrimBlank(std::string_view& str);
 std::string Md5(const std::string& value);
 size_t ToNumber(std::string_view value);
 std::string Unquote(const std::string_view& value);
 std::string ToBase64(const std::string_view& value);
 std::string FromBase64(const std::string_view& value);
-size_t FromHex(std::string_view data);
+ssize_t FromHex(std::string_view data);
 std::string_view FindFirstOf(std::string_view& str, char sym);
 std::string_view FindFirstOf(std::string_view& str, std::string_view sym);
 ssize_t ExtractJson(const std::string_view& str);

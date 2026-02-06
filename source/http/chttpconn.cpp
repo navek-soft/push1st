@@ -8,7 +8,6 @@
 #include <string_view>
 
 #include "http/chttp.h"
-#include "log/clog.h"
 
 using namespace inet;
 
@@ -44,23 +43,25 @@ ssize_t chttpconnection::HttpReadRequest(const inet::csocket& fd, std::string_vi
     return res;
 }
 
+/// TODO: make it mor unambiguous
+/// 1) read chunk size
+/// 2) read chunk body (size + 2 for delimiters)
+/// 3) repeat until see chunk of zero size
 ssize_t chttpconnection::HttpReadChunkedResponse(const inet::csocket& fd, std::vector<http::chunk_t>& chunks, size_t max_size) {// NOLINT
     ssize_t res {-1};
 
     std::string chunkStr = std::move(data);
-    data.clear();
     std::string response;
     response.resize(max_size);
 
     if (size_t nread; (res = fd.SocketRecv(response.data(), response.size(), nread, MSG_DONTWAIT)) == 0) {
         auto&& body = std::string_view {response.data(), nread};
-
         while (not body.empty()) {
             auto&& chunkLength = http::FindFirstOf(body, "\r\n");
-            if (size_t length {0}; not chunkLength.empty() and ((length = http::FromHex(chunkLength)) != 0)) {
-                if (body.size() < length + 2) {// chunk len + 2 delimiters at the end of the chunk
-                    data.append(chunkStr).append(body);
-                    data.shrink_to_fit();
+            if (ssize_t length {0}; not chunkLength.empty() and ((length = http::FromHex(chunkLength)) != -1)) {
+                if ((ssize_t)body.size() < length + 2) {// chunk len + 2 delimiters at the end of the chunk
+                    chunkStr.append(body);
+                    data = std::move(chunkStr);
                     return -ENODATA;
                 }
 
@@ -100,15 +101,20 @@ ssize_t chttpconnection::HttpReadResponse(const inet::csocket& fd, std::string_v
     ssize_t res {-1};
 
     if (size_t nread, contentLength {0}; (res = fd.SocketRecv(response.data(), response.size(), nread, MSG_DONTWAIT)) == 0) {
-        std::string_view data;
+        std::string_view resData;
 
-        if (res = http::ParseResponse(std::string_view {response.data(), nread}, code, msg, headers, contentLength, data); res > 0) {
-            content = data;
-            return 0;
+        if (res = http::ParseResponse(std::string_view {response.data(), nread}, code, msg, headers, contentLength, resData); res > 0) {
+            assert((ssize_t)nread >= res);
+            content = resData;
+            if (headers.contains("transfer-encoding") and headers.at("transfer-encoding") == "chunked") {
+                http::FindFirstOf(content, "\r\n");
+                data.append(content);
+            }
+            return nread - res;
         } else if (res == -ENODATA) {
-            if (contentLength and (response.size() + (contentLength - data.size())) <= max_size) {
-                if (res = fd.SocketRecv(response.data() + nread, contentLength - data.length(), nread, MSG_DONTWAIT); res == 0) {
-                    content = {data.data(), contentLength};
+            if (contentLength and (response.size() + (contentLength - resData.size())) <= max_size) {
+                if (res = fd.SocketRecv(response.data() + nread, contentLength - resData.length(), nread, MSG_DONTWAIT); res == 0) {
+                    content = {resData.data(), contentLength};
                     return 0;
                 }
             } else if (not contentLength) {// chunked response

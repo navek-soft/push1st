@@ -9,7 +9,7 @@ struct chunk_t {
     chunk_t(chunk_t&&) noexcept = default;
     chunk_t(std::string&& chunk) : chunk {std::move(chunk)} {}
 
-    json::value_t Json() const {
+    inline json::value_t Json() const {
         json::value_t jsonData {};
         if (not chunk.empty()) {
             json::Unserialize(chunk, jsonData);
@@ -17,16 +17,20 @@ struct chunk_t {
         return jsonData;
     }
 
+    inline std::string Raw() const {
+        return chunk;
+    }
+
    private:
     std::string chunk;
 };
 
 struct response_t {
-    response_t(std::string&& reqData, std::string_view code, std::string_view msg, http::headers_t&& headers, std::string_view body) :
+    response_t(std::string&& reqData, std::string_view code, std::string_view msg, http::headers_t&& headers, std::string&& body) :
         headers {std::move(headers)},
         code {code},
         msg {msg},
-        body {body},
+        body {std::move(body)},
         reqData {std::move(reqData)} {
         ;
     }
@@ -77,7 +81,7 @@ struct response_t {
     http::headers_t headers;
     std::string_view code;
     std::string_view msg;
-    std::string_view body;
+    std::string body;
 
    private:
     std::string reqData;

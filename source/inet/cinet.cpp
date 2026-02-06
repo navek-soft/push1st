@@ -580,7 +580,7 @@ ssize_t inet::SslCreateSelfSignedContext(std::shared_ptr<SSL_CTX>& sslCtx) {
 }
 
 ssize_t inet::SslCreateClientContext(ssl_ctx_t& sslCtx, const std::string& certFile, const std::string& privateKeyFile) {
-    if (sslCtx = std::shared_ptr<SSL_CTX> {SSL_CTX_new(TLS_client_method()),
+    if (sslCtx = std::shared_ptr<SSL_CTX> {SSL_CTX_new(SSLv23_client_method()),
                                            [](SSL_CTX* ctx) {
                                                SSL_CTX_free(ctx);
                                            }};
@@ -588,7 +588,7 @@ ssize_t inet::SslCreateClientContext(ssl_ctx_t& sslCtx, const std::string& certF
         SSL_CTX_set_ecdh_auto(sslCtx.get(), 1);
         SSL_CTX_set_verify(sslCtx.get(), SSL_VERIFY_NONE, nullptr);
 
-        if (!certFile.empty() && !privateKeyFile.empty()) {
+        if (not certFile.empty() && not privateKeyFile.empty()) {
             /* Set the key and cert */
             if (SSL_CTX_use_certificate_chain_file(sslCtx.get(), certFile.c_str()) <= 0) {
                 ERR_print_errors_fp(stderr);
@@ -599,6 +599,13 @@ ssize_t inet::SslCreateClientContext(ssl_ctx_t& sslCtx, const std::string& certF
                 ERR_print_errors_fp(stderr);
                 exit(EXIT_FAILURE);
             }
+
+            SSL_CTX_set_session_cache_mode(sslCtx.get(), SSL_SESS_CACHE_OFF);
+        } else {
+            SSL_CTX_set_options(sslCtx.get(), (SSL_OP_ALL & ~SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS) | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+            SSL_CTX_set_mode(sslCtx.get(), SSL_MODE_AUTO_RETRY);
+            SSL_CTX_set_mode(sslCtx.get(), SSL_MODE_RELEASE_BUFFERS);
+            SSL_CTX_set_cipher_list(sslCtx.get(), "EECDH+AESGCM:EDH+AESGCM:ECDHE-RSA-AES128-GCM-SHA256:AES256+EECDH:DHE-RSA-AES128-GCM-SHA256:AES256+EDH:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4");
 
             SSL_CTX_set_session_cache_mode(sslCtx.get(), SSL_SESS_CACHE_OFF);
         }

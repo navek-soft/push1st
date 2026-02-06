@@ -114,6 +114,10 @@ inline void ccluster::OnClusterPush(struct sockaddr_storage& sa, const std::stri
                              and value.contains("data")) {
         PSHT_INFO("Node {} ... PUSH", inet::GetIp(sa).c_str());
         if (auto&& ch {Broker->GetChannel(value["app"].get<std::string>(), value["channel"].get<std::string>())}; ch) {
+            if (not value["data"].is_string()) {
+                PSHT_ERROR("Node {} ... PUSH ( invalid data - not string)", inet::GetIp(sa).c_str());
+                return;
+            }
             if (json::value_t dataJson; json::Unserialize(value["data"].get<std::string>(), dataJson)) {
                 dataJson["#from-host"] = inet::GetIp(sa);
                 ch->OnClusterPush(message_t {std::make_shared<json::value_t>(dataJson)});

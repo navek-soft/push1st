@@ -3,11 +3,16 @@
 #include <fnmatch.h>
 #include <unistd.h>
 
+#include <cstdio>
+#include <exception>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <regex>
 #include <stdexcept>
 #include <unordered_map>
 
+#include "log/clog.h"
 #include "spdlog/fmt/bundled/core.h"
 
 #include <yaml-cpp/node/node.h>
@@ -139,6 +144,7 @@ void cconfig::cluster_t::Load([[maybe_unused]] const std::filesystem::path& path
         }
 
         Type = FromStr(family["adapter"].as<std::string>());
+        Enable = !Listen.Empty();
 
         switch (Type) {
             case type_t::peers: {
@@ -149,40 +155,82 @@ void cconfig::cluster_t::Load([[maybe_unused]] const std::filesystem::path& path
                 break;
             }
             case type_t::k8s: {
-                Url = family["url"].as<std::string>();
+                namespace fs = std::filesystem;
+
+                constexpr const char* k8sTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token";
+                constexpr const char* k8sNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace";
+
+                fs::path k8sTokenFS {k8sTokenPath};
+                fs::path k8sNamespaceFS {k8sNamespacePath};
+
+                InPod = fs::exists(k8sTokenFS) and fs::exists(k8sNamespaceFS);
+
+                if (InPod) {
+                    std::ifstream tokenFile {k8sTokenFS};
+                    Token = {std::istreambuf_iterator<char>(tokenFile), std::istreambuf_iterator<char>()};
+
+                    std::ifstream namespaceFile {k8sNamespaceFS};
+                    Namespace = {std::istreambuf_iterator<char>(namespaceFile), std::istreambuf_iterator<char>()};
+
+                    if (char hostname[256]; gethostname(hostname, sizeof(hostname)) == 0) {
+                        PodName = hostname;
+                    } else {
+                        throw std::runtime_error("can't get hostname");
+                    }
+
+                    if (const char* apiHost = std::getenv("KUBERNETES_SERVICE_HOST"); not apiHost) {
+                        throw std::runtime_error("KUBERNETES_SERVICE_HOST variable unset");
+                    } else if (const char* apiPort = std::getenv("KUBERNETES_SERVICE_PORT"); not apiPort) {
+                        throw std::runtime_error("KUBERNETES_SERVICE_PORT variable unset");
+                    } else {
+                        Url = fmt::format("{}:{}", apiHost, apiPort);
+                    }
+                    Ssl = ssloptions_t {.Enable = true, .Client = true, .Cert = {}, .Key = {}};
+                    return;
+                }
+
+                // push1st not in the pod
+                Url = Value<std::string>(family["url"], "");
+                if (Enable = !Url.empty(); not Enable) {
+                    return;
+                }
+
+                if (PodName = Value<std::string>(family["podname"], ""); PodName.empty()) {
+                    throw std::runtime_error("k8s pod name must be set");
+                }
+
                 Namespace = Value<std::string>(family["namespace"], "default");
+
                 if (auto&& ssl = family["ssl"]; ssl.IsDefined() and ssl.IsMap()) {
                     Ssl.Cert = Value<std::string>(ssl["cert"], {});
                     Ssl.Key = Value<std::string>(ssl["key"], {});
 
-                    if (std::filesystem::path file {Ssl.Cert}; file.is_relative()) {
-                        Ssl.Cert = std::filesystem::absolute(file).string();
+                    if (fs::path file {Ssl.Cert}; file.is_relative()) {
+                        Ssl.Cert = fs::absolute(file).string();
                     }
-                    if (std::filesystem::path file {Ssl.Key}; file.is_relative()) {
-                        Ssl.Key = std::filesystem::absolute(file).string();
-                    }
-
-                    if (not std::filesystem::exists(Ssl.Cert)) {
-                        throw std::runtime_error(fmt::format("there is no k8s ssl cert {}", Ssl.Cert.c_str()));
-                    }
-
-                    if (not std::filesystem::exists(Ssl.Key)) {
-                        throw std::runtime_error(fmt::format("there is no k8s ssl key {}", Ssl.Key.c_str()));
+                    if (fs::path file {Ssl.Key}; file.is_relative()) {
+                        Ssl.Key = fs::absolute(file).string();
                     }
 
                     Ssl.Enable = Value<bool>(ssl["enable"], false);
                     Ssl.Client = true;
+
+                    if (not fs::exists(Ssl.Cert)) {
+                        Enable = false;
+                        PSHT_DEFAULT_WARNING("there is no k8s ssl cert {}", Ssl.Cert.c_str());
+                    }
+
+                    if (not fs::exists(Ssl.Key)) {
+                        Enable = false;
+                        PSHT_DEFAULT_WARNING("there is no k8s ssl key {}", Ssl.Key.c_str());
+                    }
                 }
 
-                Enable = !Url.empty();
-
-                break;
+                return;
             }
             default:
                 throw std::runtime_error(fmt::format("wrong cluster adapter type {}", (int)Type));
         };
-
-        Enable = !Listen.Empty();
     }
 }
 
@@ -365,8 +413,7 @@ void cconfig::Load(std::filesystem::path configfile) {
         Credentials.Load(Path, cfgOptions["credentials"]);
         Logger.Load(Path, cfgOptions["log"]);
     } catch (std::exception& ex) {
-        printf("Load config file ( %s )\n\tException ... %s\n", configfile.c_str(), ex.what());
-        exit(0);
+        throw std::runtime_error(fmt::format("Load config file ( {} )\n\tException ... {}", configfile.c_str(), ex.what()));
     }
 }
 

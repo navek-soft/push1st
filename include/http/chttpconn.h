@@ -26,6 +26,10 @@ class chttpconnection {
     virtual inline void OnResponse(http::response_t&&) {};
     virtual inline void OnResponse(http::chunk_t&&) {};
 
+    inline void Reset() {
+        data.clear();
+    }
+
    private:
     std::string data {};
 };
