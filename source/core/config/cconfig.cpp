@@ -1,6 +1,7 @@
 #include "core/config/cconfig.h"
 
 #include <fnmatch.h>
+#include <unistd.h>
 
 #include <filesystem>
 #include <regex>
@@ -201,6 +202,10 @@ void cconfig::interface_t::smpp_t::Load([[maybe_unused]] const std::filesystem::
     if (Enable = Value<bool>(options["enable"], false); Enable) {
         Path = PathValue(options["path"], "smpp");
         Hook = Value<std::string>(options["webhook"], {});
+        Rps = Value<size_t>(options["rps"], Rps);
+        if (Rps < 0) {
+            throw std::runtime_error("smpp rps can't be < 0");
+        }
     }
 }
 

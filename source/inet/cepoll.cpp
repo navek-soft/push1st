@@ -16,7 +16,7 @@ inline void cpoll::Gc() {
     while (!fdQueueGC.empty()) {
         auto obj {fdQueueGC.front()};
         fdQueueGC.pop_front();
-        if (auto self {obj.lock()}; self and !self->IsLeaveUs(now)) {
+        if (auto self {obj.lock()}; self and not self->IsLeaveUs(now)) {
             fdQueueGC.push_back(obj);
         }
         break;

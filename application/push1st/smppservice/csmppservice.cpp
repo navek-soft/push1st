@@ -1,12 +1,20 @@
 #include "csmppservice.h"
 
 #include <netinet/in.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include <cinttypes>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <variant>
 
+#include "core/util/cjson.h"
 #include "log/clog.h"
 
 namespace smpp {
@@ -171,6 +179,7 @@ namespace param {
         }
     };
     class cesm {
+       private:
         uint8_t value {0};
 
        public:
@@ -178,9 +187,10 @@ namespace param {
         inline void operator()(uint8_t val) {
             value = val;
         }
-        inline void Receipt(receipt_t type) {
-            value = (value & 0xfc) | (uint8_t)type;
+        inline bool IsReceipt() const {
+            return value & 0x4;
         }
+
         inline cpacker& Pack(cpacker& package) {// NOLINT (static)
             package.Write(value);
             return package;
@@ -265,6 +275,9 @@ namespace param {
         cregistereddelivery() = default;
         inline void operator()(uint8_t val) {
             value = val;
+        }
+        inline void Receipt(receipt_t type) {
+            value = (value & 0xfc) | (uint8_t)type;
         }
         inline void Unpack(std::string_view& data) {
             value = (uint8_t)data.front();
@@ -352,8 +365,12 @@ namespace param {
 
        public:
         cmessage() = default;
+
         inline void operator()(const std::string& msg) {
             value = msg;
+        }
+        inline void operator()(std::string&& msg) {
+            value = std::move(msg);
         }
         inline cpacker& Pack(cpacker& package) {
             package.Write((uint8_t)value.length()).Write(value.data(), value.length());
@@ -463,7 +480,7 @@ class csms {
     param::cpriority priority;
     param::cscheduledeliverytime delivery_time;
     param::cvalidityperiod valid_period;
-    param::cregistereddelivery register_delivery;
+    param::cregistereddelivery registered_delivery;
     param::creplaceifpresent replace;
     param::cencoding encoding;
     param::csmdefaultmsgid msg_id;
@@ -479,7 +496,7 @@ class csms {
         priority.Pack(packer);
         delivery_time.Pack(packer);
         valid_period.Pack(packer);
-        register_delivery.Pack(packer);
+        registered_delivery.Pack(packer);
         replace.Pack(packer);
         encoding.Pack(packer);
         msg_id.Pack(packer);
@@ -550,7 +567,7 @@ class cdelivery {
     param::cpriority priority;
     param::cscheduledeliverytime delivery_time;
     param::cvalidityperiod valid_period;
-    param::cregistereddelivery register_delivery;
+    param::cregistereddelivery registered_delivery;
     param::creplaceifpresent replace;
     param::cencoding encoding;
     param::cstring predefined;
@@ -565,11 +582,58 @@ class cdelivery {
         priority.Unpack(data);
         delivery_time.Unpack(data);
         valid_period.Unpack(data);
-        register_delivery.Unpack(data);
+        registered_delivery.Unpack(data);
         replace.Unpack(data);
         encoding.Unpack(data);
         predefined.Unpack(data);
         message.Unpack(data);
+    }
+};
+
+class cshortmsg {
+   public:
+    std::string id;
+    int sub;
+    int dlvrd;
+    std::string submit_date;
+    std::string done_date;
+    std::string stat;
+    int err;
+    std::string text;
+
+    inline void Unpack(std::string_view& data) {
+        size_t keypos {0};
+        size_t valuepos {0};
+        while (keypos = data.find(':'), keypos != std::string_view::npos) {
+            auto key = data.substr(0, keypos);
+            data.remove_prefix(keypos + 1);
+
+            valuepos = data.find(' ');
+            auto value = valuepos == std::string_view::npos ? "" : data.substr(0, valuepos);
+            if (valuepos != std::string_view::npos) {
+                data.remove_prefix(valuepos + 1);
+            }
+
+            if (key == "id") {
+                id = value;
+            } else if (key == "sub") {
+                sub = std::stoi({value.data(), value.size()});
+            } else if (key == "dlvrd") {
+                dlvrd = std::stoi({value.data(), value.size()});
+            } else if (key == "submit date") {
+                submit_date = value;
+            } else if (key == "done date") {
+                done_date = value;
+            } else if (key == "stat") {
+                stat = value;
+            } else if (key == "err") {
+                err = std::stoi({value.data(), value.size()});
+            } else if (key == "text") {
+                text = value;
+            } else {
+                throw std::runtime_error("wront shortmsg key type");
+            }
+        }
     }
 };
 
@@ -598,6 +662,61 @@ class cresponse {
 };
 }// namespace smpp
 
+bool csmppservice::cackmsg::IsLeaveUs(std::time_t now) {
+    if (finished) {
+        return true;
+    }
+
+    auto&& svc = svcWeak.lock();
+    if (not svc) {
+        return true;
+    }
+
+    auto clean = [svc, this]() {
+        {
+            std::lock_guard _ {svc->retrySync};
+            svc->retryMsgs.erase(this);
+        }
+        {
+            std::lock_guard _ {svc->ackSync};
+            svc->pendingMsgQueue.erase(sequence);
+            for (auto it = svc->ackMsgQueue.begin(); it != svc->ackMsgQueue.end(); ++it) {
+                if (it->second->sequence == sequence) {
+                    svc->ackMsgQueue.erase(it);
+                    break;
+                }
+            }
+        }
+    };
+
+    if (lastSeen + svc->retryInterval >= now) {
+        return false;
+    }
+
+    if (retryNum + 1 > svc->numOfRetries) {
+        clean();
+        PSHT_WARNING("Can't send SMS ( src: {}, dst: {} )... {}/{} ({})", addr->source, addr->destination, retryNum, svc->numOfRetries, lastSeen);
+        return true;
+    }
+
+    clean();
+
+    lastSeen = now;
+    ++retryNum;
+
+    PSHT_DEBUG("Retry SMS ( src: {}, dst: {} )... {}/{} ({})", addr->source, addr->destination, retryNum, svc->numOfRetries, lastSeen);
+
+    svc->retryQueue.Enqueue([self = shared_from_this()]() {
+        if (auto&& svc = self->svcWeak.lock(); svc) {
+            const auto& [login, pass, hosts, port] = *(self->gwcred);
+            auto con = svc->GetGateway(login, pass, hosts, port);
+            svc->SendChunk(con, self);
+        }
+    });
+
+    return true;
+}
+
 void csmppservice::ReleaseGateway(const std::string& gwLogin, const std::string& gwPassword) {
     std::string conId {gwLogin + ":" + gwPassword};
     size_t removed {0};
@@ -611,12 +730,41 @@ void csmppservice::ReleaseGateway(const std::string& gwLogin, const std::string&
     }
 }
 
-std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& message) {
+std::shared_ptr<csmppservice::cgateway> csmppservice::GetGateway(const std::string& login, const std::string& pass, const std::vector<std::string>& hosts, const std::string& port) {
+    std::shared_ptr<cgateway> con;
+    std::string conId {login + ":" + pass};
+    {
+        std::unique_lock lock(gwConnectionLock);
+
+        if (auto&& conIt {gwConnections.find(conId)}; conIt != gwConnections.end()) {
+            con = conIt->second;
+            /*
+            con->Assign(gwLogin, gwPassword,
+                gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
+                */
+            PSHT_INFO("Reuse connection: {} ( channel: {} ), {}", login, con->Channel(), *(int64_t*)this);
+
+        } else {
+            con = gwConnections
+                      .emplace(conId, std::make_shared<cgateway>(shared_from_this(), gwPoll, gwHook, login, pass, hosts, port))
+                      .first->second;
+
+            gwPoll->EnqueueGc(con);
+
+            PSHT_INFO("New connection: {} ( channel: {} ), {}", conId.c_str(), con->Channel().c_str(), *(int64_t*)this);
+        }
+    }
+    return con;
+}
+
+std::pair<std::string, json::value_t> csmppservice::Send(json::value_t&& message) {
     try {
-        std::shared_ptr<cgateway> con;
         if (std::string gwLogin {message.contains("login") ? message["login"].get<std::string>() : std::string {}};
             !gwLogin.empty()) {
             std::string gwPassword {message.contains("password") ? message["password"].get<std::string>() : std::string {}};
+            std::string gwPort {message.contains("port") ? (message["port"].is_string() ? message["port"].get<std::string>()
+                                                                                        : std::to_string(message["port"].get<size_t>()))
+                                                         : std::string {}};
             std::vector<std::string> gwHosts;
 
             if (message.contains("hosts")) {
@@ -629,97 +777,58 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
                 }
             }
 
-            std::string conId {gwLogin + ":" + gwPassword};
-            {
-                std::unique_lock lock(gwConnectionLock);
-
-                if (auto&& conIt {gwConnections.find(conId)}; conIt != gwConnections.end()) {
-                    con = conIt->second;
-                    /*
-                    con->Assign(gwLogin, gwPassword,
-                        gwHosts, message.contains("port") ? message["port"].get<std::string>() : std::string{});
-                        */
-                    PSHT_INFO("Reuse connection: {} ( channel: {} ), {}", gwLogin, con->Channel(), *(int64_t*)this);
-
-                } else {
-                    con = gwConnections
-                              .emplace(conId,
-                                       std::make_shared<cgateway>(shared_from_this(),
-                                                                  gwPoll,
-                                                                  gwHook,
-                                                                  gwLogin,
-                                                                  gwPassword,
-                                                                  gwHosts,
-                                                                  message.contains("port")
-                                                                      ? (message["port"].is_string()
-                                                                             ? message["port"].get<std::string>()
-                                                                             : std::to_string(message["port"].get<size_t>()))
-                                                                      : std::string {}))
-                              .first->second;
-
-                    gwPoll->EnqueueGc(con);
-
-                    PSHT_INFO("New connection: {} ( channel: {} ), {}", conId.c_str(), con->Channel().c_str(), *(int64_t*)this);
-                }
-            }
+            std::shared_ptr<cgateway> con = GetGateway(gwLogin, gwPassword, gwHosts, gwPort);
 
             if (con->Connect()) {
                 auto&& src {message["message"].get<std::string>()};
-                smpp::csms sms {0};
-                sms.src(
+                auto&& sms = std::make_shared<smpp::csms>(0);
+                sms->src(
                     message["source_ton"].get<uint8_t>(), message["source_npi"].get<uint8_t>(), message["source_addr"].get<std::string>());
-                sms.dst(message["destination_ton"].get<uint8_t>(),
-                        message["destination_npi"].get<uint8_t>(),
-                        message["destination_addr"].get<std::string>());
-                sms.encoding(smpp::param::cencoding::ucs2);
-                sms.esm.Receipt(smpp::receipt_t::always);
+                sms->dst(message["destination_ton"].get<uint8_t>(),
+                         message["destination_npi"].get<uint8_t>(),
+                         message["destination_addr"].get<std::string>());
+                sms->encoding(smpp::param::cencoding::ucs2);
+                sms->registered_delivery.Receipt(smpp::receipt_t::always);
 
                 if (message.contains("receipt")) {
                     if (std::string && receipt {message["receipt"].get<std::string>()}; receipt == "none") {
-                        sms.esm.Receipt(smpp::receipt_t::none);
+                        sms->registered_delivery.Receipt(smpp::receipt_t::none);
                     } else if (receipt == "failure") {
-                        sms.esm.Receipt(smpp::receipt_t::failure);
+                        sms->registered_delivery.Receipt(smpp::receipt_t::failure);
                     } else if (receipt == "success") {
-                        sms.esm.Receipt(smpp::receipt_t::success);
+                        sms->registered_delivery.Receipt(smpp::receipt_t::success);
                     }
                 }
 
-                //				auto MsgId{ con->MsgId() };
-                auto&& chunks {sms.message.Split(sms.encoding.Encode(src))};
+                auto&& chunks {sms->message.Split(sms->encoding.Encode(src))};
 
-                sms.esm(chunks.size() == 1 ? 0 : 0x40);
+                auto gwcred = std::make_shared<gwcred_t>(gwLogin, gwPassword, gwHosts, gwPort);
+                auto addr =
+                    std::make_shared<addrs_t>(message["source_addr"].get<std::string>(), message["destination_addr"].get<std::string>());
 
-                std::vector<uint32_t> MsgId;
+                for (auto& part : chunks) {
+                    rateLimiter.Enqueue([gwcred, addr, con, sms, weak = weak_from_this(), part = std::move(part)](bool& skip) mutable {
+                        auto&& self = weak.lock();
+                        if (not self) {
+                            skip = true;
+                            return;
+                        }
 
-                for (auto&& part : chunks) {
-                    sms.command.sequence = con->Seq();
-                    MsgId.emplace_back(sms.command.sequence);
-                    sms.message(part);
-                    auto&& tm_start {std::chrono::system_clock::now()};
-                    if (auto res {con->Send(sms.Pack())}; res == 0) {
-                        PSHT_INFO("Push SMS: {}, id: {}, seq: {}/{} ( src: {}, dst: {} ) ... success ({} msec)",
-                                  sms.command.status,
-                                  sms.command.id,
-                                  sms.command.sequence,
-                                  MsgId.size(),
-                                  message["source_addr"].get<std::string>().c_str(),
-                                  message["destination_addr"].get<std::string>().c_str(),
-                                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - tm_start)
-                                      .count());
-                        continue;
-                    } else {
-                        PSHT_ERROR("Push SMS: {}, id: {}, seq: {}/{} ( src: {}, dst: {} ) ... error ( {} )",
-                                   sms.command.status,
-                                   sms.command.id,
-                                   sms.command.sequence,
-                                   MsgId.size(),
-                                   message["source_addr"].get<std::string>().c_str(),
-                                   message["destination_addr"].get<std::string>().c_str(),
-                                   std::strerror(-(int)res));
-                        return {"400", json::object_t {{"id", MsgId}, {"error", strerror(-(int)res)}, {"channel", con->Channel()}}};
-                    }
+                        sms->command.sequence = con->Seq();
+                        sms->message(std::move(part));
+
+                        auto ackMsg = std::make_shared<cackmsg>(self->shared_from_this(),
+                                                                gwcred,
+                                                                addr,
+                                                                sms->Pack(),
+                                                                sms->command.id,
+                                                                sms->command.status,
+                                                                sms->command.sequence);
+
+                        self->SendChunk(con, ackMsg);
+                    });
                 }
-                return {"201", json::object_t {{"id", MsgId}, {"status", "pending"}, {"channel", con->Channel()}}};
+                return {"201", json::object_t {{"size", chunks.size()}, {"status", "pending"}, {"channel", con->Channel()}}};
             } else {
                 con->Close();
                 PSHT_ERROR("Connection was lost ( {} )", con->Channel().c_str());
@@ -730,6 +839,38 @@ std::pair<std::string, json::value_t> csmppservice::Send(const json::value_t& me
         }
     } catch (std::exception& ex) { return {"500", json::object_t {{"error", ex.what()}}}; }
     return {"400", json::object_t {{"error", "invalid message format"}}};
+}
+
+void csmppservice::SendChunk(const std::shared_ptr<cgateway>& gw, const std::shared_ptr<cackmsg>& chunk) {
+    auto&& tm_start {std::chrono::system_clock::now()};
+    if (auto res {gw->Send(chunk->msg)}; res == 0) {
+        {
+            std::lock_guard _ {ackSync};
+            pendingMsgQueue.emplace(chunk->sequence, chunk);
+        }
+
+        PSHT_INFO("Push SMS: {}, id: {}, seq: {} ( src: {}, dst: {} ) ... success ({} msec)",
+                  chunk->status,
+                  chunk->id,
+                  chunk->sequence,
+                  chunk->addr->source,
+                  chunk->addr->destination,
+                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - tm_start).count());
+    } else {
+        PSHT_ERROR("Push SMS: {}, id: {}, seq: {} ( src: {}, dst: {} ) ... error ( {} )",
+                   chunk->status,
+                   chunk->id,
+                   chunk->sequence,
+                   chunk->addr->source,
+                   chunk->addr->destination,
+                   std::strerror(-(int)res));
+        {
+            std::lock_guard _ {retrySync};
+            retryMsgs.emplace(chunk.get(), chunk);
+        }
+    }
+
+    gwPoll->EnqueueGc(chunk);
 }
 
 ssize_t csmppservice::cgateway::Send(const std::string& msg, std::string& response) {
@@ -773,23 +914,50 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
             case smpp::cdelivery::id: {
                 auto&& [report] = smpp::cresponse<smpp::cdelivery> {}(response);
 
-                if (cmd.status == 0) {
-                    status = json::object_t {
-                        {"id", cmd.sequence}, {"status", "delivered"}, {"channel", Channel()}, {"data", report.message.Str()}};
-                } else {
-                    status = json::object_t {{"id", cmd.sequence}, {"status", "not_delivered"}, {"channel", Channel()}};
-                }
+                response = report.message.Str();
+                auto&& [shortmsg] = smpp::cresponse<smpp::cshortmsg> {}(response);
+
+                status = json::object_t {
+                    {"id", cmd.sequence}, {"status", shortmsg.stat}, {"channel", Channel()}, {"data", report.message.Str()}};
 
                 smpp::cdelivery_resp resp {cmd.sequence, {}};
-                auto res = Send(resp.Pack());
 
-                PSHT_INFO("Delivery SMS: status: {}, id: {}, seq: {} ( {} ), channel: {} ( {} )",
-                          cmd.status,
+                bool found {false};
+                [[maybe_unused]] size_t ackSize {0};
+                [[maybe_unused]] size_t pendingSize {0};
+                [[maybe_unused]] size_t retryMsgs {0};
+                {
+                    std::unique_lock lock {svc->ackSync};
+                    if (auto&& it = svc->ackMsgQueue.find(shortmsg.id); it != svc->ackMsgQueue.end()) {
+                        auto ackmsg = it->second;
+                        svc->ackMsgQueue.erase(it);
+                        lock.unlock();
+                        found = true;
+                        if (shortmsg.stat != "DELIVRD") {
+                            {
+                                std::lock_guard _ {svc->retrySync};
+                                svc->retryMsgs.emplace(ackmsg.get(), ackmsg);
+                                retryMsgs = svc->retryMsgs.size();
+                            }
+                        } else {
+                            ackmsg->finished = true;
+                        }
+                    }
+                    ackSize = svc->ackMsgQueue.size();
+                    pendingSize = svc->pendingMsgQueue.size();
+                }
+                // PSHT_DEBUG("{}", json::Serialize(json::object_t {{"pending", pendingSize}, {"delivery", ackSize}, {"retry", retryMsgs}}));
+
+                auto res = Send(resp.Pack());
+                PSHT_INFO("Delivery{} SMS: status: {}, id: {}, seq: {} ( {} ), channel: {} ( {} ), receipt: {}",
+                          found ? "" : " UNKNOWN",
+                          shortmsg.stat,
                           cmd.id,
                           cmd.sequence,
                           report.message.Str().c_str(),
                           Channel().c_str(),
-                          std::strerror(-(int)res));
+                          std::strerror(-(int)res),
+                          report.esm.IsReceipt());
 
                 break;
             }
@@ -798,12 +966,24 @@ inline void csmppservice::cgateway::OnDeliveryStatus(const std::string& data) {
 
                 if (cmd.status == 0) {
                     status = json::object_t {{"id", cmd.sequence}, {"status", "accepted"}, {"channel", Channel()}, {"uid", msg.Str()}};
-                    PSHT_INFO("Accept SMS: status: {}, id: {}, seq: {}, uid: {}, channel: {}",
+                    bool found {false};
+                    {
+                        std::lock_guard _ {svc->ackSync};
+                        if (auto&& it = svc->pendingMsgQueue.find(cmd.sequence); it != svc->pendingMsgQueue.end()) {
+                            found = true;
+                            svc->ackMsgQueue.emplace(msg.Str(), std::move(it->second));
+                            svc->pendingMsgQueue.erase(it);
+                        }
+                    }
+
+                    PSHT_INFO("Accept{} SMS: status: {}, id: {}, seq: {}, uid: {}, channel: {}",
+                              found ? "" : " UNKNOWN",
                               cmd.status,
                               cmd.id,
                               cmd.sequence,
                               msg.Str().c_str(),
                               Channel().c_str());
+
                 } else {
                     status = json::object_t {{"id", cmd.sequence}, {"status", "not_accepted"}, {"channel", Channel()}};
                     PSHT_INFO("Accept SMS: status: {}, id: {}, seq: {}, channel: {}",
@@ -877,7 +1057,7 @@ void csmppservice::cgateway::OnGwReply([[maybe_unused]] fd_t fd, uint events) {
 }
 
 bool csmppservice::cgateway::IsLeaveUs(std::time_t now) {
-    if (gwPPTimeout and gwPPTimeout <= now) {
+    if (gwPPTimeout and gwPPTimeout < now) {
         Close();
         PSHT_ERROR("Ping timeout {} <= {}, channel: {}, {}", gwPPTimeout, now, Channel(), *(int64_t*)this);
         return true;
@@ -990,10 +1170,12 @@ csmppservice::cgateway::cgateway(const std::shared_ptr<csmppservice>& svc, const
 
 csmppservice::cgateway::~cgateway() {}
 
-csmppservice::csmppservice(const std::string& webhook) {
+csmppservice::csmppservice(const std::string& webhook, size_t rps) :
+    gwPoll {std::make_shared<inet::cpoll>("smpp-worker")},
+    rateLimiter {cratelimiter {rps}},
+    retryQueue {1, "smppretry"} {
     if (!webhook.empty()) {
         gwHook = std::make_shared<cwebhook>(webhook);
     };
-    gwPoll = std::make_shared<inet::cpoll>("smpp-worker");
     PSHT_INFO("Api SMPP ... enabled ( Delivery report is {} )", webhook.empty() ? "Disable" : "Enable");
 }

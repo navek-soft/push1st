@@ -9,6 +9,7 @@
 #include "core/config/cconfig.h"
 #include "core/credentials/ccredentials.h"
 #include "core/util/casyncqueue.h"
+#include "core/util/cjson.h"
 #include "log/clog.h"
 
 #include "../smppservice/csmppservice.h"
@@ -134,9 +135,9 @@ void capiserver::ApiOnModuleSmpp(const std::vector<std::string_view>& vals, cons
     if (method == "POST") {
         if (auto&& app {Credentials->GetAppById(std::string {vals[0]})}; app) {
             if (json::value_t request; cjson::Unserialize(content, request) and request.is_object()) {
-                ApiProcessing.Enqueue([this, weak = weak_from_this(), fd, request]() {
+                ApiProcessing.Enqueue([this, weak = weak_from_this(), fd, request = std::move(request)]() mutable {
                     if (auto&& self = weak.lock(); self) {
-                        auto&& [code, response] = ApiSmpp->Send(request);
+                        auto&& [code, response] = ApiSmpp->Send(std::move(request));
                         ApiResponse(fd, code, cjson::Serialize(std::move(response)), true);
                     }
                 });
@@ -214,7 +215,7 @@ capiserver::capiserver(const std::shared_ptr<cchannels>& channels, const std::sh
     });
 
     if (config.Smpp.Enable and !config.Smpp.Path.empty()) {
-        ApiSmpp = std::make_shared<csmppservice>(config.Smpp.Hook);
+        ApiSmpp = std::make_shared<csmppservice>(config.Smpp.Hook, config.Smpp.Rps);
         ApiRoutes.Add("/" + config.Smpp.Path + "/*", [this](auto&& PH1, auto&& PH2, auto&& PH3, auto&& PH4, auto&& PH5, auto&& PH6) {
             ApiOnModuleSmpp(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2), std::forward<decltype(PH3)>(PH3), std::forward<decltype(PH4)>(PH4), std::forward<decltype(PH5)>(PH5), std::forward<decltype(PH6)>(PH6));
         });

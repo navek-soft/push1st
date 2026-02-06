@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sys/types.h>
+
 #include <cstddef>
 #include <ctime>
 #include <filesystem>
@@ -167,6 +169,7 @@ class cconfig {
             bool Enable {false};
             std::string Hook;
             std::string Path;
+            ssize_t Rps {100};
 
            private:
             friend class cconfig;
