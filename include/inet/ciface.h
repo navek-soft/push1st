@@ -3,6 +3,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <cstdint>
 
 namespace inet {
 class ciface {
