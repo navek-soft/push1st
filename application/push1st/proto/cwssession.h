@@ -105,11 +105,15 @@ class cwssession : public inet::cwsconnection, public inet::csocket, public csub
 };
 
 inline std::string cwssession::Pack(const message_t& message) {// NOLINT (static)
-    return json::Serialize(
-        {{"event", (*message)["event"]},
-         {"channel", (*message)["channel"]},
-         {"#msg-time", std::chrono::system_clock::now().time_since_epoch().count() - (*message)["#msg-arrival"].get<size_t>()},
-         {"data", (*message)["data"]},
-         {"#msg-id", (*message)["#msg-id"]},
-         {"#msg-from", (*message)["#msg-from"]}});
+    json::object_t o;
+    o["event"] = (*message)["event"];
+    o["channel"] = (*message)["channel"];
+    o["#msg-time"] = std::chrono::system_clock::now().time_since_epoch().count() - (*message)["#msg-arrival"].get<size_t>();
+    o["data"] = (*message)["data"];
+    o["#msg-id"] = (*message)["#msg-id"];
+    o["#msg-from"] = (*message)["#msg-from"];
+    if (message->contains("headers")) {
+        o["headers"] = (*message)["headers"];
+    }
+    return json::Serialize(o);
 }
