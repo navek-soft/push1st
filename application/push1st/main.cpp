@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (cmd.Isset("version")) {
-        printf("Version: %s, build: %s-%s\n", Version.Major, Version.Revision, Version.BuildType);
+        printf("Version: %s.%s.%s.%s %s %s [%s]\n", Version.Major, Version.Minor, Version.Patch, Version.BuildNo, Version.BuildType, Version.Revision, Version.Commit);
         return 0;
     }
 
